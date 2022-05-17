@@ -1,0 +1,473 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<doc>
+    <assembly>
+        <name>Xceed.UI</name>
+    </assembly>
+    <members>
+        <member name="N:Xceed.UI">
+            <summary>This namespace is reserved for internal use and is not intended to be used directly from your code.</summary>
+        </member>
+        <member name="T:Xceed.UI.IKeyboardHandling">
+            <summary>Interface which defines what keys and characters are accepted as input keys and characters.</summary>
+        </member>
+        <member name="M:Xceed.UI.IKeyboardHandling.IsInputChar(System.Char)">
+            <summary>Determines if a character is an input character that the editor recognizes.</summary>
+            <returns>true if the character should be sent directly to the editor and not preprocessed; false otherwise.</returns>
+            <param name="charCode">The character to test.</param>
+        </member>
+        <member name="M:Xceed.UI.IKeyboardHandling.IsInputKey(System.Windows.Forms.Keys)">
+            <summary>Determines whether the specified key is a regular input key or a special key that requires preprocessing.</summary>
+            <returns>true if the specified key is a regular input key; false otherwise.</returns>
+            <param name="keyData">One of the Keys values.</param>
+        </member>
+        <member name="T:Xceed.UI.IThemed">
+            <summary>Interface which indicates that the implementing control supports theming.</summary>
+        </member>
+        <member name="M:Xceed.UI.IThemed.ResetUIStyle">
+            <summary>Resets the value of the UIStyle property to its default value.</summary>
+        </member>
+        <member name="P:Xceed.UI.IThemed.Theme">
+            <summary>This property is reserved for internal use and is not intended to be used directly from your code.</summary>
+        </member>
+        <member name="P:Xceed.UI.IThemed.UIStyle">
+            <summary>Gets or sets the appearance of the control/editor.</summary>
+            <remarks>    When set to WindowsXP on non-Windows XP machines, the     blue XP theme style will be used. On Windows XP machines, the     current theme will be used. If you want to force a style in     particular, for example the Blue, Olive Green or Silver XP     themes, the resource assembly must be assigned to the     ResourceAssembly property and the UIStyle property set to     UIStyle.ResourceAssembly.</remarks>
+        </member>
+        <member name="E:Xceed.UI.IThemed.UIStyleChanged">
+            <summary>Raised when the value of the UIStyle property is changed.</summary>
+        </member>
+        <member name="T:Xceed.UI.GradientMode">
+            <summary>A value representing the orientation of the gradient axis.</summary>
+        </member>
+        <member name="F:Xceed.UI.GradientMode.Horizontal">
+            <summary>The orientation of the gradient axis is horizontal: colors are graded from left to right.</summary>
+        </member>
+        <member name="F:Xceed.UI.GradientMode.Vertical">
+            <summary>The orientation of the gradient axis is vertical: colors are graded from top to bottom. (Default value.)</summary>
+        </member>
+        <member name="T:Xceed.UI.GripLocation">
+            <summary>Value representing the location of the resizing control/form when it is dock-filled on a form.</summary>
+        </member>
+        <member name="F:Xceed.UI.GripLocation.None">
+            <summary>No resizing grip is displayed.</summary>
+        </member>
+        <member name="F:Xceed.UI.GripLocation.TopLeft">
+            <summary>The resizing grip is located in the top-left corner.</summary>
+        </member>
+        <member name="F:Xceed.UI.GripLocation.TopRight">
+            <summary>The resizing grip is located in the top-right corner.</summary>
+        </member>
+        <member name="F:Xceed.UI.GripLocation.BottomLeft">
+            <summary>The resizing grip is located in the bottom-left corner.</summary>
+        </member>
+        <member name="F:Xceed.UI.GripLocation.BottomRight">
+            <summary>The resizing grip is located in the bottom-right corner.</summary>
+        </member>
+        <member name="T:Xceed.UI.ImageStyle">
+            <summary>Value indicating the style in which an image is displayed.</summary>
+        </member>
+        <member name="F:Xceed.UI.ImageStyle.Stretch">
+            <summary>The image is stretched to fit the available area.</summary>
+        </member>
+        <member name="F:Xceed.UI.ImageStyle.Tile">
+            <summary>The image is repeated until the entire available area is filled.</summary>
+        </member>
+        <member name="F:Xceed.UI.ImageStyle.Align">
+            <summary>The image is aligned according to the value of the control's BackgroundImageAlignment property</summary>
+        </member>
+        <member name="T:Xceed.UI.UIStyle">
+            <summary>Value representing the appearance of a control and its child elements.</summary>
+        </member>
+        <member name="F:Xceed.UI.UIStyle.System">
+            <summary>The control and its child elements will have the system's theme appearance.</summary>
+        </member>
+        <member name="F:Xceed.UI.UIStyle.WindowsClassic">
+            <summary>The control and its child elements will have the classic Windows 95 to 2000 appearance.</summary>
+        </member>
+        <member name="F:Xceed.UI.UIStyle.WindowsXP">
+            <summary>The control and its child elements will have the Windows XP appearance.</summary>
+        </member>
+        <member name="F:Xceed.UI.UIStyle.ResourceAssembly">
+            <summary>The control and its child elements will have the appearance defined in the resource assembly which can be provided by setting the control's ResourceAssembly property.</summary>
+        </member>
+        <member name="T:Xceed.UI.Margins">
+            <summary>A structure representing margins.</summary>
+        </member>
+        <member name="M:Xceed.UI.Margins.#ctor">
+            <summary>Initializes a new instance of the Margins structure.</summary>
+        </member>
+        <member name="M:Xceed.UI.Margins.#ctor(System.Int32)">
+            <summary>Initializes a new instance of the Margins structure.</summary>
+            <param name="all">A value representing the width, in pixels, of the left, top, right and bottom margins.</param>
+        </member>
+        <member name="M:Xceed.UI.Margins.#ctor(System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary>Initializes a new instance of the Margins structure.</summary>
+            <param name="left">The width, in pixels, of the left margin.</param>
+            <param name="right">The width, in pixels, of the right margin.</param>
+            <param name="top">The height, in pixels, of the top margin.</param>
+            <param name="bottom">The height, in pixels, of the bottom margin.</param>
+        </member>
+        <member name="M:Xceed.UI.Margins.Add(Xceed.UI.Margins)">
+            <summary>Adds the specified margins to the current Margins structure.</summary>
+            <param name="margins">A Margins structure representing the margins to add to the current Margins structure.</param>
+        </member>
+        <member name="M:Xceed.UI.Margins.Equals(System.Object)">
+            <summary>Tests whether the specified object is a Margins structure and is equivalent to this Margins structure.</summary>
+            <returns>true if obj is a Margins structure equivalent to the current Margins structure; false otherwise.</returns>
+            <param name="obj">The object to test.</param>
+        </member>
+        <member name="M:Xceed.UI.Margins.GetHashCode">
+            <summary>Returns a hash code for this Margins structure.</summary>
+            <returns>A value representing the hash code of the Margins structure.</returns>
+        </member>
+        <member name="M:Xceed.UI.Margins.RemoveFrom(System.Drawing.Rectangle)">
+            <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+            <returns/>
+        </member>
+        <member name="M:Xceed.UI.Margins.RotateFlip(System.Drawing.RotateFlipType)">
+            <summary>This method either rotates, flips, or rotates and flips the Margins structure.</summary>
+            <param name="rotateFlipType">A RotateFlipType) value indicating the type of rotation and flip to apply to the Margins structure.</param>
+        </member>
+        <member name="M:Xceed.UI.Margins.Subtract(Xceed.UI.Margins)">
+            <summary>Subtracts the specified margins from the current Margins structure.</summary>
+            <param name="margins">A Margins structure representing the margins to subtract from the current Margins structure.</param>
+        </member>
+        <member name="P:Xceed.UI.Margins.op_Addition">
+            <summary>Adds the specified Margins structures.</summary>
+            <returns>A Margins whose value is the sum of margins1 and margins2.</returns>
+            <param name="margins1">The first Margins structure to add.</param>
+            <param name="margins2">The second Margins structure to add.</param>
+        </member>
+        <member name="P:Xceed.UI.Margins.op_Equality">
+            <summary>Indicates whether two Margins instances are equal.</summary>
+            <returns>true if the structures are equal; false otherwise.</returns>
+            <param name="margins1">The first Margins structure to verify.</param>
+            <param name="margins2">The second Margins structure to verify.</param>
+        </member>
+        <member name="P:Xceed.UI.Margins.op_Inequality">
+            <summary>Indicates whether two Margins instances are not equal.</summary>
+            <returns>true if the structures are not equal; false otherwise.</returns>
+            <param name="margins1">The first Margins structure to verify.</param>
+            <param name="margins2">The second Margins structure to verify.</param>
+        </member>
+        <member name="P:Xceed.UI.Margins.op_Subtraction">
+            <summary>Subtracts the specified Margins structures.</summary>
+            <returns>A Margins whose value is the difference between margins1 and margins2.</returns>
+            <param name="margins1">The first Margins structure to subtract.</param>
+            <param name="margins2">The second Margins structure to subtract.</param>
+        </member>
+        <member name="P:Xceed.UI.Margins.Bottom">
+            <summary>Gets or sets the height, in pixels, of the bottom margin.</summary>
+        </member>
+        <member name="P:Xceed.UI.Margins.IsEmpty">
+            <summary>Gets a boolean value indicating if the margins are empty.</summary>
+        </member>
+        <member name="P:Xceed.UI.Margins.Left">
+            <summary>Gets or sets the width, in pixels, of the left margin.</summary>
+        </member>
+        <member name="P:Xceed.UI.Margins.Right">
+            <summary>Gets or sets the width, in pixels, of the right margin.</summary>
+        </member>
+        <member name="P:Xceed.UI.Margins.Top">
+            <summary>Gets or sets the height, in pixels, of the top margin.</summary>
+        </member>
+        <member name="F:Xceed.UI.Margins.Empty">
+            <summary>Gets an empty Margins structure</summary>
+        </member>
+        <member name="T:Xceed.UI.ThemedContainerControl">
+            <summary>The ThemedContainerControl class represents an extensible and themable container control for Windows Forms which supports both Windows XP and classic Windows themes and can adapt to the current Windows Theme.</summary>
+        </member>
+        <member name="M:Xceed.UI.ThemedContainerControl.#ctor">
+            <summary>Initializes a new instance of the ThemedContainerControl class.</summary>
+        </member>
+        <member name="M:Xceed.UI.ThemedContainerControl.#ctor">
+            <summary>Initializes a new instance of the ThemedContainerControl class.</summary>
+        </member>
+        <member name="M:Xceed.UI.ThemedContainerControl.#ctor(Xceed.UI.ThemedContainerControl)">
+            <summary>Initializes a new instance of the ThemedContainerControl class specifying the ThemedContainerControl control that will be used as a template.</summary>
+            <param name="template">The ThemedContainerControl to use as a template.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedContainerControl.AdjustToSystemColors">
+            <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+        </member>
+        <member name="M:Xceed.UI.ThemedContainerControl.GetPropertyValue(System.Object)">
+            <summary>Retrieves the value of the specified property in the Properties collection.</summary>
+            <returns>An object representing the value of the property.</returns>
+            <param name="key">The property whose value to retrieve.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedContainerControl.IsPropertyDefined(System.Object)">
+            <summary>Retrieves a boolean value indicating if the specified property has been explicitly set.</summary>
+            <returns>true if the property has been explicitly set; false otherwise.</returns>
+            <param name="key">The property to evaluate.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedContainerControl.OnResourceAssemblyChanged(System.EventArgs)">
+            <summary>Raises the ResourceAssemblyChanged event.</summary>
+            <param name="e">An EventArgs that contains the event data.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedContainerControl.OnSystemColorsChanged(System.EventArgs)">
+            <summary>Raises the SystemColorsChanged event.</summary>
+            <param name="e">An EventArgs that contains the event data.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedContainerControl.OnUIStyleChanged(System.EventArgs)">
+            <summary>Raises the UIStyleChanged event.</summary>
+            <remarks>When overriding OnUIStyleChanged in a derived class, be sure to call the base class's OnUIStyleChanged method so that registered delegates receive the event.</remarks>
+            <param name="e">An EventArgs that contains the event data.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedContainerControl.OnVisibleChanged(System.EventArgs)">
+            <summary>Raises the VisibleChanged event.</summary>
+            <remarks>When overriding OnVisibleChanged in a derived class, be sure to call the base class's OnVisibleChanged method so that registered delegates receive the event.</remarks>
+            <param name="e">An EventArgs that contains the event data.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedContainerControl.RaiseEvent(System.Object,System.EventArgs)">
+            <summary>Raises the specified event using the provided EventArgs.</summary>
+            <param name="eventKey">The event to raise.</param>
+            <param name="e">An EventArgs that contains the event data.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedContainerControl.RemovePropertyValue(System.Object)">
+            <summary>Removes the specified property from the Properties collection.</summary>
+            <param name="key">The property to remove.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedContainerControl.ResetCanSelect">
+            <summary>Resets the value of the CanSelect property to its default value, DefaultCanSelect.</summary>
+        </member>
+        <member name="M:Xceed.UI.ThemedContainerControl.ResetUIStyle">
+            <summary>Resets the value of the UIStyle property to its default value.</summary>
+        </member>
+        <member name="P:Xceed.UI.ThemedContainerControl.CanSelect">
+            <summary>Gets or sets a boolean value indicating if the ThemedContainerControl can be selected.</summary>
+            <remarks>    This property returns true if the control has     ControlStyles.Selectable set to true, is contained in another     control, and all its parent controls are both visible and     enabled.</remarks>
+        </member>
+        <member name="P:Xceed.UI.ThemedContainerControl.DefaultCanSelect">
+            <summary>Gets the default value of the CanSelect property.</summary>
+        </member>
+        <member name="P:Xceed.UI.ThemedContainerControl.Properties">
+            <summary>Gets a collection of property names whose values have been explicitly set as well as the corresponding values.</summary>
+        </member>
+        <member name="P:Xceed.UI.ThemedContainerControl.ResourceAssembly">
+            <summary>Gets or sets the assembly representing the resource from which the UI style is loaded.</summary>
+            <remarks>    The assembly assigned to the ResourceAssembly property is     only taken into consideration when UIStyle is set to     ResourceAssembly.</remarks>
+        </member>
+        <member name="P:Xceed.UI.ThemedContainerControl.Theme">
+            <summary>This property is reserved for internal use and is not intended to be used directly from your code.</summary>
+        </member>
+        <member name="P:Xceed.UI.ThemedContainerControl.UIStyle">
+            <summary>Gets or sets the appearance of the control/editor.</summary>
+            <remarks>    When set to WindowsXP on non-Windows XP machines, the     blue XP theme style will be used. On Windows XP machines, the     current theme will be used. If you want to force a style in     particular, for example the Blue, Olive Green or Silver XP     themes, the resource assembly must be assigned to the     ResourceAssembly property and the UIStyle property set to     UIStyle.ResourceAssembly.</remarks>
+        </member>
+        <member name="E:Xceed.UI.ThemedContainerControl.ResourceAssemblyChanged">
+            <summary>Raised when the value of the ResourceAssembly property is changed.</summary>
+        </member>
+        <member name="E:Xceed.UI.ThemedContainerControl.UIStyleChanged">
+            <summary>Raised when the value of the UIStyle property is changed.</summary>
+        </member>
+        <member name="T:Xceed.UI.ThemedControl">
+            <summary>The ThemedContainerControl class represents an extensible and themable control for Windows Forms which supports both Windows XP and classic Windows themes and can adapt to the current Windows Theme.</summary>
+        </member>
+        <member name="M:Xceed.UI.ThemedControl.#ctor">
+            <summary>Initializes a new instance of the ThemedControl class.</summary>
+        </member>
+        <member name="M:Xceed.UI.ThemedControl.#ctor">
+            <summary>Initializes a new instance of the ThemedControl class.</summary>
+        </member>
+        <member name="M:Xceed.UI.ThemedControl.#ctor(Xceed.UI.ThemedControl)">
+            <summary>Initializes a new instance of the ThemedControl class specifying the ThemedControl control that will be used as a template.</summary>
+            <param name="template">The ThemedControl to use as a template.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedControl.AdjustToSystemColors">
+            <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+        </member>
+        <member name="M:Xceed.UI.ThemedControl.CloneControl(System.Windows.Forms.Control)">
+            <summary>Clones the specified control.</summary>
+            <returns>A Control representing the cloned instance.</returns>
+            <remarks>    Events from the source control will not be     propagated to the cloned instance.</remarks>
+            <param name="source">A reference to the Control to clone.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedControl.CopyControlProperties(System.Windows.Forms.Control,System.Windows.Forms.Control,System.Type,System.String[],System.Windows.Forms.Control[])">
+            <summary>Copies the values of the properties from the source control to the cloned instance.</summary>
+            <param name="source">A reference to the Control to clone.</param>
+            <param name="destination">A reference to the cloned control.</param>
+            <param name="type">The source and destination controls' type.</param>
+            <param name="excludedPropertyNames">A string array containing the names of the properties whose values are to be excluded from the cloning process.</param>
+            <param name="excludedControls">A control array containing the child controls who are to be excluded from the cloning process.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedControl.CopyProperties(System.Object,System.Object,System.Type,System.String[])">
+            <summary>Copies the values of the properties from the source control to the cloned instance.</summary>
+            <param name="source">A reference to the Control to clone.</param>
+            <param name="destination">A reference to the cloned control.</param>
+            <param name="type">The source and destination controls' type.</param>
+            <param name="excludedPropertyNames">A string array containing the names of the properties whose values are to be excluded from the cloning process.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedControl.GetPropertyValue(System.Object)">
+            <summary>Retrieves the value of the specified property in the Properties collection.</summary>
+            <returns>An object representing the value of the property.</returns>
+            <param name="key">The property whose value to retrieve.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedControl.IsPropertyDefined(System.Object)">
+            <summary>Retrieves a boolean value indicating if the specified property has been explicitly set.</summary>
+            <returns>true if the property has been explicitly set; false otherwise.</returns>
+            <param name="key">The property to evaluate.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedControl.OnResourceAssemblyChanged(System.EventArgs)">
+            <summary>Raises the ResourceAssemblyChanged event.</summary>
+            <param name="e">An EventArgs that contains the event data.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedControl.OnSystemColorsChanged(System.EventArgs)">
+            <summary>Raises the SystemColorsChanged event.</summary>
+            <param name="e">An EventArgs that contains the event data.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedControl.OnUIStyleChanged(System.EventArgs)">
+            <summary>Raises the UIStyleChanged event.</summary>
+            <remarks>When overriding OnUIStyleChanged in a derived class, be sure to call the base class's OnUIStyleChanged method so that registered delegates receive the event.</remarks>
+            <param name="e">An EventArgs that contains the event data.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedControl.OnVisibleChanged(System.EventArgs)">
+            <summary>Raises the VisibleChanged event.</summary>
+            <remarks>When overriding OnVisibleChanged in a derived class, be sure to call the base class's OnVisibleChanged method so that registered delegates receive the event.</remarks>
+            <param name="e">An EventArgs that contains the event data.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedControl.RaiseEvent(System.Object,System.EventArgs)">
+            <summary>Raises the specified event using the provided EventArgs.</summary>
+            <param name="eventKey">The event to raise.</param>
+            <param name="e">An EventArgs that contains the event data.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedControl.RemovePropertyValue(System.Object)">
+            <summary>Removes the specified property from the Properties collection.</summary>
+            <param name="key">The property to remove.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedControl.ResetCanSelect">
+            <summary>Resets the value of the CanSelect property to its default value, DefaultCanSelect.</summary>
+        </member>
+        <member name="M:Xceed.UI.ThemedControl.ResetUIStyle">
+            <summary>Resets the value of the UIStyle property to its default value.</summary>
+        </member>
+        <member name="P:Xceed.UI.ThemedControl.CanSelect">
+            <summary>Gets or sets a value indicating if the ThemedControl can be selected.</summary>
+            <remarks>    This property returns true if the control has     ControlStyles.Selectable set to true, is contained in another     control, and all its parent controls are both visible and     enabled.</remarks>
+        </member>
+        <member name="P:Xceed.UI.ThemedControl.DefaultCanSelect">
+            <summary>Gets the default value of the CanSelect property.</summary>
+            <remarks>    This property returns true if the control has     ControlStyles.Selectable set to true, is contained in another     control, and all its parent controls are both visible and     enabled.</remarks>
+        </member>
+        <member name="P:Xceed.UI.ThemedControl.Properties">
+            <summary>Gets a collection of property names whose values have been explicitly set as well as the corresponding values.</summary>
+        </member>
+        <member name="P:Xceed.UI.ThemedControl.ResourceAssembly">
+            <summary>Gets or sets the assembly representing the resource from which the UI style is loaded.</summary>
+            <remarks>    The assembly assigned to the ResourceAssembly property is     only taken into consideration when UIStyle is set to     ResourceAssembly.</remarks>
+        </member>
+        <member name="P:Xceed.UI.ThemedControl.Theme">
+            <summary>This property is reserved for internal use and is not intended to be used directly from your code.</summary>
+        </member>
+        <member name="P:Xceed.UI.ThemedControl.UIStyle">
+            <summary>Gets or sets the appearance of the control/editor.</summary>
+            <remarks>    When set to WindowsXP on non-Windows XP machines, the     blue XP theme style will be used. On Windows XP machines, the     current theme will be used. If you want to force a style in     particular, for example the Blue, Olive Green or Silver XP     themes, the resource assembly must be assigned to the     ResourceAssembly property and the UIStyle property set to     UIStyle.ResourceAssembly.</remarks>
+        </member>
+        <member name="E:Xceed.UI.ThemedControl.ResourceAssemblyChanged">
+            <summary>Raised when the value of the ResourceAssembly property is changed.</summary>
+        </member>
+        <member name="E:Xceed.UI.ThemedControl.UIStyleChanged">
+            <summary>Raised when the value of the UIStyle property is changed.</summary>
+        </member>
+        <member name="T:Xceed.UI.ThemedScrollableControl">
+            <summary>The ThemedScrollableControl class represents an extensible and themable scrollable control for Windows Forms which supports both Windows XP and classic Windows themes and can adapt to the current Windows Theme.</summary>
+        </member>
+        <member name="M:Xceed.UI.ThemedScrollableControl.#ctor">
+            <summary>Initializes a new instance of the ThemedScrollableControl class.</summary>
+        </member>
+        <member name="M:Xceed.UI.ThemedScrollableControl.#ctor">
+            <summary>Initializes a new instance of the ThemedScrollableControl class.</summary>
+        </member>
+        <member name="M:Xceed.UI.ThemedScrollableControl.#ctor(Xceed.UI.ThemedScrollableControl)">
+            <summary>Initializes a new instance of the ThemedScrollableControl class specifying the ThemedScrollableControl control that will be used as a template.</summary>
+            <param name="template">The ThemedScrollableControl to use as a template.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedScrollableControl.AdjustToSystemColors">
+            <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+        </member>
+        <member name="M:Xceed.UI.ThemedScrollableControl.GetPropertyValue(System.Object)">
+            <summary>Retrieves the value of the specified property in the Properties collection.</summary>
+            <returns>An object representing the value of the property.</returns>
+            <param name="key">The property whose value to retrieve.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedScrollableControl.IsPropertyDefined(System.Object)">
+            <summary>Retrieves a boolean value indicating if the specified property has been explicitly set.</summary>
+            <returns>true if the property has been explicitly set; false otherwise.</returns>
+            <param name="key">The property to evaluate.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedScrollableControl.OnResourceAssemblyChanged(System.EventArgs)">
+            <summary>Raises the ResourceAssemblyChanged event.</summary>
+            <param name="e">An EventArgs that contains the event data.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedScrollableControl.OnSystemColorsChanged(System.EventArgs)">
+            <summary>Raises the SystemColorsChanged event.</summary>
+            <param name="e">An EventArgs that contains the event data.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedScrollableControl.OnUIStyleChanged(System.EventArgs)">
+            <summary>Raises the UIStyleChanged event.</summary>
+            <remarks>When overriding OnUIStyleChanged in a derived class, be sure to call the base class's OnUIStyleChanged method so that registered delegates receive the event.</remarks>
+            <param name="e">An EventArgs that contains the event data.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedScrollableControl.OnVisibleChanged(System.EventArgs)">
+            <summary>Raises the VisibleChanged event.</summary>
+            <remarks>When overriding OnVisibleChanged in a derived class, be sure to call the base class's OnVisibleChanged method so that registered delegates receive the event.</remarks>
+            <param name="e">An EventArgs that contains the event data.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedScrollableControl.RaiseEvent(System.Object,System.EventArgs)">
+            <summary>Raises the specified event using the provided EventArgs.</summary>
+            <param name="eventKey">The event to raise.</param>
+            <param name="e">An EventArgs that contains the event data.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedScrollableControl.RemovePropertyValue(System.Object)">
+            <summary>Removes the specified property from the Properties collection.</summary>
+            <param name="key">The property to remove.</param>
+        </member>
+        <member name="M:Xceed.UI.ThemedScrollableControl.ResetCanSelect">
+            <summary>Resets the value of the CanSelect property to its default value, DefaultCanSelect.</summary>
+        </member>
+        <member name="M:Xceed.UI.ThemedScrollableControl.ResetUIStyle">
+            <summary>Resets the value of the UIStyle property to its default value.</summary>
+        </member>
+        <member name="P:Xceed.UI.ThemedScrollableControl.CanSelect">
+            <summary>Gets or sets a boolean value indicating if the ThemedScrollableControl can be selected.</summary>
+            <remarks>    This property returns true if the control has     ControlStyles.Selectable set to true, is contained in another     control, and all its parent controls are both visible and     enabled.</remarks>
+        </member>
+        <member name="P:Xceed.UI.ThemedScrollableControl.DefaultCanSelect">
+            <summary>Gets the default value of the CanSelect property.</summary>
+        </member>
+        <member name="P:Xceed.UI.ThemedScrollableControl.Properties">
+            <summary>Gets a collection of property names whose values have been explicitly set as well as the corresponding values.</summary>
+        </member>
+        <member name="P:Xceed.UI.ThemedScrollableControl.ResourceAssembly">
+            <summary>Gets or sets the assembly representing the resource from which the UI style is loaded.</summary>
+            <remarks>    The assembly assigned to the ResourceAssembly property is     only taken into consideration when UIStyle is set to     ResourceAssembly.</remarks>
+        </member>
+        <member name="P:Xceed.UI.ThemedScrollableControl.Theme">
+            <summary>This property is reserved for internal use and is not intended to be used directly from your code.</summary>
+        </member>
+        <member name="P:Xceed.UI.ThemedScrollableControl.UIStyle">
+            <summary>Gets or sets the appearance of the control/editor.</summary>
+            <remarks>    When set to WindowsXP on non-Windows XP machines, the     blue XP theme style will be used. On Windows XP machines, the     current theme will be used. If you want to force a style in     particular, for example the Blue, Olive Green or Silver XP     themes, the resource assembly must be assigned to the     ResourceAssembly property and the UIStyle property set to     UIStyle.ResourceAssembly.</remarks>
+        </member>
+        <member name="E:Xceed.UI.ThemedScrollableControl.ResourceAssemblyChanged">
+            <summary>Raised when the value of the ResourceAssembly property is changed.</summary>
+        </member>
+        <member name="E:Xceed.UI.ThemedScrollableControl.UIStyleChanged">
+            <summary>Raised when the value of the UIStyle property is changed.</summary>
+        </member>
+        <member name="T:Xceed.UI.UIException">
+            <summary>The exception that is thrown when a UI-specific error occurs.</summary>
+        </member>
+        <member name="M:Xceed.UI.UIException.#ctor">
+            <summary>Initializes a new instance of the UIException class with a specified error message</summary>
+        </member>
+        <member name="M:Xceed.UI.UIException.#ctor(System.String)">
+            <summary>Initializes a new instance of the UIException class with a specified error message</summary>
+            <param name="message">A message that describes the error.</param>
+        </member>
+        <member name="M:Xceed.UI.UIException.#ctor(System.String,System.Exception)">
+            <summary>Initializes a new instance of the UIException class with a specified error message and a reference to the inner exception that is the cause of this exception.</summary>
+            <param name="message">A message that describes the error.</param>
+            <param name="inner">The exception that is the cause of the current exception.</param>
+        </member>
+    </members>
+</doc>

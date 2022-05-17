@@ -1,0 +1,108 @@
+<?xml version="1.0" standalone="yes"?>
+<xs:schema id="customobjectrelations" targetNamespace="metadata" xmlns:mstns="metadata" xmlns="metadata" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" attributeFormDefault="qualified" elementFormDefault="qualified">
+  <xs:element name="customobjectrelations" msdata:IsDataSet="true" msdata:Locale="en-US" msdata:EnforceConstraints="False">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="customdirectrelcol">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="idcustomdirectrel" type="xs:int" />
+              <xs:element name="fromfield" type="xs:string" />
+              <xs:element name="tofield" type="xs:string" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="customindirectrelcol">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="idcustomindirectrel" type="xs:int" />
+              <xs:element name="parentnumber" type="xs:int" />
+              <xs:element name="parentfield" type="xs:string" />
+              <xs:element name="middlefield" type="xs:string" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="customobject">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="objectname" type="xs:string" />
+              <xs:element name="description" type="xs:string" minOccurs="0" />
+              <xs:element name="isreal" type="xs:string" />
+              <xs:element name="realtable" type="xs:string" minOccurs="0" />
+              <xs:element name="lastmoduser" type="xs:string" minOccurs="0" />
+              <xs:element name="lastmodtimestamp" type="xs:dateTime" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="customdirectrel">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="idcustomdirectrel" type="xs:int" />
+              <xs:element name="fromtable" type="xs:string" />
+              <xs:element name="totable" type="xs:string" />
+              <xs:element name="description" type="xs:string" />
+              <xs:element name="edittype" type="xs:string" />
+              <xs:element name="flag" type="xs:int" />
+              <xs:element name="filter" type="xs:string" minOccurs="0" />
+              <xs:element name="navigationfilterparent" type="xs:string" minOccurs="0" />
+              <xs:element name="insertfilterparent" type="xs:string" minOccurs="0" />
+              <xs:element name="listtype" type="xs:string" minOccurs="0" />
+              <xs:element name="totableview" type="xs:string" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="customindirectrel">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="idcustomindirectrel" type="xs:int" />
+              <xs:element name="parenttable1" type="xs:string" />
+              <xs:element name="parenttable2" type="xs:string" />
+              <xs:element name="middletable" type="xs:string" />
+              <xs:element name="description" type="xs:string" />
+              <xs:element name="flag" type="xs:int" />
+              <xs:element name="edittype" type="xs:string" />
+              <xs:element name="filterparenttable2" type="xs:string" minOccurs="0" />
+              <xs:element name="filtermiddle" type="xs:string" minOccurs="0" />
+              <xs:element name="navigationfilterparenttable1" type="xs:string" minOccurs="0" />
+              <xs:element name="insertfilterparenttable1" type="xs:string" minOccurs="0" />
+              <xs:element name="listtype" type="xs:string" minOccurs="0" />
+              <xs:element name="parenttable2view" type="xs:string" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+    <xs:unique name="Constraint1" msdata:PrimaryKey="true">
+      <xs:selector xpath=".//mstns:customdirectrelcol" />
+      <xs:field xpath="mstns:idcustomdirectrel" />
+      <xs:field xpath="mstns:fromfield" />
+      <xs:field xpath="mstns:tofield" />
+    </xs:unique>
+    <xs:unique name="customindirectrelcol_Constraint1" msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true">
+      <xs:selector xpath=".//mstns:customindirectrelcol" />
+      <xs:field xpath="mstns:idcustomindirectrel" />
+      <xs:field xpath="mstns:parentnumber" />
+      <xs:field xpath="mstns:parentfield" />
+    </xs:unique>
+    <xs:unique name="customobject_Constraint1" msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true">
+      <xs:selector xpath=".//mstns:customobject" />
+      <xs:field xpath="mstns:objectname" />
+    </xs:unique>
+    <xs:unique name="customdirectrel_Constraint1" msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true">
+      <xs:selector xpath=".//mstns:customdirectrel" />
+      <xs:field xpath="mstns:idcustomdirectrel" />
+    </xs:unique>
+    <xs:unique name="customindirectrel_Constraint1" msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true">
+      <xs:selector xpath=".//mstns:customindirectrel" />
+      <xs:field xpath="mstns:idcustomindirectrel" />
+    </xs:unique>
+  </xs:element>
+  <xs:annotation>
+    <xs:appinfo>
+      <msdata:Relationship name="customobjectcustomindirectrel" msdata:parent="customobject" msdata:child="customindirectrel" msdata:parentkey="objectname" msdata:childkey="parenttable1" />
+      <msdata:Relationship name="customobjectcustomdirectrel" msdata:parent="customobject" msdata:child="customdirectrel" msdata:parentkey="objectname" msdata:childkey="fromtable" />
+      <msdata:Relationship name="customindirectrelcustomindirectrelcol" msdata:parent="customindirectrel" msdata:child="customindirectrelcol" msdata:parentkey="idcustomindirectrel" msdata:childkey="idcustomindirectrel" />
+      <msdata:Relationship name="customdirectrelcustomdirectrelcol" msdata:parent="customdirectrel" msdata:child="customdirectrelcol" msdata:parentkey="idcustomdirectrel" msdata:childkey="idcustomdirectrel" />
+    </xs:appinfo>
+  </xs:annotation>
+</xs:schema>

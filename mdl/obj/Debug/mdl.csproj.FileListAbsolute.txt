@@ -1,0 +1,11 @@
+D:\progetti\MDL_4.5\mdl\bin\Debug\mdl.dll
+D:\progetti\MDL_4.5\mdl\bin\Debug\mdl.pdb
+D:\progetti\MDL_4.5\mdl\obj\Debug\mdl.csproj.AssemblyReference.cache
+D:\progetti\MDL_4.5\mdl\obj\Debug\mdl.csproj.CoreCompileInputs.cache
+D:\progetti\MDL_4.5\mdl\obj\Debug\mdl.dll
+D:\progetti\MDL_4.5\mdl\obj\Debug\mdl.pdb
+D:\progetti\MDL_4.5\mdl\bin\Debug\mdl_language.dll
+D:\progetti\MDL_4.5\mdl\bin\Debug\mdl_utils.dll
+D:\progetti\MDL_4.5\mdl\bin\Debug\mdl_language.pdb
+D:\progetti\MDL_4.5\mdl\bin\Debug\mdl_utils.pdb
+D:\progetti\MDL_4.5\mdl\obj\Debug\mdl.csproj.CopyComplete

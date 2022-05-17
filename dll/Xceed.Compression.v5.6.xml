@@ -1,0 +1,516 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<doc>
+  <assembly>
+    <name>Xceed.Compression.v5.6</name>
+  </assembly>
+  <members>
+    <member name="T:Xceed.Compression.CompressionLevel">
+      <summary>Represents the amount of compression to be applied when compressing data.</summary>
+    </member>
+    <member name="F:Xceed.Compression.CompressionLevel.None">
+      <summary>No compression is applied. <span id="BugEvents">Numeric value: 0.</span></summary>
+    </member>
+    <member name="F:Xceed.Compression.CompressionLevel.Lowest">
+      <summary>Minimum compression. Takes the least amount of time to compress data. <span id="BugEvents">Numeric value: 1.</span></summary>
+    </member>
+    <member name="F:Xceed.Compression.CompressionLevel.Normal">
+      <summary>
+        <para>Normal compression. Best balance between the time it takes to compress data and the compression ratio achieved. <span id="BugEvents">Numeric value:
+6.</span></para>
+      </summary>
+    </member>
+    <member name="F:Xceed.Compression.CompressionLevel.Highest">
+      <summary>
+        <para>
+          <span>Maximum compression. Best compression ratio that the compression algorithm is capable of producing. Compared to the Normal compression level, this
+level significantly increases compression time for only slightly smaller compressed data. It is recommended to use this setting only when you really need to
+achieve the smallest possible files and when compression time is not important. <span id="BugEvents">Numeric value: 9.</span></span>
+        </para>
+      </summary>
+    </member>
+    <member name="T:Xceed.Compression.CompressionMethod">
+      <summary>Represents the compression algorithm to be used when compressing data.</summary>
+    </member>
+    <member name="F:Xceed.Compression.CompressionMethod.Stored">
+      <summary>No compression is applied.</summary>
+    </member>
+    <member name="F:Xceed.Compression.CompressionMethod.Deflated">
+      <summary>Deflate algorithm. Standard algorithm used by the PKZip 2.04g format.</summary>
+    </member>
+    <member name="F:Xceed.Compression.CompressionMethod.Deflated64">
+      <summary>
+        <para>Also know as Enhanced Deflate.</para>
+        <para>Deflate64 is a variation of the Deflate algorithm that uses a 64K sliding window rather than a 32K window in order to compress a sequence of bits. Deflate64
+takes longer to compress data than Deflate, however it provides better compression. <b>The Xceed Self-Extractor Module does not support the Deflated64
+compression method.</b></para>
+      </summary>
+    </member>
+    <member name="F:Xceed.Compression.CompressionMethod.BZip2">
+      <summary>
+        <para>A BWT-based block-sorting algorithm used in zip files created with WinZip 11.0 and up. An excellent alternative to Deflate and Deflate64 when speed can be
+traded off.</para>
+      </summary>
+    </member>
+    <member name="F:Xceed.Compression.CompressionMethod.LZMA">
+      <summary>
+        <para>The Lempel-Ziv-Markov chain-Algorithm (LZMA) uses an improved and optimized version of the Lempel-Ziv (LZ77) compression algorithm, backed by a Markov chain
+range encoder. It uses a variable dictionary size. Used in zip files created with WinZip 12.0 and up.</para>
+        <para>LZMA typically provides much better compression than the Deflate and Deflate64 algorithms at the expense of speed and memory usage when compressing. It also
+typically provides compression ratios a little better than BZip2/BWT and PPMd while being a little faster.</para>
+        <para>Compression usually requires (&lt;dictionary size&gt; * 11.5 + 6 MB)<br />
+Decompression is usually fast and requires &lt;dictionary size&gt; + 16K</para>
+      </summary>
+    </member>
+    <member name="F:Xceed.Compression.CompressionMethod.BWT">
+      <summary>
+        <para>The raw BWT block-sorting algorithm. Produces smaller compressed output than the BZip2 method, but is not compatible with WinZip. It is compatible with zip
+files created using the BWT compression method offered by Xceed Zip Compression Library ActiveX.</para>
+      </summary>
+    </member>
+    <member name="F:Xceed.Compression.CompressionMethod.PPMd">
+      <summary>
+        <para>A PPM-based predictor algorithm used in zip files created with Winzip 11.0 and up. In our tests, especially with text files and XML files, the PPMd method
+generally produced the smallest compressed output.</para>
+        <para>Xceed recommends that the PPMd compression method be selected when dealing with text files, XML files, and other files with high redundancy, as this is
+where the PPMd algorithm is able to create smaller files than the other compression methods.</para>
+      </summary>
+    </member>
+    <member name="T:Xceed.Compression.CompressedStream">
+      <summary>Pass-through stream that applies compression and decompression to an inner stream.</summary>
+    </member>
+    <member name="T:Xceed.Compression.CompressionException">
+      <summary>Exception that is thrown when there is a problem compressing or decompressing data.</summary>
+    </member>
+    <member name="T:Xceed.Compression.CompressionInternalException">
+      <summary>Exception that is thrown when something unexpected occurs while compressing or decompressing data.</summary>
+    </member>
+    <member name="T:Xceed.Compression.Compressor">
+      <summary>Abstract class from which other classes can derive to implement custom compression algorithms.</summary>
+    </member>
+    <member name="T:Xceed.Compression.Decompressor">
+      <summary>An abstract class from which other classes can derive to implement custom decompression algorithms.</summary>
+    </member>
+    <member name="T:Xceed.Compression.Licenser">
+      <summary>Class which is used to register the classes located in the Xceed.Compression namespace.</summary>
+    </member>
+    <member name="T:Xceed.Compression.ManagedPPMdCompressor">
+      <summary>Implements the PPMd compression algorithm.</summary>
+    </member>
+    <member name="T:Xceed.Compression.ManagedPPMdDecompressor">
+      <summary>Implements the PPMd compression algorithm.</summary>
+    </member>
+    <member name="T:Xceed.Compression.QuickCompression">
+      <summary>Exposes static methods that allow basic byte array compression and decompression operations.</summary>
+    </member>
+    <member name="M:Xceed.Compression.CompressedStream.#ctor(System.IO.Stream)">
+      <summary>Initializes a <strong>CompressedStream</strong> using the default compressor and decompressor classes.</summary>
+      <param name="inner">Inner stream.</param>
+    </member>
+    <member name="M:Xceed.Compression.CompressedStream.#ctor(System.IO.Stream,Xceed.Compression.CompressionMethod,Xceed.Compression.CompressionLevel)">
+      <summary>Initializes a <strong>CompressedStream</strong> using the provided compression method and level.</summary>
+      <param name="inner">Inner stream.</param>
+      <param name="method">Compression method to use.</param>
+      <param name="level">Compression level to use.</param>
+    </member>
+    <member name="M:Xceed.Compression.CompressedStream.#ctor(System.IO.Stream,Xceed.Compression.Compressor)">
+      <summary>Initializes a compress-only <strong>CompressedStream</strong> using the provided compressor class.</summary>
+      <param name="inner">Inner stream.</param>
+      <param name="compressor">Compressor class used to perform data compression.</param>
+    </member>
+    <member name="M:Xceed.Compression.CompressedStream.#ctor(System.IO.Stream,Xceed.Compression.Decompressor)">
+      <summary>Initializes a decompress-only <strong>CompressedStream</strong> using the provided decompressor class.</summary>
+      <param name="inner">Inner stream.</param>
+      <param name="decompressor">Decompressor class used to perform data decompression.</param>
+    </member>
+    <member name="M:Xceed.Compression.CompressedStream.#ctor(System.IO.Stream,Xceed.Compression.Compressor,Xceed.Compression.Decompressor)">
+      <summary>Initializes a <strong>CompressedStream</strong> using the provided compressor and decompressor classes.</summary>
+      <param name="inner">Inner stream.</param>
+      <param name="compressor">Compressor class used to perform data compression.</param>
+      <param name="decompressor">Decompressor class used to perform data decompression.</param>
+    </member>
+    <member name="M:Xceed.Compression.CompressedStream.Finalize">
+      <summary>Allows the CompressedStream object to attempt to free resources and perform other cleanup operations before it is reclaimed by garbage collection.</summary>
+    </member>
+    <member name="M:Xceed.Compression.CompressedStream.Flush">
+      <summary>Causes all pending compressed data to be written to the inner stream, and updates the underlying data source or repository of the inner stream with the current
+state of the buffer.</summary>
+    </member>
+    <member name="M:Xceed.Compression.CompressedStream.Read(System.Byte[],System.Int32,System.Int32)">
+      <summary>Reads and decompresses a sequence of bytes from the inner stream.</summary>
+      <returns>The total number of bytes read into the <paramref name="buffer" />. This may be less than the number of bytes requested if that many bytes aren't currently available, or zero if
+the end of the stream has been reached. Applications must check the return value to prevent data corruption.</returns>
+      <param name="buffer">An array of bytes. A maximum of <paramref name="count" /> bytes are stored in this array.</param>
+      <param name="offset">The byte offset in <paramref name="buffer" /> at which to begin storing the data decompressed from the inner stream.</param>
+      <param name="count">The maximum number of bytes to be stored in <paramref name="buffer" />.</param>
+    </member>
+    <member name="M:Xceed.Compression.CompressedStream.Seek(System.Int64,System.IO.SeekOrigin)">
+      <summary>A CompressedStream object is not seekable.</summary>
+    </member>
+    <member name="M:Xceed.Compression.CompressedStream.SetLength(System.Int64)">
+      <summary>A CompressedStream object is not seekable.</summary>
+    </member>
+    <member name="M:Xceed.Compression.CompressedStream.SetupPPMdCompression(System.IO.Stream,Xceed.Compression.CompressionLevel)">
+      <summary>Prepares PPMd compression using the specified Stream and compression level.</summary>
+      <returns>The <strong>ManagedPPMdCompressor</strong> that will perform the compression.</returns>
+      <param name="compressedStream">The Stream that will be compressed.</param>
+      <param name="level">The CompressionLevel that will be used.</param>
+    </member>
+    <member name="M:Xceed.Compression.CompressedStream.SetupPPMdDecompression(System.IO.Stream)">
+      <summary>Prepares PPMd decompression using the specified Stream and compression level.</summary>
+      <returns>The <strong>ManagedPPMdDecompressor</strong> that will perform the decompression.</returns>
+      <param name="compressedStream">The Stream that will be decompressed.</param>
+    </member>
+    <member name="M:Xceed.Compression.CompressedStream.WillUseCompression(Xceed.Compression.CompressionMethod@,Xceed.Compression.CompressionLevel@)">
+      <summary>Determines whether a compression format will be used, based on a specified compression method and level.</summary>
+      <returns>
+        <strong>true</strong> if compression will be used; <strong>false</strong> otherwise.</returns>
+      <param name="method">The compression method.</param>
+      <param name="level">The compression level.</param>
+    </member>
+    <member name="M:Xceed.Compression.CompressedStream.Write(System.Byte[],System.Int32,System.Int32)">
+      <summary>Compresses and writes a sequence of bytes to the inner stream.</summary>
+      <returns>The total number of bytes written to the inner stream. This may be less than the <paramref name="count" /> parameter. It may even be 0.</returns>
+      <param name="buffer">An array of bytes. A maximum of <paramref name="count" /> bytes are taken from this array and compressed into the inner stream.</param>
+      <param name="offset">The byte offset in <paramref name="buffer" /> at which to begin taking the data.</param>
+      <param name="count">The maximum number of bytes to be taken from <paramref name="buffer" />.</param>
+    </member>
+    <member name="M:Xceed.Compression.CompressedStream.Dispose(System.Boolean)">
+      <summary>Provides correct cleanup of resources in the base class and its derived classes.</summary>
+      <param name="disposing">true if this method was called by another method such as Close or Dispose; false if it was called by the finalizer.</param>
+    </member>
+    <member name="P:Xceed.Compression.CompressedStream.CanRead">
+      <summary>Determines whether the inner stream supports reading AND the compressed stream supports data decompression.</summary>
+    </member>
+    <member name="P:Xceed.Compression.CompressedStream.CanSeek">
+      <summary>A CompressedStream object is not seekable.</summary>
+    </member>
+    <member name="P:Xceed.Compression.CompressedStream.CanWrite">
+      <summary>Determines whether the inner stream supports writing AND the compressed stream supports data compression.</summary>
+    </member>
+    <member name="P:Xceed.Compression.CompressedStream.InnerStream">
+      <summary>Gets the  that was passed when creating this CompressedStream.</summary>
+    </member>
+    <member name="P:Xceed.Compression.CompressedStream.Length">
+      <summary>A CompressedStream object is not seekable.</summary>
+    </member>
+    <member name="P:Xceed.Compression.CompressedStream.Position">
+      <summary>A CompressedStream object is not seekable.</summary>
+    </member>
+    <member name="P:Xceed.Compression.CompressedStream.RemainingOffset">
+      <summary>Gets the negative byte offset at which the compressed data ends inside the last data buffer read by the object.</summary>
+    </member>
+    <member name="P:Xceed.Compression.CompressedStream.Transient">
+      <summary>Gets or sets a boolean value indicating if the stream is responsible for closing its inner stream.</summary>
+    </member>
+    <member name="M:Xceed.Compression.CompressionException.#ctor(System.String)">
+      <summary>Initializes a new instance of the exception with the specified message text.</summary>
+      <param name="message">The error message that explains the reason for the exception.</param>
+    </member>
+    <member name="M:Xceed.Compression.CompressionException.#ctor(System.String,System.Exception)">
+      <summary>Initializes a new instance of the exception with the specified message text and inner exception.</summary>
+      <param name="message">The error message that explains the reason for the exception.</param>
+      <param name="inner">The exception that initially caused the current exception to be thrown.</param>
+    </member>
+    <member name="M:Xceed.Compression.CompressionInternalException.#ctor">
+      <summary>Initializes a new instance of the exception.</summary>
+    </member>
+    <member name="M:Xceed.Compression.CompressionInternalException.#ctor(System.Exception)">
+      <summary>Initializes a new instance of the exception with the specified inner exception.</summary>
+      <param name="inner">The exception that initially caused the current exception to be thrown.</param>
+    </member>
+    <member name="M:Xceed.Compression.CompressionInternalException.#ctor(System.String)">
+      <summary>Initializes a new instance of the exception with the specified message test.</summary>
+      <param name="message">The error message that explains the reason for the exception.</param>
+    </member>
+    <member name="M:Xceed.Compression.CompressionInternalException.#ctor(System.String,System.Exception)">
+      <summary>Initializes a new instance of the exception with the specified message text and inner exception.</summary>
+      <param name="message">The error message that explains the reason for the exception.</param>
+      <param name="inner">The exception that initially caused the current exception to be thrown.</param>
+    </member>
+    <member name="M:Xceed.Compression.Compressor.Compress(System.Byte[],System.Int32,System.Int32,System.Boolean,System.Byte[]@)">
+      <summary>Compresses an array of bytes.</summary>
+      <returns>The number of bytes written to the <paramref name="compressed" /> parameter.</returns>
+      <param name="buffer">An array of bytes to compress. A maximum of <paramref name="count" /> bytes are taken from this array and compressed.</param>
+      <param name="offset">The byte offset in <paramref name="buffer" /> at which to begin taking the data to compress.</param>
+      <param name="count">The maximum number of bytes to be taken from <paramref name="buffer" />.</param>
+      <param name="endOfData">Indicates if this call ends the stream of data to compress.</param>
+      <param name="compressed">An array of bytes containing the compressed data. Can be empty.</param>
+    </member>
+    <member name="M:Xceed.Compression.Decompressor.Decompress(System.Byte[],System.Int32,System.Int32,System.Boolean@,System.Byte[]@,System.Int32@)">
+      <summary>Decompresses an array of bytes.</summary>
+      <returns>The number of bytes written to the <paramref name="decompressed" /> parameter.</returns>
+      <param name="buffer">An array of bytes to decompress. A maximum of <paramref name="count" /> bytes are taken from this array and decompressed.</param>
+      <param name="offset">The byte offset in <paramref name="buffer" /> at which to begin taking the data to decompress.</param>
+      <param name="count">The maximum number of bytes to be taken from <paramref name="buffer" />.</param>
+      <param name="endOfData">true if the end of the compressed data has been reached; false otherwise.</param>
+      <param name="decompressed">An array of bytes containing the decompressed data. Can be empty if no bytes were decompressed.</param>
+      <param name="remaining">The number of unused bytes read from buffer the for decompression.</param>
+    </member>
+    <member name="P:Xceed.Compression.Licenser.LicenseKey">
+      <summary>Gets or sets the license key used to license this product.</summary>
+    </member>
+    <member name="M:Xceed.Compression.ManagedPPMdCompressor.#ctor">
+      <summary>
+        <para>Initializes a new instance of the <strong>ManagedPPMdCompressor</strong> class.</para>
+      </summary>
+    </member>
+    <member name="M:Xceed.Compression.ManagedPPMdCompressor.#ctor">
+      <summary>
+        <para>Initializes a new instance of the <strong>ManagedPPMdCompressor</strong> class.</para>
+      </summary>
+    </member>
+    <member name="M:Xceed.Compression.ManagedPPMdCompressor.#ctor(System.Int32,System.Byte,Xceed.Compression.PPMd.ModelRestorationMethod)">
+      <summary>
+        <para>Initializes a new instance of the <strong>ManagedPPMdCompressor</strong> class, using the specified parameters.</para>
+      </summary>
+      <param name="allocatorSize">The allocator size.</param>
+      <param name="modelOrder">The maximum model order.</param>
+      <param name="method">Method of model restoration if memory is insufficient.</param>
+    </member>
+    <member name="M:Xceed.Compression.ManagedPPMdCompressor.Compress">
+      <summary>Compresses an array of bytes.</summary>
+    </member>
+    <member name="M:Xceed.Compression.ManagedPPMdCompressor.ComputePPMdOptions(Xceed.Compression.CompressionLevel,System.Int32@,System.Byte@,Xceed.Compression.PPMd.ModelRestorationMethod@)">
+      <summary>Computes the correct values of the PPMd algorithm properties based on the specified compression level.</summary>
+      <param name="level">The compression level to base the PPMd algorithm property values on.</param>
+      <param name="allocatorSize">The allocator size.</param>
+      <param name="modelOrder">The maximum model order.</param>
+      <param name="method">Method of model restoration if memory is insufficient.</param>
+    </member>
+    <member name="M:Xceed.Compression.ManagedPPMdCompressor.Dispose">
+      <summary>Provides correct cleanup of resources in the base class and its derived classes.</summary>
+    </member>
+    <member name="M:Xceed.Compression.ManagedPPMdCompressor.WritePPMdZipHeader(System.IO.Stream,System.Int32,System.Byte,Xceed.Compression.PPMd.ModelRestorationMethod)">
+      <summary>Writes the PPMd algorithm properties in the specified stream using the Zip Specification format.</summary>
+      <param name="stream">The stream the header will be written to.</param>
+      <param name="allocatorSize">The allocator size.</param>
+      <param name="modelOrder">The maximum model order.</param>
+      <param name="method">Method of model restoration if memory is insufficient.</param>
+    </member>
+    <member name="M:Xceed.Compression.ManagedPPMdCompressor.Compress(System.Byte[],System.Int32,System.Int32,System.Boolean,System.Byte[]@)">
+      <summary>Compresses an array of bytes to an array of bytes.</summary>
+      <returns>A value representing the length of the compressed stream.</returns>
+      <param name="buffer">An array of bytes to compress. A maximum of <em>count</em> bytes are taken from this array and compressed. Cannot be null.</param>
+      <param name="offset">The byte offset in <em>buffer</em> at which to begin taking the data to compress. Cannot be less than 0.</param>
+      <param name="count">The maximum number of bytes to be taken from <em>buffer</em>. Cannot be less than 0.</param>
+      <param name="endOfData">Indicates if this call ends the stream of data to compress.</param>
+      <param name="compressed">An array of bytes containing the compressed data. Can be empty.</param>
+    </member>
+    <member name="M:Xceed.Compression.ManagedPPMdCompressor.Compress(System.Byte[],System.Int32,System.Int32,System.Boolean,System.IO.Stream)">
+      <summary>Compresses an array of bytes to a Stream.</summary>
+      <param name="buffer">An array of bytes to compress. A maximum of <em>count</em> bytes are taken from this array and compressed. Cannot be null.</param>
+      <param name="offset">The byte offset in <em>buffer</em> at which to begin taking the data to compress. Cannot be less than 0.</param>
+      <param name="count">The maximum number of bytes to be taken from <em>buffer</em>. Cannot be less than 0.</param>
+      <param name="endOfData">Indicates if this call ends the stream of data to compress.</param>
+      <param name="compressed">A Stream containing the compressed data. Cannot be null.</param>
+    </member>
+    <member name="M:Xceed.Compression.ManagedPPMdCompressor.Dispose">
+      <summary>Provides correct cleanup of resources in the base class and its derived classes.</summary>
+    </member>
+    <member name="M:Xceed.Compression.ManagedPPMdCompressor.Dispose(System.Boolean)">
+      <summary>Provides correct cleanup of resources in the base class and its derived classes.</summary>
+      <param name="disposing">
+        <strong>true</strong> if this method was called by another method such as Close or Dispose; <strong>false</strong> if it was called by the finalizer.</param>
+    </member>
+    <member name="F:Xceed.Compression.ManagedPPMdCompressor.DefaultAllocatorSize">
+      <summary>The default value for the 'allocator size' PPMd compression property. The value represents megabytes of memory.</summary>
+    </member>
+    <member name="F:Xceed.Compression.ManagedPPMdCompressor.DefaultModelOrder">
+      <summary>The default value for the 'maximum model order' PPMd compression property.</summary>
+    </member>
+    <member name="F:Xceed.Compression.ManagedPPMdCompressor.DefaultModelRestorationMethod">
+      <summary>The default value for the 'model restoration method' PPMd compression property.</summary>
+    </member>
+    <member name="F:Xceed.Compression.ManagedPPMdCompressor.MaxAllocatorSize">
+      <summary>The maximum allowed value for the 'allocator size' PPMd compression property. The value represents megabytes of memory.</summary>
+    </member>
+    <member name="F:Xceed.Compression.ManagedPPMdCompressor.MaxModelOrder">
+      <summary>The maximum allowed value for the 'maximum model order' PPMd compression property.</summary>
+    </member>
+    <member name="F:Xceed.Compression.ManagedPPMdCompressor.MinAllocatorSize">
+      <summary>The minimum allowed value for the 'allocator size' PPMd compression property. The value represents megabytes of memory.</summary>
+    </member>
+    <member name="F:Xceed.Compression.ManagedPPMdCompressor.MinModelOrder">
+      <summary>The minimum allowed value for the 'maximum model order' PPMd compression property.</summary>
+    </member>
+    <member name="F:Xceed.Compression.ManagedPPMdCompressor.Signature">
+      <summary>The binary signature of the PPMd algorithm.</summary>
+    </member>
+    <member name="F:Xceed.Compression.ManagedPPMdCompressor.Variant">
+      <summary>The variant signature of the PPMd algorithm the component implements.</summary>
+    </member>
+    <member name="M:Xceed.Compression.ManagedPPMdDecompressor.#ctor">
+      <summary>Initializes a new instance of the <strong>ManagedPPMdDecompressor</strong> class.</summary>
+    </member>
+    <member name="M:Xceed.Compression.ManagedPPMdDecompressor.#ctor">
+      <summary>Initializes a new instance of the <strong>ManagedPPMdDecompressor</strong> class.</summary>
+    </member>
+    <member name="M:Xceed.Compression.ManagedPPMdDecompressor.#ctor(System.Int32,System.Byte,Xceed.Compression.PPMd.ModelRestorationMethod)">
+      <summary>Initializes a new instance of the <strong>ManagedPPMdDecompressor</strong> class using the passed parameters.</summary>
+      <param name="allocatorSize">The allocator size.</param>
+      <param name="modelOrder">The maximum model order.</param>
+      <param name="method">Method of model restoration if memory is insufficient.</param>
+    </member>
+    <member name="M:Xceed.Compression.ManagedPPMdDecompressor.Decompress">
+      <summary>Decompresses an array of bytes or a stream.</summary>
+    </member>
+    <member name="M:Xceed.Compression.ManagedPPMdDecompressor.Dispose">
+      <summary>Provides correct cleanup of resources in the base class and its derived classes.</summary>
+    </member>
+    <member name="M:Xceed.Compression.ManagedPPMdDecompressor.ReadPPMdZipHeader(System.IO.Stream,System.Int32@,System.Byte@,Xceed.Compression.PPMd.ModelRestorationMethod@)">
+      <summary>Reads PPMd algorithm properties from the specified stream using the Zip Specification format.</summary>
+      <returns>
+        <strong>true</strong> if not at the end of the stream; <strong>false</strong> otherwise.</returns>
+      <param name="stream">The stream the header will be read from.</param>
+      <param name="allocatorSize">The allocator size.</param>
+      <param name="modelOrder">The maximum model order.</param>
+      <param name="method">Method of model restoration if memory is insufficient.</param>
+    </member>
+    <member name="M:Xceed.Compression.ManagedPPMdDecompressor.Decompress(System.Byte[],System.Int32,System.Int32,System.Boolean@,System.Byte[]@,System.Int32@)">
+      <summary>Decompresses an array of bytes.</summary>
+      <returns>A value representing the length of the decompressed stream.</returns>
+      <param name="buffer">An array of bytes to decompress. A maximum of <em>count</em> bytes are taken from this array and decompressed.</param>
+      <param name="offset">The byte offset in <em>buffer</em> at which to begin taking the data to decompress.</param>
+      <param name="count">The maximum number of bytes to be taken from <em>buffer.</em></param>
+      <param name="endOfData">
+        <strong>true</strong> if the end of the compressed data has been reached; <strong>false</strong> otherwise.</param>
+      <param name="decompressed">An array of bytes containing the decompressed data. Can be empty if no bytes were decompressed.</param>
+      <param name="remaining">The number of unused bytes read from buffer the for decompression.</param>
+    </member>
+    <member name="M:Xceed.Compression.ManagedPPMdDecompressor.Decompress(System.IO.Stream,System.IO.Stream,System.Boolean@)">
+      <summary>Decompresses a stream.</summary>
+      <param name="compressedStream">The compressed stream that will be decompressed. Cannot be null.</param>
+      <param name="decompressedStream">The resulting decompressed stream. Cannot be null.</param>
+      <param name="endOfData">
+        <strong>true</strong> if the end of the compressed data has been reached; <strong>false</strong> otherwise.</param>
+    </member>
+    <member name="M:Xceed.Compression.ManagedPPMdDecompressor.Dispose">
+      <summary>Provides correct cleanup of resources in the base class and its derived classes.</summary>
+    </member>
+    <member name="M:Xceed.Compression.ManagedPPMdDecompressor.Dispose(System.Boolean)">
+      <summary>Provides correct cleanup of resources in the base class and its derived classes.</summary>
+      <param name="disposing">
+        <strong>true</strong> if this method was called by another method such as Close or Dispose; <strong>false</strong> if it was called by the finalizer.</param>
+    </member>
+    <member name="M:Xceed.Compression.QuickCompression.Compress(System.Byte[])">
+      <summary>Compresses an array of bytes.</summary>
+      <returns>An array of bytes containing the compressed data.</returns>
+      <param name="buffer">The array of bytes to compress.</param>
+    </member>
+    <member name="M:Xceed.Compression.QuickCompression.Compress(System.Byte[],Xceed.Compression.CompressionMethod,Xceed.Compression.CompressionLevel)">
+      <summary>Compresses an array of bytes using the specified compression method and level.</summary>
+      <returns>An array of bytes containing the compressed data.</returns>
+      <param name="buffer">The array of bytes to compress.</param>
+      <param name="method">A  value representing the compression method to use.</param>
+      <param name="level">A  value representing the compression level to use.</param>
+    </member>
+    <member name="M:Xceed.Compression.QuickCompression.Compress(System.Byte[],System.Int32,System.Int32,Xceed.Compression.CompressionMethod,Xceed.Compression.CompressionLevel)">
+      <summary>Compresses an array of bytes specifying the amount of bytes to compress as well as the compression method and level.</summary>
+      <returns>An array of bytes containing the compressed data. Can be empty.</returns>
+      <param name="buffer">The array of bytes to compress. A maximum of <paramref name="count" /> bytes are taken from this array and compressed</param>
+      <param name="offset">The byte offset in <paramref name="buffer" /> at which to begin taking the data to compress.</param>
+      <param name="count">The maximum number of bytes to be taken from <paramref name="buffer" />.</param>
+      <param name="method">A  value representing the compression method to use.</param>
+      <param name="level">A  value representing the compression level to use.</param>
+    </member>
+    <member name="M:Xceed.Compression.QuickCompression.Decompress(System.Byte[])">
+      <summary>Decompresses an array of bytes compressed using the  compression method.</summary>
+      <returns>An array of bytes containing the decompressed data.</returns>
+      <param name="buffer">An array of bytes to decompress.</param>
+    </member>
+    <member name="M:Xceed.Compression.QuickCompression.Decompress(System.Byte[],Xceed.Compression.CompressionMethod)">
+      <summary>Decompresses an array of compressed bytes specifying the compression method that was used to compress the byte array.</summary>
+      <returns>An array of bytes containing the decompressed data.</returns>
+      <param name="buffer">An array of bytes to decompress.</param>
+      <param name="method">A  value representing the compression method that was used to compress the byte array.</param>
+    </member>
+    <member name="M:Xceed.Compression.QuickCompression.Decompress(System.Byte[],System.Int32,System.Int32,Xceed.Compression.CompressionMethod)">
+      <summary>Decompresses a compressed byte array specifying the amount of bytes to decompress as well as the compression method that was used to compress the byte array.</summary>
+      <returns>An array of bytes containing the decompressed data.</returns>
+      <param name="buffer">An array of bytes to decompress.</param>
+      <param name="offset">The byte offset in <paramref name="buffer" /> at which to begin taking the data to compress.</param>
+      <param name="count">The maximum number of bytes to be taken from <paramref name="buffer" />.</param>
+      <param name="method">A  value representing the compression method that was used to compress the byte array.</param>
+    </member>
+    <member name="M:Xceed.Compression.QuickCompression.Decompress(System.Byte[],System.Int32,System.Int32,Xceed.Compression.CompressionMethod,System.Boolean)">
+      <summary>Decompresses a compressed byte array specifying the amount of bytes to decompress as well as the compression method that was used to compress the byte array.</summary>
+      <param name="buffer">An array of bytes to decompress.</param>
+      <param name="offset">The byte offset in <paramref name="buffer" /> at which to begin taking the data to compress.</param>
+      <param name="count">The maximum number of bytes to be taken from <paramref name="buffer" />.</param>
+      <param name="method">A  value representing the compression method that was used to compress the byte array.</param>
+      <param name="enforceFormatIntegrity">A boolean value indicating whether the format's integrity should be enforced.</param>
+    </member>
+    <member name="T:Xceed.Compression.LZMA.LZMAHeaderType">
+      <summary>Identifies the various header formats that can be read/written by the ManagedLZMACompressor and <see cref="Xceed.Compression.v5.6~Xceed.Compression.ManagedLZMADecompressor.html">ManagedLZMADecompressor</see> classes.</summary>
+    </member>
+    <member name="F:Xceed.Compression.LZMA.LZMAHeaderType.None">
+      <summary>
+        <para>No header will be read or written. Use this value if you're making your own data format.</para>
+        <para>Note that LZMA will not work correctly without knowing its properties.</para>
+      </summary>
+    </member>
+    <member name="F:Xceed.Compression.LZMA.LZMAHeaderType.Properties">
+      <summary>The header consists only of the LZMA properties as encoded by the LZMA engine. It is 5 bytes long. The first byte is an encoded property value and the
+remaining 4 bytes represent the dictionary size.</summary>
+    </member>
+    <member name="F:Xceed.Compression.LZMA.LZMAHeaderType.Zip">
+      <summary>The header is in the format specified by the Zip Specification 6.3.2 for the LZMA compression method. Refer to the specification for more details.</summary>
+    </member>
+    <member name="T:Xceed.Compression.LZMA.LZMAOptions">
+      <summary>Represents the options that can be used to fine-tune LZMA compression.</summary>
+    </member>
+    <member name="M:Xceed.Compression.LZMA.LZMAOptions.#ctor">
+      <summary>Initializes a new instance of the <strong>LZMAOptions</strong> class.</summary>
+    </member>
+    <member name="M:Xceed.Compression.LZMA.LZMAOptions.#ctor">
+      <summary>Initializes a new instance of the <strong>LZMAOptions</strong> class.</summary>
+    </member>
+    <member name="M:Xceed.Compression.LZMA.LZMAOptions.#ctor(Xceed.Compression.CompressionLevel)">
+      <summary>Initializes a new instance of the <strong>LZMAOptions</strong> class using the provided compression level.</summary>
+      <param name="level">Compression level to use.</param>
+    </member>
+    <member name="M:Xceed.Compression.LZMA.LZMAOptions.SetTemplate(Xceed.Compression.CompressionLevel)">
+      <summary>Sets the <strong>LZMAOptions</strong> properties to values appropriate to the passed level of compression.</summary>
+      <param name="compressionLevel">Compression level to use.</param>
+    </member>
+    <member name="P:Xceed.Compression.LZMA.LZMAOptions.DictionarySize">
+      <summary>Get or sets the dictionary size.</summary>
+    </member>
+    <member name="P:Xceed.Compression.LZMA.LZMAOptions.MatchFinder">
+      <summary>Gets or sets the match finder algorithm to use.</summary>
+    </member>
+    <member name="P:Xceed.Compression.LZMA.LZMAOptions.NumFastBytes">
+      <summary>Gets or sets the number of fast bytes.</summary>
+    </member>
+    <member name="P:Xceed.Compression.LZMA.LZMAOptions.NumLiteralContextBits">
+      <summary>Gets or sets the number of literal context bits.</summary>
+    </member>
+    <member name="P:Xceed.Compression.LZMA.LZMAOptions.NumLiteralPositionBits">
+      <summary>Gets or sets the number of literal position bits.</summary>
+    </member>
+    <member name="P:Xceed.Compression.LZMA.LZMAOptions.NumPositionBits">
+      <summary>Gets or sets the number of position bits.</summary>
+    </member>
+    <member name="P:Xceed.Compression.LZMA.LZMAOptions.UseEndOfStreamMarker">
+      <summary>Gets or sets whether an end-of-stream marker is written at the end of the compressed data.</summary>
+    </member>
+    <member name="T:Xceed.Compression.PPMd.ModelRestorationMethod">
+      <summary>
+        <para>The method used to adjust the model when the memory limit is reached.</para>
+      </summary>
+    </member>
+    <member name="F:Xceed.Compression.PPMd.ModelRestorationMethod.Restart">
+      <summary>Restart the model from scratch (this is the default).</summary>
+    </member>
+    <member name="F:Xceed.Compression.PPMd.ModelRestorationMethod.CutOff">
+      <summary>
+        <para>Cut off the model (nearly twice as slow).</para>
+      </summary>
+    </member>
+    <member name="F:Xceed.Compression.PPMd.ModelRestorationMethod.Freeze">
+      <summary>
+        <para>Freeze the context tree (in some cases may result in poor compression).</para>
+      </summary>
+    </member>
+  </members>
+</doc>

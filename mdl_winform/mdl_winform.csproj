@@ -1,0 +1,243 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{693E373A-9DA2-4AEE-8E4D-8758495F2FCF}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>mdl_winform</RootNamespace>
+    <AssemblyName>mdl_winform</AssemblyName>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="EPPlus">
+      <HintPath>..\dll\EPPlus.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="Xceed.Editors.v2.6, Version=2.6.14265.12340, Culture=neutral, PublicKeyToken=ba83ff368b7563c6, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\dll\Xceed.Editors.v2.6.dll</HintPath>
+    </Reference>
+    <Reference Include="Xceed.Grid.v3.9, Version=3.9.14265.12340, Culture=neutral, PublicKeyToken=ba83ff368b7563c6, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\dll\Xceed.Grid.v3.9.dll</HintPath>
+    </Reference>
+    <Reference Include="Xceed.UI.v1.4, Version=1.4.14265.12340, Culture=neutral, PublicKeyToken=ba83ff368b7563c6, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\dll\Xceed.UI.v1.4.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AskParameter.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ComboBoxManager.cs" />
+    <Compile Include="ContextMenuManager.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="ControEnabler.cs" />
+    <Compile Include="customobjectrelations1.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>customobjectrelations.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="FormCopyList.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmCheckExpression.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmFiltraColonna.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmFiltraColonna.designer.cs">
+      <DependentUpon>FrmFiltraColonna.cs</DependentUpon>
+    </Compile>
+    <Compile Include="frmMultipleSelection.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmNotesOleNotes.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmSelezioneValori.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmSimpleList.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmSimpleList.designer.cs">
+      <DependentUpon>FrmSimpleList.cs</DependentUpon>
+    </Compile>
+    <Compile Include="MetaDataForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MetaDataForm.Designer.cs">
+      <DependentUpon>MetaDataForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="RichTextBoxPlus.cs" />
+    <Compile Include="WinEntityDispatcher.cs" />
+    <Compile Include="EventSuppressor.cs" />
+    <Compile Include="exportclass.cs" />
+    <Compile Include="FileDialog.cs" />
+    <Compile Include="formatgrids.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="formcolors.cs" />
+    <Compile Include="FormController.cs" />
+    <Compile Include="FormCustomViewList.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormEventsManager.cs" />
+    <Compile Include="FormStatic.cs" />
+    <Compile Include="frmAvvisoNessunaRigaTrovata.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmMeter.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmShowException.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="helpform.cs" />
+    <Compile Include="IFileDialog.cs" />
+    <Compile Include="IFormController.cs" />
+    <Compile Include="IHelpForm.cs" />
+    <Compile Include="ListViewManager.cs" />
+    <Compile Include="MainToolBarManager.cs" />
+    <Compile Include="MessageShower.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="treeviewmanager.cs" />
+    <Compile Include="utils.cs" />
+    <Compile Include="VistaFormCustomView1.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>VistaFormCustomView.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="WinErrorLogger.cs" />
+    <Compile Include="WinFormMetaData.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\mdl\mdl.csproj">
+      <Project>{31e22658-b971-4d84-8e80-f03ff74393cd}</Project>
+      <Name>mdl</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\mdl_language\mdl_language.csproj">
+      <Project>{542b6760-8bfe-4d73-b78d-48bdd183281e}</Project>
+      <Name>mdl_language</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\mdl_utils\mdl_utils.csproj">
+      <Project>{ff0fc4ac-7083-4f33-9103-4b9c2654cec3}</Project>
+      <Name>mdl_utils</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\mdl_windows\mdl_windows.csproj">
+      <Project>{a23aad87-a889-47a6-b538-47647a75ea8c}</Project>
+      <Name>mdl_windows</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="AskParameter.resx">
+      <DependentUpon>AskParameter.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ContextMenuManager.resx">
+      <DependentUpon>ContextMenuManager.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="formatgrids.resx">
+      <DependentUpon>formatgrids.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormCopyList.resx">
+      <DependentUpon>FormCopyList.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormCustomViewList.resx">
+      <DependentUpon>FormCustomViewList.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmAvvisoNessunaRigaTrovata.resx">
+      <DependentUpon>frmAvvisoNessunaRigaTrovata.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmCheckExpression.resx">
+      <DependentUpon>FrmCheckExpression.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmFiltraColonna.resx">
+      <DependentUpon>FrmFiltraColonna.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmMeter.resx">
+      <DependentUpon>FrmMeter.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmMultipleSelection.resx">
+      <DependentUpon>frmMultipleSelection.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmNotesOleNotes.resx">
+      <DependentUpon>FrmNotesOleNotes.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmSelezioneValori.resx">
+      <DependentUpon>frmSelezioneValori.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmShowException.resx">
+      <DependentUpon>FrmShowException.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmSimpleList.resx">
+      <DependentUpon>FrmSimpleList.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="customobjectrelations.xsc">
+      <DependentUpon>customobjectrelations.xsd</DependentUpon>
+    </None>
+    <None Include="customobjectrelations.xsd">
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>customobjectrelations1.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="customobjectrelations.xss">
+      <DependentUpon>customobjectrelations.xsd</DependentUpon>
+    </None>
+    <None Include="customobjectrelations.xsx">
+      <DependentUpon>customobjectrelations.xsd</DependentUpon>
+    </None>
+    <None Include="VistaFormCustomView.xsc">
+      <DependentUpon>VistaFormCustomView.xsd</DependentUpon>
+    </None>
+    <None Include="VistaFormCustomView.xsd">
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>VistaFormCustomView1.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="VistaFormCustomView.xss">
+      <DependentUpon>VistaFormCustomView.xsd</DependentUpon>
+    </None>
+    <None Include="VistaFormCustomView.xsx">
+      <DependentUpon>VistaFormCustomView.xsd</DependentUpon>
+    </None>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

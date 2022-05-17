@@ -1,0 +1,164 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<xs:schema id="VistaFormCustomView" targetNamespace="metadata" xmlns:mstns="metadata" xmlns="metadata" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" attributeFormDefault="qualified" elementFormDefault="qualified" xmlns:msprop="urn:schemas-microsoft-com:xml-msprop">
+  <xs:element name="VistaFormCustomView" msdata:IsDataSet="true" msdata:Locale="en-US">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="customview">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="objectname" type="xs:string" />
+              <xs:element name="viewname" type="xs:string" />
+              <xs:element name="isreal" type="xs:string" minOccurs="0" />
+              <xs:element name="issystem" type="xs:string" minOccurs="0" />
+              <xs:element name="staticfilter" type="xs:string" minOccurs="0" />
+              <xs:element name="lastmodtimestamp" type="xs:dateTime" minOccurs="0" />
+              <xs:element name="lastmoduser" type="xs:string" minOccurs="0" />
+              <xs:element name="createtimestamp" type="xs:dateTime" minOccurs="0" />
+              <xs:element name="createuser" type="xs:string" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="customviewcolumn">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="objectname" type="xs:string" />
+              <xs:element name="viewname" type="xs:string" />
+              <xs:element name="colnumber" type="xs:short" />
+              <xs:element name="heading" type="xs:string" minOccurs="0" />
+              <xs:element name="colwidth" type="xs:int" minOccurs="0" />
+              <xs:element name="visible" type="xs:short" />
+              <xs:element name="fontname" type="xs:string" minOccurs="0" />
+              <xs:element name="fontsize" type="xs:short" minOccurs="0" />
+              <xs:element name="bold" type="xs:short" minOccurs="0" />
+              <xs:element name="italic" type="xs:short" minOccurs="0" />
+              <xs:element name="underline" type="xs:short" minOccurs="0" />
+              <xs:element name="strikeout" type="xs:short" minOccurs="0" />
+              <xs:element name="color" type="xs:int" minOccurs="0" />
+              <xs:element name="format" type="xs:string" minOccurs="0" />
+              <xs:element name="isreal" type="xs:string" minOccurs="0" />
+              <xs:element name="expression" type="xs:string" minOccurs="0" />
+              <xs:element name="colname" type="xs:string" minOccurs="0" />
+              <xs:element name="systemtype" type="xs:string" minOccurs="0" />
+              <xs:element name="lastmodtimestamp" type="xs:dateTime" minOccurs="0" />
+              <xs:element name="lastmoduser" type="xs:string" minOccurs="0" />
+              <xs:element name="createtimestamp" type="xs:dateTime" minOccurs="0" />
+              <xs:element name="createuser" type="xs:string" minOccurs="0" />
+              <xs:element name="listcolpos" type="xs:short" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="customvieworderby">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="objectname" type="xs:string" />
+              <xs:element name="viewname" type="xs:string" />
+              <xs:element name="periodnumber" type="xs:short" />
+              <xs:element name="columnname" type="xs:string" minOccurs="0" />
+              <xs:element name="direction" type="xs:int" minOccurs="0" />
+              <xs:element name="lastmodtimestamp" type="xs:dateTime" minOccurs="0" />
+              <xs:element name="lastmoduser" type="xs:string" minOccurs="0" />
+              <xs:element name="createtimestamp" type="xs:dateTime" minOccurs="0" />
+              <xs:element name="createuser" type="xs:string" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="customviewwhere">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="objectname" type="xs:string" />
+              <xs:element name="viewname" type="xs:string" />
+              <xs:element name="periodnumber" type="xs:short" />
+              <xs:element name="connector" type="xs:int" minOccurs="0" />
+              <xs:element name="columnname" type="xs:string" minOccurs="0" />
+              <xs:element name="operator" type="xs:int" minOccurs="0" />
+              <xs:element name="value" type="xs:string" minOccurs="0" />
+              <xs:element name="runtime" type="xs:int" minOccurs="0" />
+              <xs:element name="lastmodtimestamp" type="xs:dateTime" minOccurs="0" />
+              <xs:element name="lastmoduser" type="xs:string" minOccurs="0" />
+              <xs:element name="createtimestamp" type="xs:dateTime" minOccurs="0" />
+              <xs:element name="createuser" type="xs:string" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="customoperator">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="idoperator" type="xs:int" />
+              <xs:element name="name" type="xs:string" />
+              <xs:element name="lastmodtimestamp" type="xs:dateTime" minOccurs="0" />
+              <xs:element name="lastmoduser" type="xs:string" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="connector">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="idconnector" type="xs:int" />
+              <xs:element name="name" type="xs:string" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="customdirection">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="direction" type="xs:int" />
+              <xs:element name="valore" type="xs:string" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="fieldtosum">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="colname" type="xs:string" />
+              <xs:element name="flag" type="xs:boolean" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+    <xs:unique name="Constraint1" msdata:PrimaryKey="true">
+      <xs:selector xpath=".//mstns:customview" />
+      <xs:field xpath="mstns:objectname" />
+      <xs:field xpath="mstns:viewname" />
+    </xs:unique>
+    <xs:unique name="customviewcolumn_Constraint1" msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true">
+      <xs:selector xpath=".//mstns:customviewcolumn" />
+      <xs:field xpath="mstns:objectname" />
+      <xs:field xpath="mstns:viewname" />
+      <xs:field xpath="mstns:colnumber" />
+    </xs:unique>
+    <xs:unique name="customvieworderby_Constraint1" msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true">
+      <xs:selector xpath=".//mstns:customvieworderby" />
+      <xs:field xpath="mstns:objectname" />
+      <xs:field xpath="mstns:viewname" />
+      <xs:field xpath="mstns:periodnumber" />
+    </xs:unique>
+    <xs:unique name="customviewwhere_Constraint1" msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true">
+      <xs:selector xpath=".//mstns:customviewwhere" />
+      <xs:field xpath="mstns:objectname" />
+      <xs:field xpath="mstns:viewname" />
+      <xs:field xpath="mstns:periodnumber" />
+    </xs:unique>
+    <xs:unique name="customoperator_Constraint1" msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true">
+      <xs:selector xpath=".//mstns:customoperator" />
+      <xs:field xpath="mstns:idoperator" />
+    </xs:unique>
+    <xs:unique name="connector_Constraint1" msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true">
+      <xs:selector xpath=".//mstns:connector" />
+      <xs:field xpath="mstns:idconnector" />
+    </xs:unique>
+    <xs:unique name="fieldtosum_Constraint1" msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true">
+      <xs:selector xpath=".//mstns:fieldtosum" />
+      <xs:field xpath="mstns:colname" />
+    </xs:unique>
+  </xs:element>
+  <xs:annotation>
+    <xs:appinfo>
+      <msdata:Relationship name="customoperatorcustomviewwhere" msdata:parent="customoperator" msdata:child="customviewwhere" msdata:parentkey="idoperator" msdata:childkey="operator" />
+      <msdata:Relationship name="connectorcustomviewwhere" msdata:parent="connector" msdata:child="customviewwhere" msdata:parentkey="idconnector" msdata:childkey="connector" />
+      <msdata:Relationship name="customviewcustomviewwhere" msdata:parent="customview" msdata:child="customviewwhere" msdata:parentkey="objectname viewname" msdata:childkey="objectname viewname" />
+      <msdata:Relationship name="customviewcustomvieworderby" msdata:parent="customview" msdata:child="customvieworderby" msdata:parentkey="objectname viewname" msdata:childkey="objectname viewname" />
+      <msdata:Relationship name="customviewcustomviewcolumn" msdata:parent="customview" msdata:child="customviewcolumn" msdata:parentkey="objectname viewname" msdata:childkey="objectname viewname" />
+    </xs:appinfo>
+  </xs:annotation>
+</xs:schema>

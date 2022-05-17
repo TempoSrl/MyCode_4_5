@@ -1,0 +1,681 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<doc>
+  <assembly>
+    <name>Xceed.Compression.Formats.v5.6</name>
+  </assembly>
+  <members>
+    <member name="T:Xceed.Compression.Formats.ChecksumType">
+      <summary>Represents the checksum type that will be used to calculate a stream's checksum.</summary>
+    </member>
+    <member name="F:Xceed.Compression.Formats.ChecksumType.Adler32">
+      <summary>The Adler-32 checksum is a 32-bit checksum that is often used to verify the integrity of data. An Adler-32 checksum is almost as reliable as a CRC checksum but
+can be computed much faster.</summary>
+    </member>
+    <member name="F:Xceed.Compression.Formats.ChecksumType.CRC32">
+      <summary>Cyclic Redundancy Check. The CRC checksum is a 32-bit checksum that is often used to verify the integrity of data. While slightly more reliable than an
+Adler-32 checksum, the CRC checksum takes longer to compute.</summary>
+    </member>
+    <member name="T:Xceed.Compression.Formats.ChecksumStream">
+      <summary>Represents a pass-through stream that calculates a checksum on the data read or written to the inner stream.</summary>
+    </member>
+    <member name="T:Xceed.Compression.Formats.FormattedCompressedStream">
+      <summary>Represents a pass-through stream which writes the header and footer of formatted compressed streams.</summary>
+    </member>
+    <member name="T:Xceed.Compression.Formats.GZipCompressedStream">
+      <summary>Represents a pass-through stream that reads and writes GZip formatted compressed data.</summary>
+    </member>
+    <member name="T:Xceed.Compression.Formats.GZipHeader">
+      <summary>Represents the header used by the  class.</summary>
+    </member>
+    <member name="T:Xceed.Compression.Formats.Licenser">
+      <summary>Class which is used to register the classes located in the Xceed.Compression.Formats namespace.</summary>
+    </member>
+    <member name="T:Xceed.Compression.Formats.LZMACompressedStream">
+      <summary>Represents a pass-through stream that reads and writes LZMA formatted compressed data.</summary>
+    </member>
+    <member name="T:Xceed.Compression.Formats.PPMdCompressedStream">
+      <summary>
+        <para>Represents a pass-through stream that reads and writes PPMd formatted compressed data.</para>
+      </summary>
+    </member>
+    <member name="T:Xceed.Compression.Formats.XceedCompressedStream">
+      <summary>Represents a pass-through stream that reads and writes Xceed formatted compressed data.</summary>
+    </member>
+    <member name="T:Xceed.Compression.Formats.XceedCompressedStreamEx">
+      <summary>Represents a pass-through stream that reads and writes Xceed formatted compressed data. <b>Use this class to decompress or compress data compatible with the
+ActiveX Xceed Zip Compression Library (XceedCompression object).</b></summary>
+    </member>
+    <member name="T:Xceed.Compression.Formats.ZLibCompressedStream">
+      <summary>Represents a pass-through stream that reads and writes ZLib formatted compressed data.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ChecksumStream.#ctor">
+      <summary>Initializes a new instance of the <strong>ChecksumStream</strong> class.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ChecksumStream.#ctor(System.IO.Stream,Xceed.Compression.Formats.ChecksumType)">
+      <summary>Initializes a new instance of the <strong>ChecksumStream</strong> class that will calculate, <b>but not validate</b>, the checksum for the specified stream.</summary>
+      <param name="inner">The stream whose checksum will be calculated.</param>
+      <param name="checksumType">A ChecksumType value indicating which type of checksum to calculate.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ChecksumStream.#ctor(System.IO.Stream,Xceed.Compression.Formats.ChecksumType,System.Int32)">
+      <summary>Initializes a new instance of the <strong>ChecksumStream</strong> class that will calculate the checksum for the specified stream.</summary>
+      <param name="inner">The stream whose checksum will be calculated.</param>
+      <param name="checksumType">A ChecksumType value indicating which type of checksum to calculate.</param>
+      <param name="expectedChecksum">The checksum value that is expected after all the data has been read from the inner stream.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ChecksumStream.#ctor(System.IO.Stream,Xceed.Compression.Formats.ChecksumType,System.Int32,System.Int32)">
+      <summary>Initializes a new instance of the <strong>ChecksumStream</strong> class that will calculate the checksum for the specified stream.</summary>
+      <param name="inner">The stream whose checksum will be calculated.</param>
+      <param name="checksumType">A ChecksumType value indicating which type of checksum to calculate.</param>
+      <param name="expectedChecksum">The checksum value that is expected after all the data has been read from the inner stream.</param>
+      <param name="initialChecksum">The initial checksum value to use.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ChecksumStream.CalculateAdler32">
+      <summary>Calculates an Adler32 checksum.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ChecksumStream.CalculateCrc32">
+      <summary>Calculates a CRC32 checksum.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ChecksumStream.Finalize">
+      <summary>Allows the ChecksumStream object to attempt to free resources and perform other cleanup operations before it is reclaimed by garbage collection.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ChecksumStream.Flush">
+      <summary>Clears all buffers for this stream and causes any buffered data to be written to the underlying stream.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ChecksumStream.Read(System.Byte[],System.Int32,System.Int32)">
+      <summary>Reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read.</summary>
+      <returns>The total number of bytes read into the buffer. This may be less than the number of bytes requested if that many bytes are not currently available, or zero (0)
+if the end of the stream has been reached.</returns>
+      <param name="buffer">An array of bytes. When this method returns, the buffer contains the specified byte array with the values between <paramref name="offset" /> and (<paramref name="offset" /> + count) replaced by
+the bytes read from the current source.</param>
+      <param name="offset">The zero-based byte <paramref name="offset" /> in <paramref name="buffer" /> at which to begin storing the data read from the current stream.</param>
+      <param name="count">The maximum number of bytes to be read from the current stream.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ChecksumStream.Seek(System.Int64,System.IO.SeekOrigin)">
+      <summary>Sets the position within the current stream.</summary>
+      <returns>The new position within the current stream.</returns>
+      <param name="offset">A byte offset relative to <paramref name="origin" />.</param>
+      <param name="origin">A  value indicating the reference point used to obtain the new position</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ChecksumStream.SetLength(System.Int64)">
+      <summary>Sets the length of the current stream.</summary>
+      <param name="value">The desired length of the current stream in bytes.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ChecksumStream.Write(System.Byte[],System.Int32,System.Int32)">
+      <summary>Writes a sequence of bytes to the current stream and advances the current position within this stream by the number of bytes written.</summary>
+      <param name="buffer">An array of bytes. This method copies <paramref name="count" /> bytes from <paramref name="buffer" /> to the current stream.</param>
+      <param name="offset">The zero-based byte offset in <paramref name="buffer" /> at which to begin copying bytes to the current stream.</param>
+      <param name="count">The number of bytes to be written to the current stream.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ChecksumStream.CalculateAdler32(System.Byte[],System.Int32,System.Int32,System.Int32)">
+      <summary>Calculates an Adler32 checksum for the specified byte array.</summary>
+      <returns>The Adler32 checksum calculated for the buffer, including the previous CRC if any.</returns>
+      <param name="buffer">The byte array whose checksum will be calculated.</param>
+      <param name="offset">The zero-based byte offset in <paramref name="buffer" /> at which to begin reading bytes.</param>
+      <param name="count">The number of bytes to read from <paramref name="buffer" />.</param>
+      <param name="previousAdler">The Adler32 checksum from a previous call to CalculateAdler32 or 0 if a new CRC should be calculated.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ChecksumStream.CalculateAdler32(System.IO.Stream,System.Int32)">
+      <summary>Calculates an Adler32 checksum for the specified stream.</summary>
+      <returns>The Adler32 checksum calculated for the buffer, including the previous CRC if any.</returns>
+      <param name="stream">The stream whose checksum will be calculated.</param>
+      <param name="previousAdler">The Adler32 checksum from a previous call to CalculateAdler32 or 0 if a new CRC should be calculated.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ChecksumStream.CalculateCrc32(System.Byte[],System.Int32,System.Int32,System.Int32)">
+      <summary>Calculates a CRC32 checksum for the specified byte array.</summary>
+      <returns>The CRC32 checksum calculated for the buffer, including the previous CRC if any.</returns>
+      <param name="buffer">The byte array whose checksum will be calculated.</param>
+      <param name="offset">The zero-based byte offset in <paramref name="buffer" /> at which to begin reading bytes.</param>
+      <param name="count">The number of bytes to read from <paramref name="buffer" />.</param>
+      <param name="previousCrc">The CRC32 checksum from a previous call to CalculateCrc32 or 0 if a new CRC should be calculated.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ChecksumStream.CalculateCrc32(System.IO.Stream,System.Int32)">
+      <summary>Calculates a CRC32 checksum for the specified stream.</summary>
+      <returns>The CRC32 checksum calculated for the buffer, including the previous CRC if any.</returns>
+      <param name="stream">The stream whose checksum will be calculated.</param>
+      <param name="previousCrc">The CRC32 checksum from a previous call to <strong>CalculateCrc32</strong> or 0 if a new CRC should be calculated.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ChecksumStream.Dispose(System.Boolean)">
+      <summary>Releases all resources used by the ChecksumStream.</summary>
+      <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
+    </member>
+    <member name="P:Xceed.Compression.Formats.ChecksumStream.CanRead">
+      <summary>Gets a boolean value indicating whether the current stream supports reading.</summary>
+    </member>
+    <member name="P:Xceed.Compression.Formats.ChecksumStream.CanSeek">
+      <summary>Gets a boolean value indicating whether the current stream supports seeking.</summary>
+    </member>
+    <member name="P:Xceed.Compression.Formats.ChecksumStream.CanWrite">
+      <summary>Gets a boolean value indicating whether the current stream supports writing.</summary>
+    </member>
+    <member name="P:Xceed.Compression.Formats.ChecksumStream.Checksum">
+      <summary>Gets a value representing the current checksum.</summary>
+    </member>
+    <member name="P:Xceed.Compression.Formats.ChecksumStream.ExpectedChecksum">
+      <summary>Gets or sets the expected checksum.</summary>
+    </member>
+    <member name="P:Xceed.Compression.Formats.ChecksumStream.Length">
+      <summary>Gets the length, in bytes, of the stream.</summary>
+    </member>
+    <member name="P:Xceed.Compression.Formats.ChecksumStream.Position">
+      <summary>Gets or sets the position within the current stream.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.FormattedCompressedStream.Finalize">
+      <summary>Allows the FormattedCompressedStream object to attempt to free resources and perform other cleanup operations before it is reclaimed by garbage collection.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.FormattedCompressedStream.Flush">
+      <summary>Clears all buffers for this stream and causes any buffered data to be written to the underlying compressed stream.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.FormattedCompressedStream.Read(System.Byte[],System.Int32,System.Int32)">
+      <summary>Reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read.</summary>
+      <returns>The total number of bytes read into the buffer. This may be less than the number of bytes requested if that many bytes are not currently available, or zero (0)
+if the end of the stream has been reached.</returns>
+      <param name="buffer">An array of bytes. When this method returns, the buffer contains the specified byte array with the values between <paramref name="offset" /> and (<paramref name="offset" /> + count) replaced by
+the bytes read from the current source.</param>
+      <param name="offset">The zero-based byte <paramref name="offset" /> in <paramref name="buffer" /> at which to begin storing the data read from the current stream.</param>
+      <param name="count">The maximum number of bytes to be read from the current stream.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.FormattedCompressedStream.ReadFooter(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.FormattedCompressedStream.ReadHeader(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.FormattedCompressedStream.Seek(System.Int64,System.IO.SeekOrigin)">
+      <summary>Sets the position within the current stream.</summary>
+      <returns>The new position within the current stream.</returns>
+      <param name="offset">A byte offset relative to <paramref name="origin" />.</param>
+      <param name="origin">A  value indicating the reference point used to obtain the new position</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.FormattedCompressedStream.SetLength(System.Int64)">
+      <summary>Sets the length of the current stream.</summary>
+      <param name="value">The desired length of the current stream in bytes.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.FormattedCompressedStream.Write(System.Byte[],System.Int32,System.Int32)">
+      <summary>Writes a sequence of bytes to the current stream and advances the current position within this stream by the number of bytes written.</summary>
+      <param name="buffer">An array of bytes. This method copies <paramref name="count" /> bytes from <paramref name="buffer" /> to the current stream.</param>
+      <param name="offset">The zero-based byte offset in <paramref name="buffer" /> at which to begin copying bytes to the current stream.</param>
+      <param name="count">The number of bytes to be written to the current stream.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.FormattedCompressedStream.WriteFooter(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.FormattedCompressedStream.WriteHeader(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.FormattedCompressedStream.Dispose(System.Boolean)">
+      <summary>Releases all resources used by the FormattedCompressedStream.</summary>
+      <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
+    </member>
+    <member name="P:Xceed.Compression.Formats.FormattedCompressedStream.CanRead">
+      <summary>Gets a boolean value indicating whether the current stream supports reading.</summary>
+    </member>
+    <member name="P:Xceed.Compression.Formats.FormattedCompressedStream.CanSeek">
+      <summary>Gets a boolean value indicating whether the current stream supports seeking.</summary>
+    </member>
+    <member name="P:Xceed.Compression.Formats.FormattedCompressedStream.CanWrite">
+      <summary>Gets a boolean value indicating whether the current stream supports writing.</summary>
+    </member>
+    <member name="P:Xceed.Compression.Formats.FormattedCompressedStream.Length">
+      <summary>Gets the length, in bytes, of the stream.</summary>
+    </member>
+    <member name="P:Xceed.Compression.Formats.FormattedCompressedStream.Position">
+      <summary>Gets or sets the position within the current stream.</summary>
+    </member>
+    <member name="P:Xceed.Compression.Formats.FormattedCompressedStream.Transient">
+      <summary>Gets or sets a boolean value indicating if the stream is responsible for closing its inner stream.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.GZipCompressedStream.#ctor(System.IO.Stream)">
+      <summary>Initializes a new instance of the GZipCompressedStream class specifying the inner stream to write to and read from.</summary>
+      <param name="inner">The stream to write to and read from.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.GZipCompressedStream.#ctor(System.IO.Stream,Xceed.Compression.CompressionLevel)">
+      <summary>Initializes a new instance of the GZipCompressedStream class specifying the inner stream to write to and read from as well as the compression level.</summary>
+      <param name="inner">The stream to write to and read from.</param>
+      <param name="level">A  value representing the compression level to use.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.GZipCompressedStream.#ctor(System.IO.Stream,Xceed.Compression.Formats.GZipHeader,Xceed.Compression.CompressionLevel)">
+      <summary>Initializes a new instance of the GZipCompressedStream class specifying the inner stream <b>to write to</b>, the  to
+use and the compression level.</summary>
+      <param name="inner">The stream to write to.</param>
+      <param name="header">A reference to the  object representing the compressed data's header.</param>
+      <param name="level">A  value representing the compression level to use.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.GZipCompressedStream.#ctor(System.IO.Stream,Xceed.Compression.CompressionLevel,System.Boolean)">
+      <summary>Initializes a new instance of the GZipCompressedStream class specifying the inner stream to write to and read from and the compression level.</summary>
+      <param name="inner">The stream to write to and read from.</param>
+      <param name="level">A  value representing the compression level to use.</param>
+      <param name="readHeader">If true, this stream can only be read from and the header will be read immediately. If false, this stream can be used for reading or writing but no header is
+read until a call to  or
+<see cref="M:Xceed.Compression.Formats.FormattedCompressedStream.Read(System.Byte[],System.Int32,System.Int32)" />.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.GZipCompressedStream.Read(System.Byte[],System.Int32,System.Int32)">
+      <summary>Reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read.</summary>
+      <returns>The total number of bytes read into the buffer. This may be less than the number of bytes requested if that many bytes are not currently available, or zero (0)
+if the end of the stream has been reached.</returns>
+      <param name="buffer">An array of bytes containing the decompressed data. When this method returns, the buffer contains the specified byte array with the values between <paramref name="offset" /> and
+(<paramref name="offset" /> + nb bytes read) replaced by the bytes read from the current source.</param>
+      <param name="offset">The zero-based byte <paramref name="offset" /> in <paramref name="buffer" /> at which to begin storing the data read from the current stream.</param>
+      <param name="count">The maximum number of bytes to be read from the current stream.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.GZipCompressedStream.ReadFooter(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.GZipCompressedStream.ReadHeader(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.GZipCompressedStream.Write(System.Byte[],System.Int32,System.Int32)">
+      <summary>Writes a sequence of bytes to the current stream and advances the current position within this stream by the number of bytes written.</summary>
+      <param name="buffer">An array of bytes containing the compressed data. This method copies <paramref name="count" /> bytes from <paramref name="buffer" /> to the current stream.</param>
+      <param name="offset">The zero-based byte offset in <paramref name="buffer" /> at which to begin copying bytes to the current stream.</param>
+      <param name="count">The number of bytes to be written to the current stream.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.GZipCompressedStream.WriteFooter(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.GZipCompressedStream.WriteHeader(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.GZipCompressedStream.Compress(System.Byte[])">
+      <summary>Compresses an array of bytes using the GZip compression format and the  compression level.</summary>
+      <returns>An array of bytes containing the compressed data.</returns>
+      <param name="buffer">The array of bytes to compress.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.GZipCompressedStream.Compress(System.Byte[],Xceed.Compression.CompressionLevel)">
+      <summary>Compresses an array of bytes using the GZip compression format and specified compression level.</summary>
+      <returns>An array of bytes containing the compressed data.</returns>
+      <param name="buffer">The array of bytes to compress.</param>
+      <param name="level">A  value representing the compression level to use.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.GZipCompressedStream.Compress(System.Byte[],System.Int32,System.Int32,Xceed.Compression.CompressionLevel)">
+      <summary>Compresses an array of bytes using the GZip compression format specifying the amount of bytes to compress as well as the compression level.</summary>
+      <returns>An array of bytes containing the compressed data. Can be empty.</returns>
+      <param name="buffer">The array of bytes to compress. A maximum of <paramref name="count" /> bytes are taken from this array and compressed.</param>
+      <param name="offset">The byte offset in <paramref name="buffer" /> at which to begin taking the data to compress.</param>
+      <param name="count">The maximum number of bytes to be taken from <paramref name="buffer" />.</param>
+      <param name="level">A  value representing the compression level to use.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.GZipCompressedStream.Decompress(System.Byte[])">
+      <summary>Decompresses an array of GZip formatted compressed bytes.</summary>
+      <returns>An array of bytes containing the decompressed data.</returns>
+      <param name="buffer">An array of bytes to decompress.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.GZipCompressedStream.Decompress(System.Byte[],System.Int32,System.Int32)">
+      <summary>Decompresses an array of GZip formatted compressed bytes specifying the amount of bytes to decompress.</summary>
+      <returns>An array of bytes containing the decompressed data. Can be empty.</returns>
+      <param name="buffer">An array of bytes to decompress. A maximum of <paramref name="count" /> bytes are taken from this array and decompressed.</param>
+      <param name="offset">The byte offset in <paramref name="buffer" /> at which to begin taking the data to decompress.</param>
+      <param name="count">The maximum number of bytes to be taken from <paramref name="buffer" />.</param>
+    </member>
+    <member name="P:Xceed.Compression.Formats.GZipCompressedStream.Header">
+      <summary>Gets the compressed data's header.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.GZipHeader.#ctor">
+      <summary>Initializes a new instance of the GZipHeader class.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.GZipHeader.#ctor(System.Boolean,System.Boolean,System.DateTime,System.Byte[],System.String,System.String)">
+      <summary>Initializes a new instance of the GZipHeader class specifying the necessary parameter values.</summary>
+      <param name="isTextFile">true if the data to compress has been retrieved from a text file; false otherwise.</param>
+      <param name="hasHeaderChecksum">true if the header as a checksum; false otherwise.</param>
+      <param name="lastWriteDateTime">A  value representing the last modification date/time.</param>
+      <param name="extraHeader">An array containing the possible extra headers.</param>
+      <param name="fileName">A string representing the header's filename.</param>
+      <param name="comment">The header's comment. Can be  is there is no comment.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.GZipHeader.#ctor(Xceed.Compression.Formats.GZipHeader)">
+      <summary>Initializes a new instance of the GZipHeader class specifying the GZipHeader object whose values are to be copied.</summary>
+      <param name="template">A reference to a GZipHeader object whose values are to be copied.</param>
+    </member>
+    <member name="P:Xceed.Compression.Formats.GZipHeader.Comment">
+      <summary>Gets or sets the header's comment.</summary>
+    </member>
+    <member name="P:Xceed.Compression.Formats.GZipHeader.ExtraHeader">
+      <summary>Gets or sets the possible extra headers.</summary>
+    </member>
+    <member name="P:Xceed.Compression.Formats.GZipHeader.FileName">
+      <summary>Gets or sets the filename from which the header information was retrieved.</summary>
+    </member>
+    <member name="P:Xceed.Compression.Formats.GZipHeader.HasHeaderChecksum">
+      <summary>Gets or sets a boolean value indicating if the header has a checksum.</summary>
+    </member>
+    <member name="P:Xceed.Compression.Formats.GZipHeader.IsTextFile">
+      <summary>Gets or sets a boolean value indication if the data to compress has been retrieved from a text file.</summary>
+    </member>
+    <member name="P:Xceed.Compression.Formats.GZipHeader.LastWriteDateTime">
+      <summary>Gets or sets the modification date and time of the item.</summary>
+    </member>
+    <member name="P:Xceed.Compression.Formats.Licenser.LicenseKey">
+      <summary>Gets or sets the license key used to license this product.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.LZMACompressedStream.#ctor(System.IO.Stream)">
+      <summary>Initializes a new instance of the <strong>LZMACompressedStream</strong> class using the provided stream as a source.</summary>
+      <param name="inner">The inner stream to write to and read from.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.LZMACompressedStream.#ctor(System.IO.Stream,Xceed.Compression.LZMA.LZMAOptions)">
+      <summary>Initializes a new instance of the <strong>LZMACompressedStream</strong> class specifying the stream to write to and read from and using a set of options for
+the compression engine.</summary>
+      <param name="inner">The inner stream to write to and read from.</param>
+      <param name="options">The LZMA options to use when writing (compressing). Can be null.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.LZMACompressedStream.ReadFooter(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.LZMACompressedStream.ReadHeader(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.LZMACompressedStream.WriteFooter(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.LZMACompressedStream.WriteHeader(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.LZMACompressedStream.Compress(System.Byte[])">
+      <summary>Compresses an array of bytes using the LZMA compression format and CompressionLevel.Highest.</summary>
+      <returns>An array of bytes containing the compressed data.</returns>
+      <param name="buffer">The array of bytes to compress.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.LZMACompressedStream.Compress(System.Byte[],System.Int32,System.Int32)">
+      <summary>Compresses an array of bytes using the LZMA compression format specifying the amount of bytes to compress.</summary>
+      <returns>An array of bytes containing the compressed data. Can be empty.</returns>
+      <param name="buffer">The array of bytes to compress. A maximum of <em>count</em> bytes are taken from this array and compressed.</param>
+      <param name="offset">The byte offset in <em>buffer</em> at which to begin taking the data to compress.</param>
+      <param name="count">The maximum number of bytes to be taken from <em>buffer</em>.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.LZMACompressedStream.Decompress(System.Byte[])">
+      <summary>Decompresses an array of LZMA formatted compressed bytes.</summary>
+      <returns>An array of bytes containing the decompressed data.</returns>
+      <param name="buffer">An array of bytes to decompress.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.LZMACompressedStream.Decompress(System.Byte[],System.Int32,System.Int32)">
+      <summary>Decompresses an array of LZMA formatted compressed bytes specifying the amount of bytes to decompress.</summary>
+      <returns>An array of bytes containing the decompressed data.</returns>
+      <param name="buffer">An array of bytes to decompress. A maximum of <em>count</em> bytes are taken from this array and decompressed.</param>
+      <param name="offset">The byte offset in <em>buffer</em> at which to begin taking the data to decompress.</param>
+      <param name="count">The maximum number of bytes to be taken from <em>buffer</em>.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.PPMdCompressedStream.#ctor">
+      <summary>Intializes a new instance of the <strong>PPMdCompressedStream</strong> class.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.PPMdCompressedStream.#ctor(System.IO.Stream)">
+      <summary>Intializes a new instance of the <strong>PPMdCompressedStream</strong> class using the provided stream as a source.</summary>
+      <param name="inner">The stream to write to and read from.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.PPMdCompressedStream.#ctor(System.IO.Stream,Xceed.Compression.CompressionLevel)">
+      <summary>Intializes a new instance of the <strong>PPMdCompressedStream</strong> class specifying the inner stream to write to and read from, as well as a compression
+level.</summary>
+      <param name="inner">The stream to write to and read from.</param>
+      <param name="level">The compression level to use.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.PPMdCompressedStream.#ctor(System.IO.Stream,System.Int32,System.Byte,Xceed.Compression.PPMd.ModelRestorationMethod)">
+      <summary>Intializes a new instance of the <strong>PPMdCompressedStream</strong> class using the specified parameters.</summary>
+      <param name="inner">The stream to write to and read from.</param>
+      <param name="allocatorSize">The allocator size.</param>
+      <param name="maximumModelOrder">The maximum model order.</param>
+      <param name="modelRestorationMethod">Method of model restoration if memory is insufficient.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.PPMdCompressedStream.Compress">
+      <summary>Compresses an array of bytes using the PPMd compression format.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.PPMdCompressedStream.Decompress">
+      <summary>Decompresses an array of PPMd formatted compressed bytes.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.PPMdCompressedStream.ReadFooter(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.PPMdCompressedStream.ReadHeader(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.PPMdCompressedStream.WriteFooter(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.PPMdCompressedStream.WriteHeader(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.PPMdCompressedStream.Compress(System.Byte[])">
+      <summary>Compresses an array of bytes using the PPMd compression format and CompressionLevel.Highest.</summary>
+      <returns>An array of bytes containing the compressed data. Can be empty.</returns>
+      <param name="buffer">The array of bytes to compress. Cannot be null.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.PPMdCompressedStream.Compress(System.Byte[],System.Int32,System.Int32)">
+      <summary>Compresses an array of bytes using the PPMd compression format, specifying the amount of bytes to compress.</summary>
+      <returns>An array of bytes containing the compressed data. Can be empty.</returns>
+      <param name="buffer">The array of bytes to compress. Cannot be null.</param>
+      <param name="offset">The byte offset in <em>buffer</em> at which to begin taking the data to compress. Cannot be less than zero.</param>
+      <param name="count">The maximum number of bytes to be taken from <em>buffer</em>. Cannot be less than zero.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.PPMdCompressedStream.Decompress(System.Byte[])">
+      <summary>Decompresses an array of PPMd formatted compressed bytes.</summary>
+      <param name="buffer">An array of bytes to decompress. Cannot be null.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.PPMdCompressedStream.Decompress(System.Byte[],System.Int32,System.Int32)">
+      <summary>Decompresses an array of PPMd formatted compressed bytes, using the specified offset and count.</summary>
+      <param name="buffer">An array of bytes to decompress. Cannot be null.</param>
+      <param name="offset">The byte offset in buffer at which to begin taking the data to decompress. Cannot be less than zero.</param>
+      <param name="count">The maximum number of bytes to be taken from buffer. Cannot be less than zero.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStream.#ctor(System.IO.Stream)">
+      <summary>Initializes a new instance of the XceedCompressedStream class specifying the inner stream to write to and read from.</summary>
+      <param name="inner">The stream to write to and read from.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStream.#ctor(System.IO.Stream,System.String)">
+      <summary>Initializes a new instance of the XceedCompressedStream class specifying the inner stream to write to and read from and the encryption password.</summary>
+      <param name="inner">The stream to write to and read from.</param>
+      <param name="encryptionPassword">A string containing the encryption password that will be used to encrypt the files in the stream.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStream.#ctor(System.IO.Stream,Xceed.Compression.CompressionMethod,Xceed.Compression.CompressionLevel)">
+      <summary>Initializes a new instance of the XceedCompressedStream class specifying the inner stream to write to and read from, the compression method and level to use.</summary>
+      <param name="inner">The stream to write to and read from.</param>
+      <param name="method">A  value representing the compression method to use.</param>
+      <param name="level">A  value representing the compression level to use.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStream.#ctor(System.IO.Stream,Xceed.Compression.CompressionMethod,Xceed.Compression.CompressionLevel,System.Boolean)">
+      <summary>Initializes a new instance of the XceedCompressedStream class specifying the inner stream to write to and read from, the compression method and level to use.</summary>
+      <param name="inner">The stream to write to and read from.</param>
+      <param name="method">A  value representing the compression method to use.</param>
+      <param name="level">A  value representing the compression level to use.</param>
+      <param name="readHeader">If true, this stream can only be read from and the header will be read immediately. If false, this stream can be used for reading or writing but no header is
+read until a call to  or
+<see cref="M:Xceed.Compression.Formats.FormattedCompressedStream.Read(System.Byte[],System.Int32,System.Int32)" />.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStream.#ctor(System.IO.Stream,Xceed.Compression.CompressionMethod,Xceed.Compression.CompressionLevel,System.Boolean,System.String)">
+      <summary>Initializes a new instance of the XceedCompressedStream class specifying the inner stream to write to and read from, the compression method and level to use,
+and the encryption password.</summary>
+      <param name="inner">The stream to write to and read from.</param>
+      <param name="method">A  value representing the compression method to use.</param>
+      <param name="level">A  value representing the compression level to use.</param>
+      <param name="readHeader">If true, this stream can only be read from and the header will be read immediately. If false, this stream can be used for reading or writing but no header is
+read until a call to  or
+<see cref="M:Xceed.Compression.Formats.FormattedCompressedStream.Read(System.Byte[],System.Int32,System.Int32)" />.</param>
+      <param name="encryptionPassword">A string containing the encryption password that will be used to encrypt the files in the stream.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStream.ReadFooter(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStream.ReadHeader(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStream.WriteFooter(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStream.WriteHeader(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStream.Compress(System.Byte[])">
+      <summary>Compresses an array of bytes using the Xceed compression format.</summary>
+      <returns>An array of bytes containing the compressed data.</returns>
+      <param name="buffer">The array of bytes to compress.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStream.Compress(System.Byte[],System.String)">
+      <summary>Compresses an array of bytes using the Xceed compression format and encryption password.</summary>
+      <param name="buffer">The array of bytes to compress.</param>
+      <param name="encryptionPassword">A string containing the encryption password that will be used to encrypt the files in the stream.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStream.Compress(System.Byte[],Xceed.Compression.CompressionMethod,Xceed.Compression.CompressionLevel)">
+      <summary>Compresses an array of bytes using the Xceed compression format with the specified compression method and level.</summary>
+      <returns>An array of bytes containing the compressed data.</returns>
+      <param name="buffer">The array of bytes to compress.</param>
+      <param name="method">A  value representing the compression method to use.</param>
+      <param name="level">A  value representing the compression level to use.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStream.Compress(System.Byte[],Xceed.Compression.CompressionMethod,Xceed.Compression.CompressionLevel,System.String)">
+      <summary>Compresses an array of bytes using the Xceed compression format with the specified compression method and level and, encryption password.</summary>
+      <param name="buffer">The array of bytes to compress.</param>
+      <param name="method">A  value representing the compression method to use.</param>
+      <param name="level">A string containing the encryption password that will be used to encrypt the files in the stream.</param>
+      <param name="encryptionPassword">A string containing the encryption password that will be used to encrypt the files in the stream.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStream.Compress(System.Byte[],System.Int32,System.Int32,Xceed.Compression.CompressionMethod,Xceed.Compression.CompressionLevel)">
+      <summary>Compresses an array of bytes using the Xceed compression format specifying the amount of bytes to compress as well as compression method and level.</summary>
+      <returns>An array of bytes containing the compressed data. Can be empty.</returns>
+      <param name="buffer">The array of bytes to compress. A maximum of <paramref name="count" /> bytes are taken from this array and compressed</param>
+      <param name="offset">The byte offset in <paramref name="buffer" /> at which to begin taking the data to compress.</param>
+      <param name="count">The maximum number of bytes to be taken from <paramref name="buffer" />.</param>
+      <param name="method">A  value representing the compression method to use.</param>
+      <param name="level">A  value representing the compression level to use.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStream.Compress(System.Byte[],System.Int32,System.Int32,Xceed.Compression.CompressionMethod,Xceed.Compression.CompressionLevel,System.String)">
+      <summary>Compresses an array of bytes using the Xceed compression format specifying the amount of bytes to compress as well as compression method and level, and
+encryption password.</summary>
+      <param name="buffer">The array of bytes to compress.</param>
+      <param name="offset">The byte offset in <paramref name="buffer" /> at which to begin taking the data to compress.</param>
+      <param name="count">The maximum number of bytes to be taken from <paramref name="buffer" />.</param>
+      <param name="method">A  value representing the compression method to use.</param>
+      <param name="level">A  value representing the compression level to use.</param>
+      <param name="encryptionPassword">A string containing the encryption password that will be used to encrypt the files in the stream.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStream.Decompress(System.Byte[])">
+      <summary>Decompresses an array of Xceed formatted compressed bytes.</summary>
+      <returns>An array of bytes containing the decompressed data.</returns>
+      <param name="buffer">An array of bytes to decompress.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStream.Decompress(System.Byte[],System.String)">
+      <summary>Decompresses an array of Xceed formatted compressed bytes and encryption password.</summary>
+      <param name="buffer">An array of bytes to decompress.</param>
+      <param name="encryptionPassword">A string containing the encryption password that was used used to encrypt the files in the stream.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStream.Decompress(System.Byte[],System.Int32,System.Int32)">
+      <summary>Decompresses an array of Xceed formatted compressed bytes specifying the amount of bytes to decompress.</summary>
+      <returns>An array of bytes containing the decompressed data. Can be empty.</returns>
+      <param name="buffer">An array of bytes to decompress. A maximum of <paramref name="count" /> bytes are taken from this array and decompressed.</param>
+      <param name="offset">The byte offset in <paramref name="buffer" /> at which to begin taking the data to decompress.</param>
+      <param name="count">The maximum number of bytes to be taken from <paramref name="buffer" />.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStream.Decompress(System.Byte[],System.Int32,System.Int32,System.String)">
+      <summary>Decompresses an array of Xceed formatted compressed bytes specifying the amount of bytes to decompress and encryption password.</summary>
+      <param name="buffer">An array of bytes to decompress. A maximum of <paramref name="count" /> bytes are taken from this array and decompressed.</param>
+      <param name="offset">The byte offset in <paramref name="buffer" /> at which to begin taking the data to decompress.</param>
+      <param name="count">The maximum number of bytes to be taken from <paramref name="buffer" />.</param>
+      <param name="encryptionPassword">A string containing the encryption password that was used used to encrypt the files in the stream.</param>
+    </member>
+    <member name="P:Xceed.Compression.Formats.XceedCompressedStream.EncryptionPassword">
+      <summary>Gets or sets the encryption password that will be used to encrypt the files in the stream.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStreamEx.#ctor(System.IO.Stream)">
+      <summary>Initializes a new instance of the XceedCompressedStreamEx class specifying the inner stream to write to and read from.</summary>
+      <param name="inner">The stream to write to and read from.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStreamEx.#ctor(System.IO.Stream,System.String)">
+      <summary>Initializes a new instance of the XceedCompressedStreamEx class specifying the inner stream to write to and read from and the encryption password to use.</summary>
+      <param name="inner">The stream to write to and read from.</param>
+      <param name="encryptionPassword">The encryption password to use.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStreamEx.#ctor(System.IO.Stream,Xceed.Compression.CompressionMethod,Xceed.Compression.CompressionLevel)">
+      <summary>Initializes a new instance of the XceedCompressedStreamEx class specifying the inner stream to write to and read from, the compression method and level to use.</summary>
+      <param name="inner">The stream to write to and read from.</param>
+      <param name="method">A  value representing the compression method to use.</param>
+      <param name="level">A  value representing the compression level to use.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStreamEx.#ctor(System.IO.Stream,Xceed.Compression.CompressionMethod,Xceed.Compression.CompressionLevel,System.String)">
+      <summary>Initializes a new instance of the XceedCompressedStreamEx class specifying the inner stream to write to and read from, the compression method and level, and
+the encryption password to use.</summary>
+      <param name="inner">The stream to write to and read from.</param>
+      <param name="method">A  value representing the compression method to use.</param>
+      <param name="level">A  value representing the compression level to use.</param>
+      <param name="encryptionPassword">The encryption password to use.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStreamEx.#ctor(System.IO.Stream,Xceed.Compression.CompressionMethod,Xceed.Compression.CompressionLevel,System.Boolean)">
+      <summary>Initializes a new instance of the XceedCompressedStreamEx class specifying the inner stream to write to and read from, the compression method and level to use.</summary>
+      <param name="inner">The stream to write to and read from.</param>
+      <param name="method">A  value representing the compression method to use.</param>
+      <param name="level">A  value representing the compression level to use.</param>
+      <param name="readHeader">If true, this stream can only be read from and the header will be read immediately. If false, this stream can be used for reading or writing but no header is
+read until a call to  or
+<see cref="M:Xceed.Compression.Formats.FormattedCompressedStream.Read(System.Byte[],System.Int32,System.Int32)" />.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.XceedCompressedStreamEx.#ctor(System.IO.Stream,Xceed.Compression.CompressionMethod,Xceed.Compression.CompressionLevel,System.Boolean,System.String)">
+      <summary>Initializes a new instance of the XceedCompressedStreamEx class specifying the inner stream to write to and read from, the compression method and level, and
+the encryption password to use.</summary>
+      <param name="inner">The stream to write to and read from.</param>
+      <param name="method">A  value representing the compression method to use.</param>
+      <param name="level">A  value representing the compression level to use.</param>
+      <param name="readHeader">If true, this stream can only be read from and the header will be read immediately. If false, this stream can be used for reading or writing but no header is
+read until a call to  or
+<see cref="M:Xceed.Compression.Formats.FormattedCompressedStream.Read(System.Byte[],System.Int32,System.Int32)" />.</param>
+      <param name="encryptionPassword">The encryption password to use.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ZLibCompressedStream.#ctor(System.IO.Stream,Xceed.Compression.CompressionMethod,Xceed.Compression.CompressionLevel)">
+      <summary>Initializes a new instance of the ZLibCompressedStream class specifying the inner stream to write to and read from, the compression method and level to use.</summary>
+      <param name="inner">The stream to write to and read from.</param>
+      <param name="method">A  value representing the compression method to use.</param>
+      <param name="level">A  value representing the compression level to use.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ZLibCompressedStream.#ctor(System.IO.Stream)">
+      <summary>Initializes a new instance of the ZLibCompressedStream class specifying the inner stream to write to and read from.</summary>
+      <param name="inner">The stream to write to and read from.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ZLibCompressedStream.#ctor(System.IO.Stream,Xceed.Compression.CompressionMethod,Xceed.Compression.CompressionLevel,System.Boolean)">
+      <summary>Initializes a new instance of the ZLibCompressedStream class specifying the inner stream to write to and read from, the compression method and level to use as
+well as indicating if the header must be read.</summary>
+      <param name="inner">The stream to write to and read from.</param>
+      <param name="method">A  value representing the compression method to use.</param>
+      <param name="level">A  value representing the compression level to use.</param>
+      <param name="readHeader">If <strong>true</strong>, this stream can only be read from and the header will be read immediately. If <strong>false</strong>, this stream can be used for
+reading or writing but no header is read until a call to 
+or <see cref="M:Xceed.Compression.Formats.FormattedCompressedStream.Read(System.Byte[],System.Int32,System.Int32)" />.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ZLibCompressedStream.ReadFooter(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ZLibCompressedStream.ReadHeader(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ZLibCompressedStream.WriteFooter(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ZLibCompressedStream.WriteHeader(System.IO.Stream)">
+      <summary>This method is reserved for internal use and is not intended to be used directly from your code.</summary>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ZLibCompressedStream.Compress(System.Byte[])">
+      <summary>Compresses an array of bytes using the ZLib compression format.</summary>
+      <returns>An array of bytes containing the compressed data.</returns>
+      <param name="buffer">The array of bytes to compress.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ZLibCompressedStream.Compress(System.Byte[],Xceed.Compression.CompressionMethod,Xceed.Compression.CompressionLevel)">
+      <summary>Compresses an array of bytes using the ZLib compression format with specified compression method and level.</summary>
+      <returns>An array of bytes containing the compressed data.</returns>
+      <param name="buffer">The array of bytes to compress.</param>
+      <param name="method">A  value representing the compression method to use.</param>
+      <param name="level">A  value representing the compression level to use.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ZLibCompressedStream.Compress(System.Byte[],System.Int32,System.Int32,Xceed.Compression.CompressionMethod,Xceed.Compression.CompressionLevel)">
+      <summary>Compresses an array of bytes using the ZLib compression format specifying the amount of bytes to compress as well as compression method and level.</summary>
+      <returns>An array of bytes containing the compressed data. Can be empty.</returns>
+      <param name="buffer">The array of bytes to compress. A maximum of <paramref name="count" /> bytes are taken from this array and compressed.</param>
+      <param name="offset">The byte offset in <paramref name="buffer" /> at which to begin taking the data to compress.</param>
+      <param name="count">The maximum number of bytes to be taken from <paramref name="buffer" />.</param>
+      <param name="method">A  value representing the compression method to use.</param>
+      <param name="level">A  value representing the compression level to use.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ZLibCompressedStream.Decompress(System.Byte[])">
+      <summary>Decompresses an array of ZLib formatted compressed bytes.</summary>
+      <returns>An array of bytes containing the decompressed data.</returns>
+      <param name="buffer">An array of bytes to decompress.</param>
+    </member>
+    <member name="M:Xceed.Compression.Formats.ZLibCompressedStream.Decompress(System.Byte[],System.Int32,System.Int32)">
+      <summary>Decompresses an array of ZLib formatted compressed bytes specifying the amount of bytes to decompress.</summary>
+      <returns>An array of bytes containing the decompressed data. Can be empty.</returns>
+      <param name="buffer">An array of bytes to decompress. A maximum of <paramref name="count" /> bytes are taken from this array and decompressed.</param>
+      <param name="offset">The byte offset in <paramref name="buffer" /> at which to begin taking the data to decompress.</param>
+      <param name="count">The maximum number of bytes to be taken from <paramref name="buffer" />.</param>
+    </member>
+  </members>
+</doc>
