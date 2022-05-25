@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-
+using q  = mdl.MetaExpression;
 using mdl;
 using System.Data;
 using mdl_utils;
@@ -53,7 +53,7 @@ namespace mdl_winform {
         /// <param name="c"></param>
         /// <param name="filter"></param>
         /// <param name="freshvalue"></param>
-        void filteredPreFillCombo(ComboBox c, string filter, bool freshvalue);
+        void filteredPreFillCombo(ComboBox c, q filter, bool freshvalue);
 
         /// <summary>
         /// Fills a combobox with related data. It adds a dummy empty row to 
@@ -69,7 +69,7 @@ namespace mdl_winform {
         /// <param name="filter">filter to apply</param>
         /// <param name="freshvalue">true if a RowChange Should be generated</param>
         /// <param name="selList"></param>
-        void filteredPreFillCombo(ComboBox c, string filter, bool freshvalue, List<SelectBuilder> selList);
+        void filteredPreFillCombo(ComboBox c, q filter, bool freshvalue, List<SelectBuilder> selList);
 
         /// <summary>
         /// Fill the table  related to a combobox.
@@ -99,7 +99,7 @@ namespace mdl_winform {
         /// <param name="c"></param>
         /// <param name="combotable"></param>
         /// <param name="filter"></param>
-        void setComboBoxFilteredSource(ComboBox c, string combotable, string filter);
+        void setComboBoxFilteredSource(ComboBox c, string combotable, q filter);
 
         /// <summary>
         /// Imposta il DataSource del Combo in modo adeguato alla modalità corrente ed in modo che
@@ -202,6 +202,7 @@ namespace mdl_winform {
             
         }
 
+        CQueryHelper qhc;  
         /// <summary>
         /// 
         /// </summary>
@@ -213,6 +214,7 @@ namespace mdl_winform {
             helpForm = f.getInstance<IHelpForm>();
             eventsManager = f.getInstance<IFormEventsManager>();
             shower = MetaFactory.factory.getSingleton<IMessageShower>();
+            qhc = MetaFactory.factory.getSingleton<CQueryHelper>();
         }
         /// <summary>
         /// Prefills a combo with a specified filter, optionally changing its value
@@ -220,7 +222,7 @@ namespace mdl_winform {
         /// <param name="c"></param>
         /// <param name="filter"></param>
         /// <param name="freshvalue"></param>
-        public void filteredPreFillCombo(ComboBox c, string filter, bool freshvalue) {
+        public void filteredPreFillCombo(ComboBox c, q filter, bool freshvalue) {
             filteredPreFillCombo(c, filter, freshvalue, null);
         }
 
@@ -238,7 +240,7 @@ namespace mdl_winform {
         /// <param name="filter">filter to apply</param>
         /// <param name="freshvalue">true if a RowChange Should be generated</param>
         /// <param name="selList"></param>
-        public void filteredPreFillCombo(ComboBox c, string filter, 
+        public void filteredPreFillCombo(ComboBox c, q filter, 
             bool freshvalue,
             List<SelectBuilder> selList) {
 
@@ -272,15 +274,15 @@ namespace mdl_winform {
             var combokind = comboTableKind(T) ?? "";
 
             if ((ds2 == null) || ! combokind.StartsWith("mkytemp") ) {
-	            var clonehandle = mdl_utils.metaprofiler.StartTimer("Cloning table * "+T.TableName);
+	            var clonehandle = mdl_utils.MetaProfiler.StartTimer("Cloning table * "+T.TableName);
                 ds2 = new DataSet("mkytemp");
                 //int clonehandle= metaprofiler.StartTimer("Cloning table "+T.TableName);
                 ds2.EnforceConstraints = false;
-                t2 = DataAccess.SingleTableClone(T, true); //T.Clone();
+                t2 = DataAccess.singleTableClone(T, true); //T.Clone();
                 setComboTableKind(t2, "mkytemp");
                 t2.ExtendedProperties["sort_by"] = T.ExtendedProperties["sort_by"];
                 ds2.Tables.Add(t2);
-                mdl_utils.metaprofiler.StopTimer(clonehandle);
+                mdl_utils.MetaProfiler.StopTimer(clonehandle);
             }
 
             //var valueMember = c.ValueMember;
@@ -289,7 +291,7 @@ namespace mdl_winform {
 
             //Checks that the table is not a child of another table. Infact in that case,
             // the list will be built depending of the selected row of the other table
-            if ((filter == null) && (realTable.ParentRelations.Count > 0)) {
+            if ((filter is null) && (realTable.ParentRelations.Count > 0)) {
                 eventsManager.DisableAutoEvents();
                 if (c.DataSource != t2) {
                     //c.SuspendLayout();
@@ -304,15 +306,15 @@ namespace mdl_winform {
 
             if (filter == null) {
                 //set the table as "to cache"
-                if (!model.isCached(realTable)) {   //Mark table as cached only if it is not already. The point is that a locked-read table is also considered a cached table
-                    model.cacheTable(realTable);
+                if (!model.IsCached(realTable)) {   //Mark table as cached only if it is not already. The point is that a locked-read table is also considered a cached table
+                    model.CacheTable(realTable);
                 }
             }
 
             eventsManager.DisableAutoEvents();
 
-            model.markToAddBlankRow(realTable);
-            model.markToAddBlankRow(t2);
+            model.MarkToAddBlankRow(realTable);
+            model.MarkToAddBlankRow(t2);
 
             var sortField = c.DisplayMember;
             var pos = sortField.LastIndexOf('.');
@@ -331,7 +333,8 @@ namespace mdl_winform {
            
             c.DataSource = null;
             c.DataBindings.Clear();
-            var sel = getData.DO_GET_TABLE(realTable, sortField, filter, true, null, selList);
+            var sel = getData.GetTable(realTable, sortBy:sortField, filter:filter, selList: selList, clear:true)
+                                    .GetAwaiter().GetResult();
             c.DataSource = realTable;
             eventsManager.EnableAutoEvents();
             if (sel == null) {
@@ -340,8 +343,6 @@ namespace mdl_winform {
             else {
                 sel.AddOnRead(fillComboBoxTable, fc);
             }
-          
-
 
         }
 
@@ -373,17 +374,17 @@ namespace mdl_winform {
             c.SuspendLayout();
             c.DataSource = null;
             c.DataBindings.Clear();
-            model.clear(t2);
+            model.Clear(t2);
 
             if (formState == ApplicationFormState.Empty) {
                
                 var searchfilter = QueryCreator.GetSearchFilter(realTable);
                 if (searchfilter == null) {
-                    QueryCreator.MergeDataTable(t2, realTable);
+                    DataSetUtils.MergeDataTable(t2, realTable);
                     setComboTableKind(t2, "mkytemp");
                 }
                 else {
-                    QueryCreator.MergeDataTable(t2, realTable);
+                    DataSetUtils.MergeDataTable(t2, realTable);
                     foreach (var r in t2.Select("not(" + searchfilter + ")")) {
                         t2.Rows.Remove(r);
                     }
@@ -394,11 +395,11 @@ namespace mdl_winform {
             if (formState != ApplicationFormState.Empty) {                
                 var insertfilter = QueryCreator.GetInsertFilter(realTable);
                 if (insertfilter == null) {
-                    QueryCreator.MergeDataTable(t2, realTable);
+                    DataSetUtils.MergeDataTable(t2, realTable);
                     setComboTableKind(t2, "mkytemp");
                 }
                 else {
-                    QueryCreator.MergeDataTable(t2, realTable);
+                    DataSetUtils.MergeDataTable(t2, realTable);
                     foreach (var r in t2.Select("not(" + insertfilter + ")")) {
                         t2.Rows.Remove(r);
                     }
@@ -478,7 +479,7 @@ namespace mdl_winform {
                 shower.Show(ff, err);
                 return;
             }
-            var handle = mdl_utils.metaprofiler.StartTimer("In FillComboBoxTable");
+            var handle = mdl_utils.MetaProfiler.StartTimer("In FillComboBoxTable");
             if (C.DropDownStyle != ComboBoxStyle.DropDown)
                 C.DropDownStyle = ComboBoxStyle.DropDown;
 
@@ -488,7 +489,7 @@ namespace mdl_winform {
             var combokind = comboTableKind(t2)??"";
             if (!combokind.StartsWith("mkytemp")) {
                 var ds2 = new DataSet("mkytemp") {EnforceConstraints = false};
-                t2 = DataAccess.SingleTableClone(T, true); 
+                t2 = DataAccess.singleTableClone(T, true); 
                 setComboTableKind(t2, "mkytemp_insert");
                 t2.ExtendedProperties["sort_by"] = T.ExtendedProperties["sort_by"];
                 ds2.Tables.Add(t2);
@@ -503,8 +504,8 @@ namespace mdl_winform {
             var displayMember = C.DisplayMember;
             C.DataSource = null;
             C.DataBindings.Clear();
-            model.clear(realTable);   
-            GetData.Add_Blank_Row(realTable);
+            model.Clear(realTable);   
+            model.CheckBlankRow(realTable);
 
            
           
@@ -513,10 +514,10 @@ namespace mdl_winform {
 
             C.SelectedIndex = -1;
           
-            model.clear(t2);
+            model.Clear(t2);
         
 
-            QueryCreator.MergeDataTable(t2, realTable);
+            DataSetUtils.MergeDataTable(t2, realTable);
 
             //			MarkEvent("Before DataSource=T2");
             C.DisplayMember = displayMember;
@@ -540,7 +541,7 @@ namespace mdl_winform {
                 //E' necessaria per aggiornare, per esempio, i combo dipendenti (!)
                 helpForm.IterateFillRelatedControls(C.Parent.Controls, C, realTable, null);
             }
-            mdl_utils.metaprofiler.StopTimer(handle);
+            mdl_utils.MetaProfiler.StopTimer(handle);
 
         }
         /// <summary>
@@ -611,7 +612,7 @@ namespace mdl_winform {
         /// <param name="c"></param>
         /// <param name="combotable"></param>
         /// <param name="filter"></param>
-        public void setComboBoxFilteredSource(ComboBox c, string combotable, string filter) {
+        public void setComboBoxFilteredSource(ComboBox c, string combotable, q filter) {
 
             eventsManager.DisableAutoEvents();
 
@@ -619,7 +620,7 @@ namespace mdl_winform {
             var realTable = d.Tables[combotable];
             if (PostData.IsTemporaryTable(realTable)) return;
 
-            var j = mdl_utils.metaprofiler.StartTimer("SetComboBoxFilteredSource");
+            var j = mdl_utils.MetaProfiler.StartTimer("SetComboBoxFilteredSource");
             var oldval = c.ValueMember;
             var olddescr = c.DisplayMember;
             
@@ -631,14 +632,14 @@ namespace mdl_winform {
 
             c.SelectedIndex = -1;
 
-            model.clear(t2);
+            model.Clear(t2);
             //T2.Clear(); //NON SERVE A NULLA - INUTILE PROVARLA!!!
             if (filter == null) {
-                QueryCreator.MergeDataTable(t2, realTable);
+                DataSetUtils.MergeDataTable(t2, realTable);
             }
             else {
-                QueryCreator.MergeDataTable(t2, realTable);
-                foreach (var r in t2.Select("not(" + filter + ")")) {
+                DataSetUtils.MergeDataTable(t2, realTable);
+                foreach (var r in t2.Select("not(" + filter.toADO() + ")")) {
                     r.Delete();
                 }
                 t2.AcceptChanges();
@@ -646,7 +647,7 @@ namespace mdl_winform {
             }
             //T2.AcceptChanges();// INUTILE ANCHE QUESTA!
 
-            mdl_utils.metaprofiler.StopTimer(j);
+            mdl_utils.MetaProfiler.StopTimer(j);
 
 
 
@@ -699,24 +700,24 @@ namespace mdl_winform {
 
             var fieldtoconsider = c.ValueMember;
 
-            var oldvaluefilter = ((oldValue == DBNull.Value) || (oldValue == null))
+            q oldvaluefilter = ((oldValue == DBNull.Value) || (oldValue == null))
                 ? null
-                : $"({fieldtoconsider}={mdl_utils.Quoting.quotedstrvalue(oldValue, false)})";
+                : q.eq(fieldtoconsider, oldValue); //$"({fieldtoconsider}={mdl_utils.Quoting.quote(oldValue, false)})";
             var combokind = comboTableKind(tt);
             //Se il source è mkytemp_insert e odlvalue non è incluso, lo deve aggiungere
             // se invece il source non è mkytemp_insert e odlvalue è incluso in mkytemp_insert, deve 
             //  ripristinare mkytemp_insert
             if (combokind != "mkytemp_insert") {
                 //se odlvalue è incluso in mkytemp_insert, è quello che bisogna usare per il combo.
-                var keyfilter = GetData.MergeFilters(oldvaluefilter, QueryCreator.GetInsertFilter(T));
-                if ((oldvaluefilter == null) || (tt.Select(keyfilter).Length > 0)) {
+                var keyfilter = q.and(oldvaluefilter, QueryCreator.GetFilterForInsert(T));
+                if ((oldvaluefilter == null) || (tt.filter(keyfilter).Length > 0)) {
                     refilterComboBoxSource(c, table); //ripristina mkytemp_insert
                     return;
                 }
-                var keyandfilter = GetData.MergeFilters(oldvaluefilter, QueryCreator.GetSearchFilter(T));
-                if (tt.Select(keyandfilter).Length > 0) return;
+                var keyandfilter = q.and(oldvaluefilter, QueryCreator.GetSearchFilter(T));
+                if (tt.filter(keyandfilter).Length > 0) return;
 
-                var keyorfilter = GetData.AppendOR(oldvaluefilter, QueryCreator.GetSearchFilter(T));
+                var keyorfilter = q.or(oldvaluefilter, QueryCreator.GetSearchFilter(T));
                 //"(" + oldvaluefilter + ")OR(" + QueryCreator.GetSearchFilter(T) + ")";
                 setComboBoxFilteredSource(c, table, keyorfilter);
                 setComboTableKind(tt, "mkytemp_special");
@@ -729,10 +730,10 @@ namespace mdl_winform {
             if (combokind == "mkytemp_insert") {
                 //se R è incluso in mkytemp_insert, è quello che bisogna usare per il combo.
                 var keyfilter = oldvaluefilter;
-                var keyandfilter = GetData.MergeFilters(keyfilter, QueryCreator.GetInsertFilter(T));
-                var keyorfilter = GetData.AppendOR(keyfilter, QueryCreator.GetInsertFilter(T));
+                var keyandfilter = q.and(keyfilter, QueryCreator.GetInsertFilter(T));
+                q keyorfilter = q.or(keyfilter, QueryCreator.GetInsertFilter(T));
                 //"("+keyfilter+")OR("+QueryCreator.GetInsertFilter(T)+")";
-                if (tt.Select(keyandfilter).Length == 0) {
+                if (tt.filter(keyandfilter).Length == 0) {
                     //Bisogna aggiungere R al combo, e cambiare il DataSet di nome
                     setComboBoxFilteredSource(c, table, keyorfilter);
                     setComboTableKind(tt, "mkytemp_special");
@@ -830,7 +831,7 @@ namespace mdl_winform {
                 return;
             }
             if (comboTable == null) return;
-            if (model.markedToAddBlankRow(comboTable) && (c.Items.Count > 0) && (first >= 0)) {
+            if (model.MarkedToAddBlankRow(comboTable) && (c.Items.Count > 0) && (first >= 0)) {
                 c.SelectedIndex = first;
             }
            
@@ -943,8 +944,8 @@ namespace mdl_winform {
                 fillComboBoxTable(c, true);                  
                 return;
             }
-            var filter = QueryCreator.WHERE_REL_CLAUSE(changedRow,
-                foundRel.ParentColumns, foundRel.ChildColumns, DataRowVersion.Default, true);
+            var filter = q.mGetParents(changedRow, foundRel, DataRowVersion.Default );
+                        //foundRel.ParentColumns, foundRel.ChildColumns, DataRowVersion.Default, true);
             //try {                  
             filteredPreFillCombo(c, filter, true);  //here a refresh of child must be generated                          
             //}
@@ -1117,14 +1118,14 @@ namespace mdl_winform {
 
         /// <inheritdoc />
         public void clearCombo(ComboBox c,DataTable t) {
-	        var s = mdl_utils.metaprofiler.StartTimer($"clearCombo*({t?.TableName})");
+	        var s = mdl_utils.MetaProfiler.StartTimer($"clearCombo*({t?.TableName})");
 
 	        if (_comboBoxToRefill) {
 		        resetComboBoxSource(c, t.TableName);
 	        }
             
             c.SelectedIndex = -1; 
-			mdl_utils.metaprofiler.StopTimer(s);
+			mdl_utils.MetaProfiler.StopTimer(s);
         }
 
     }

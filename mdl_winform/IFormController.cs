@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 #pragma warning disable IDE1006 // Naming Styles
 using mdl;
+using q = mdl.MetaExpression;
 
 namespace mdl_winform {
     /// <summary>
@@ -546,7 +547,7 @@ namespace mdl_winform {
         /// <param name="filterstart"></param>
         /// <param name="emptylist"></param>
         /// <returns></returns>
-        bool searchRow(string listType, string filterstart, bool emptylist);
+        bool searchRow(string listType, q filterstart, bool emptylist);
 
         /// <summary>
         /// G has tag: AutoChoose.TextBoxName.ListType.StartFilter or

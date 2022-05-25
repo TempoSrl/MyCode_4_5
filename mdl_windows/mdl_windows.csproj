@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>mdl_windows</RootNamespace>
     <AssemblyName>mdl_windows</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile />
@@ -49,6 +49,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\mdl\mdl.csproj">
+      <Project>{31e22658-b971-4d84-8e80-f03ff74393cd}</Project>
+      <Name>mdl</Name>
+    </ProjectReference>
     <ProjectReference Include="..\mdl_language\mdl_language.csproj">
       <Project>{542b6760-8bfe-4d73-b78d-48bdd183281e}</Project>
       <Name>mdl_language</Name>

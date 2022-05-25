@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>mdl</RootNamespace>
     <AssemblyName>mdl</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile />
@@ -38,9 +38,14 @@
     <AssemblyOriginatorKeyFile>mdl_sign.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="AsyncDataAdapter, Version=1.0.25.1, Culture=neutral, PublicKeyToken=9bd9d55da81428b0, processorArchitecture=MSIL">
+      <HintPath>packages\AsyncDataAdapter.1.0.25.1\lib\net45\AsyncDataAdapter.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
-    <Reference Include="System.Core" />
+    <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>packages\System.ValueTuple.4.5.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data" />
@@ -53,14 +58,18 @@
     <Compile Include="compiler.cs" />
     <Compile Include="creaDatiSistema.cs" />
     <Compile Include="DataAccess.cs" />
+    <Compile Include="DataSetUtils.cs" />
     <Compile Include="dbanalyzer.cs" />
+    <Compile Include="DbManager.cs" />
     <Compile Include="dbstructure.cs">
       <DependentUpon>dbstructure.xsd</DependentUpon>
     </Compile>
     <Compile Include="EntityDispatcher.cs" />
     <Compile Include="ErrorLogger.cs" />
     <Compile Include="GetData.cs" />
+    <Compile Include="HelpUi.cs" />
     <Compile Include="IDataAccess.cs" />
+    <Compile Include="IDBDriver.cs" />
     <Compile Include="IMessageBox.cs" />
     <Compile Include="IMetaData.cs" />
     <Compile Include="MessageShower.cs" />
@@ -76,6 +85,7 @@
     <Compile Include="QueryCreator.cs" />
     <Compile Include="QueryHelper.cs" />
     <Compile Include="Security.cs" />
+    <Compile Include="SqlServerDriver.cs" />
     <Compile Include="StringParser.cs" />
     <Compile Include="TreeViewDataAccess.cs" />
   </ItemGroup>
@@ -93,6 +103,7 @@
       <DependentUpon>dbstructure.xsd</DependentUpon>
     </None>
     <None Include="mdl_sign.snk" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\mdl_language\mdl_language.csproj">

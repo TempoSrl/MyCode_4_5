@@ -55,49 +55,49 @@ namespace mdl_winform {
                 string datacont = "";
                 if (security != null) {
                     if (security.GetSys("datacontabile") != null) {
-                        datacont = security.GetDataContabile().ToString("d");
+                        datacont = ((DateTime)(security.GetSys("datacontabile"))).ToString("d");
                     }
                     msg +=
-                            "nomedb=" + mdl_utils.Quoting.quotedstrvalue(security.GetSys("database"), true) + ";" +
-                            "server=" + mdl_utils.Quoting.quotedstrvalue(security.GetSys("server"), true) + ";" +
-                            "username=" + mdl_utils.Quoting.quotedstrvalue(security.GetSys("user"), true) + ";" +
-                            "machine=" + mdl_utils.Quoting.quotedstrvalue(security.GetSys("computername"), false) + ";" +
-                            "dep=" + mdl_utils.Quoting.quotedstrvalue(security.GetSys("userdb"), false) + ";" +
-                            "esercizio=" + mdl_utils.Quoting.quotedstrvalue(security.GetSys("esercizio"), false) + ";" +
-                            "datacont=" + mdl_utils.Quoting.quotedstrvalue(datacont, false) + ";";
+                            "nomedb=" + mdl_utils.Quoting.quote(security.GetSys("database"), true) + ";" +
+                            "server=" + mdl_utils.Quoting.quote(security.GetSys("server"), true) + ";" +
+                            "username=" + mdl_utils.Quoting.quote(security.GetSys("user"), true) + ";" +
+                            "machine=" + mdl_utils.Quoting.quote(security.GetSys("computername"), false) + ";" +
+                            "dep=" + mdl_utils.Quoting.quote(security.GetSys("userdb"), false) + ";" +
+                            "esercizio=" + mdl_utils.Quoting.quote(security.GetSys("esercizio"), false) + ";" +
+                            "datacont=" + mdl_utils.Quoting.quote(datacont, false) + ";";
                 }
                 else {
                     msg +=
-                            "username=" + mdl_utils.Quoting.quotedstrvalue(noNull(Environment.UserName), true) + ";" +
+                            "username=" + mdl_utils.Quoting.quote(noNull(Environment.UserName), true) + ";" +
                             "machine=" +
-                            mdl_utils.Quoting.quotedstrvalue(
-                                noNull(Environment.MachineName) + "-" + noNull(DataAccess.GetOSVersion()), false) + ";";
+                            mdl_utils.Quoting.quote(
+                                noNull(Environment.MachineName) + "-" + noNull(FormStatic.GetOSVersion()), false) + ";";
                 }
 
 
                 string lasterr = dataAccess?.SecureGetLastError();
                 if (!string.IsNullOrEmpty(lasterr)) {
-                    msg += "dberror=" + mdl_utils.Quoting.quotedstrvalue(lasterr, false) + ";";
+                    msg += "dberror=" + mdl_utils.Quoting.quote(lasterr, false) + ";";
                 }
                 errmsg += "\r\n" + GetOuput();
-                msg += "err=" + mdl_utils.Quoting.quotedstrvalue(noNull(errmsg), false);
+                msg += "err=" + mdl_utils.Quoting.quote(noNull(errmsg), false);
 
                 string internalMsg = "";
                 if (applicationName != null) {
-                    msg += "app=" + mdl_utils.Quoting.quotedstrvalue(applicationName, true) + ";";
+                    msg += "app=" + mdl_utils.Quoting.quote(applicationName, true) + ";";
                 }
 
 
 
                 if (exception != null) {
-                    var except = QueryCreator.GetErrorString(exception);
+                    var except = ErrorLogger.GetErrorString(exception);
                     if (except.Length > 2800) except = except.Substring(0, 2800);
                     internalMsg += except + "\n";
                     Trace.WriteLine(exception.ToString());
                 }
 
                 if (internalMsg != "") {
-                    msg += ";msg=" + mdl_utils.Quoting.quotedstrvalue(internalMsg, false);
+                    msg += ";msg=" + mdl_utils.Quoting.quote(internalMsg, false);
                 }
 
 
@@ -105,7 +105,7 @@ namespace mdl_winform {
                 var ss2 = mdl_utils.Quoting.ByteArrayToString(b2);
 
                 var sm = new SendMessage(ss2, "z");
-                sm.send();
+                sm.Send();
                 //var TT= Task.Run(() => sm.send() ); I fear that application could be closed in the meanwhile so I do the operation syncronously
 
 

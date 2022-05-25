@@ -14,6 +14,7 @@ using System.Globalization;
 using System.Linq;
 // Utilizzato per EPPlus
 using mdl_utils;
+using mdl;
 using LM=mdl_language.LanguageManager;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
@@ -349,7 +350,7 @@ namespace mdl_windows {
 
              foreach (DataRow r in dt.Rows) {
                  for (int i = 0; i < dt.Columns.Count; i++) {
-                     HorizontalAlignment align = mdl_utils.HelpUi.GetAlignForColumn(dt.Columns[i]);
+                     HorizontalAlignment align = HelpUi.GetAlignForColumn(dt.Columns[i]);
                      string campo = (align == HorizontalAlignment.Right)
                          ? r[i].ToString().PadLeft(lunghezza[i], ' ')
                          : r[i].ToString().PadRight(lunghezza[i], ' ');

@@ -77,7 +77,7 @@ namespace mdl {
                 string usrVar = value.Substring(4, value.Length - 5);
                 return MetaExpression.usr(usrVar);
             }
-            return MetaExpression.context(value);            
+            return null;            
         }
     }
    

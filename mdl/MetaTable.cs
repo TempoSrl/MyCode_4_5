@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using q = mdl.MetaExpression;
 using static mdl.IndexManager;
+using static mdl_utils. MetaProfiler;
 using mdl_utils;
 
 using System.IO;
@@ -23,7 +24,7 @@ namespace mdl {
     /// <summary>
     /// Dynamic class available for field addition
     /// </summary>
-    public class DynamicEntity : DynamicObject, IComparable{
+    public class DynamicEntity :DynamicObject, IComparable {
         private IDictionary<string, object> _values;
 
         /// <summary>
@@ -40,7 +41,7 @@ namespace mdl {
         /// </summary>
         /// <param name="sample"></param>
         /// <param name="fields"></param>
-        public DynamicEntity(object sample, params string []fields) {
+        public DynamicEntity(object sample, params string[] fields) {
             _values = new Dictionary<string, object>();
             fields._forEach(f => _values[f] = MetaExpression.getField(f, sample));
         }
@@ -51,13 +52,17 @@ namespace mdl {
         /// <param name="obj"></param>
         /// <returns></returns>
         public int CompareTo(object obj) {
-            if (obj as DynamicEntity == null) return 1;
+            if (obj as DynamicEntity == null)
+                return 1;
             var d = obj as DynamicEntity;
-            if (this._values.Count != d._values.Count) return (this._values.Count - d._values.Count);
-            foreach(string k in _values.Keys) {
-                if (!d._values.ContainsKey(k)) return 1;
+            if (this._values.Count != d._values.Count)
+                return (this._values.Count - d._values.Count);
+            foreach (string k in _values.Keys) {
+                if (!d._values.ContainsKey(k))
+                    return 1;
                 int cmp = _values[k].ToString().CompareTo(d._values[k]);
-                if (cmp != 0) return cmp;
+                if (cmp != 0)
+                    return cmp;
             }
             return 0;
         }
@@ -96,7 +101,7 @@ namespace mdl {
     /// <summary>
     /// Dynamic class available for field addition
     /// </summary>
-    public class RowObject : DynamicObject, IComparable {
+    public class RowObject :DynamicObject, IComparable {
         /// <summary>
         /// Lookup from field name to field position in the values array
         /// </summary>
@@ -112,7 +117,7 @@ namespace mdl {
         /// </summary>
         /// <param name="fieldName"></param>
         /// <returns></returns>
-        public object this[string fieldName]{
+        public object this[string fieldName] {
             get { return values[ordinal[fieldName]]; }
             set { values[ordinal[fieldName]] = value; }
         }
@@ -121,7 +126,7 @@ namespace mdl {
         /// </summary>
         /// <param name="lookup">lookup between field names and array position</param>
         /// <param name="values"></param>
-        public RowObject(IDictionary<string,int>lookup, object []values ) {
+        public RowObject(IDictionary<string, int> lookup, object[] values) {
             this.values = values;
             ordinal = lookup;
         }
@@ -146,14 +151,18 @@ namespace mdl {
         /// <param name="obj"></param>
         /// <returns></returns>
         public int CompareTo(object obj) {
-            if (obj as RowObject == null) return 1;
+            if (obj as RowObject == null)
+                return 1;
             var d = obj as RowObject;
-            int len = values.Length;
-            if (values.Length != d.values.Length) return (values.Length - d.values.Length);
+            int diff = values.Length - d.values.Length;
+            if (diff != 0)
+                return diff;
             foreach (string k in ordinal.Keys) {
-                if(!d.ordinal.TryGetValue(k, out var index)) return 1;
+                if (!d.ordinal.TryGetValue(k, out var index))
+                    return 1;
                 int cmp = values[index].ToString().CompareTo(d.values[index]);
-                if (cmp != 0) return cmp;
+                if (cmp != 0)
+                    return cmp;
             }
             return 0;
         }
@@ -165,7 +174,7 @@ namespace mdl {
         /// <param name="result"></param>
         /// <returns></returns>
         public override bool TryGetMember(GetMemberBinder binder, out object result) {
-            if(!ordinal.TryGetValue(binder.Name, out var index)) {
+            if (!ordinal.TryGetValue(binder.Name, out var index)) {
                 result = null;
                 return false;
             }
@@ -180,7 +189,7 @@ namespace mdl {
         /// <param name="value"></param>
         /// <returns></returns>
         public override bool TrySetMember(SetMemberBinder binder, object value) {
-            if(!ordinal.TryGetValue(binder.Name, out var index)) {
+            if (!ordinal.TryGetValue(binder.Name, out var index)) {
                 return false;
             }
             values[index] = value;
@@ -201,9 +210,12 @@ namespace mdl {
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static object cmpObjEq<t>(object a, object b) where t : IComparable {
-            if (a == null || b == null) return null;
-            if (a == DBNull.Value) return (b==DBNull.Value);
-            if (b== DBNull.Value) return false;
+            if (a == null || b == null)
+                return null;
+            if (a == DBNull.Value)
+                return (b == DBNull.Value);
+            if (b == DBNull.Value)
+                return false;
             return ((t)a).CompareTo((t)b) == 0;
         }
 
@@ -216,9 +228,12 @@ namespace mdl {
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static object cmpObjNe<t>(object a, object b) where t : IComparable {
-            if (a == null || b == null) return null;
-            if (a == DBNull.Value) return (b != DBNull.Value);
-            if (b == DBNull.Value) return true;
+            if (a == null || b == null)
+                return null;
+            if (a == DBNull.Value)
+                return (b != DBNull.Value);
+            if (b == DBNull.Value)
+                return true;
             return ((t)a).CompareTo((t)b) != 0;
         }
 
@@ -231,8 +246,10 @@ namespace mdl {
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static object cmpObjGt<t>(object a, object b) where t : IComparable {
-            if (a == null || b == null) return null;
-            if (a == DBNull.Value || b == DBNull.Value) return DBNull.Value;
+            if (a == null || b == null)
+                return null;
+            if (a == DBNull.Value || b == DBNull.Value)
+                return DBNull.Value;
             return ((t)a).CompareTo((t)b) > 0;
         }
 
@@ -245,8 +262,10 @@ namespace mdl {
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static object cmpObjLt<t>(object a, object b) where t : IComparable {
-            if (a == null || b == null) return null;
-            if (a == DBNull.Value || b == DBNull.Value) return DBNull.Value;
+            if (a == null || b == null)
+                return null;
+            if (a == DBNull.Value || b == DBNull.Value)
+                return DBNull.Value;
             return ((t)a).CompareTo((t)b) < 0;
         }
 
@@ -259,8 +278,10 @@ namespace mdl {
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static object cmpObjGe<t>(object a, object b) where t : IComparable {
-            if (a == null || b == null) return null;
-            if (a == DBNull.Value || b == DBNull.Value) return DBNull.Value;
+            if (a == null || b == null)
+                return null;
+            if (a == DBNull.Value || b == DBNull.Value)
+                return DBNull.Value;
             return ((t)a).CompareTo((t)b) >= 0;
         }
 
@@ -273,8 +294,10 @@ namespace mdl {
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static object cmpObjLe<t>(object a, object b) where t : IComparable {
-            if (a == null || b == null) return null;
-            if (a == DBNull.Value || b == DBNull.Value) return DBNull.Value;
+            if (a == null || b == null)
+                return null;
+            if (a == DBNull.Value || b == DBNull.Value)
+                return DBNull.Value;
             return ((t)a).CompareTo((t)b) <= 0;
         }
 
@@ -312,109 +335,178 @@ namespace mdl {
         }
 
         /// <summary>
-        /// Search all rows that satisfies a criteria
+        /// Change the Child Row fields in order to make it child of Parent. All parent-child relations between the two tables are taken into account.
         /// </summary>
-        /// <param name="T">Table to operate with</param>
-        /// <param name="filter">criteria to be met</param>
-        /// <param name="env">Environment (a DataAccess is a good parameter)</param>
-        /// <param name="sort">sorting</param>
-        /// <param name="all">if all=true also deleted rows are retrived</param>
+        /// <param name="parent">Parent row</param>
+        /// <param name="parentTable">can be null if parentRow is not null, so it is assumed parent.Table</param>
+        /// <param name="child"></param>
         /// <returns></returns>
-        public static DataRow[] _Filter(this DataTable T, MetaExpression filter, object env = null, string sort = null, bool all = false) {
-            if (filter == null) filter = MetaExpression.constant(true);           
-            if (filter!=null && filter.isFalse())return new DataRow[0];
-            if (sort != null) {
-                return (from DataRow r in T._Sort(sort)
-                        where MetaTable.compatibleState(r.RowState, all) && filter.getBooleanResult(r, env)
-                        select r as DataRow)
-                        .ToArray();
+        public static bool MakeChildOf(this DataRow child, DataRow parent,
+            DataTable parentTable = null
+        ) {
+            if (parentTable == null) {
+                parentTable = parent.Table;
             }
-
-            if (all == false ) {
-	            var idm = T.DataSet.getIndexManager();
-	            if (idm != null) {
-		            var dict = (filter as IGetCompDictionary)?.getMcmpDictionary();
-		            if (dict != null) return idm.getRows(T, dict);
-	            }
+            foreach (DataRelation rel in child.Table.ParentRelations) {
+                if (child.MakeChildByRelation(parent, parentTable, rel.RelationName)) {
+                    return true;
+                }
             }
-            return (from DataRow  r in T.Rows where MetaTable.compatibleState(r.RowState, all) && filter.getBooleanResult(r, env) select r).ToArray();
-        }
-
-        public static DataRow[] iGetChildRows(this DataRow rParent, DataRelation rel) {
-	        var iManager = rel?.ChildTable?.DataSet?.getIndexManager();
-	        return iManager?.getChildRows(rParent, rel) ?? rParent.GetChildRows(rel);
-        }
-
-        public static DataRow[] iGetChildRows(this DataRow rParent, string relationName) {
-	        var rel = rParent?.Table?.DataSet?.Relations[relationName];
-	        var iManager = rel?.ChildTable?.DataSet?.getIndexManager();
-	        return iManager?.getChildRows(rParent, rel) ?? rParent.GetChildRows(rel);
-        }
-
-        public static DataRow[] iGetParentRows(this DataRow rChild, DataRelation rel) {
-	        var iManager = rel?.ParentTable?.DataSet?.getIndexManager();
-	        return iManager?.getParentRows(rChild, rel) ?? rChild.GetParentRows(rel);
-        }
-        public static DataRow[] iGetParentRows(this DataRow rChild, string relationName) {
-	        var rel = rChild?.Table?.DataSet?.Relations[relationName];
-	        var iManager = rel?.ParentTable?.DataSet?.getIndexManager();
-	        return iManager?.getParentRows(rChild, rel) ?? rChild.GetParentRows(rel);
+            return false;
         }
 
         /// <summary>
-        /// Gets the first row of a search, or null if no row is found
+        /// Makes a "Child" DataRow related as child with a Parent Row. 
+        ///     This function should be called after calling DataTable.NewRow and
+        /// before calling CalcTemporaryID and DataTable.Add()
         /// </summary>
-        /// <param name="T">Table to operate with</param>
-        /// <param name="filter">condition for the search</param>
-        /// <param name="sort">row sorting</param>
-        /// <param name="rv">DataViewRowState to be met</param>
-        /// <returns></returns>
-        public static DataRow _First(this DataTable T, string filter = null, string sort = null, DataViewRowState rv = DataViewRowState.CurrentRows) {
-            DataRow[] r = T.Select(filter, sort, rv);
-            if (r.Length == 0) return null;
-            return r[0];
+        /// <param name="parent">Parent Row (Can be null)</param>
+        /// <param name="parentTable">Parent Table (to which Parent Row belongs)</param>
+        /// <param name="child">Row that must become child of Parent (can't be null)</param>
+        /// <param name="relname">eventually name of relation to use</param>
+        /// <remarks>This function should be called after calling DataTable.NewRow and
+        ///         BEFORE calling CalcTemporaryID and DataTable.Add()
+        /// </remarks>
+        public static bool MakeChildByRelation(this DataRow child, DataRow parent, DataTable parentTable = null,
+                string relationName = null) {
+            if (relationName == null)
+                return child.MakeChildOf(parent, parentTable);
+            if (parentTable == null) {
+                parentTable = parent.Table;
+            }
+            var rel = getChildRelation(parentTable, child.Table, relationName);
+            if (rel == null)
+                return false;
+            for (var i = 0; i < rel.ParentColumns.Length; i++) {
+                var childCol = rel.ChildColumns[i];
+                if (parent != null) {
+                    child[childCol.ColumnName] = parent[rel.ParentColumns[i].ColumnName];
+                }
+                else {
+                    child[childCol] = QueryCreator.clearValue(childCol);
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Search a Relation in Child's Parent Relations that connect Child to Parent, 
+        ///		named relname. If it is not found, it is also searched in Parent's
+        ///		child relations.
+        /// </summary>
+        /// <param name="parent">Parent table</param>
+        /// <param name="child">Child table</param>
+        /// <param name="relname">Relation Name, null if it does not matter</param>
+        /// <returns>a Relation from Child Parent Relations, or null if not found</returns>
+        static DataRelation getChildRelation(DataTable parent, DataTable child, string relname) {
+            foreach (DataRelation rel in child.ParentRelations) {
+                if ((relname != null) && (rel.RelationName != relname))
+                    continue;
+                if (rel.ParentTable.TableName == parent.TableName) {
+                    return rel;
+                }
+            }
+            foreach (DataRelation rel2 in parent.ChildRelations) {
+                if ((relname != null) && (rel2.RelationName != relname))
+                    continue;
+                if (rel2.ChildTable.TableName == child.TableName) {
+                    return rel2;
+                }
+            }
+
+            return null;
         }
 
 
+        /// <summary>
+        /// get Child Rows of a parent row, using indexes whenever possible
+        /// </summary>
+        /// <param name="rParent"></param>
+        /// <param name="rel"></param>
+        /// <returns></returns>
+        public static DataRow[] getChildRows(this DataRow rParent, DataRelation rel) {
+            var iManager = rel?.ChildTable?.DataSet?.getIndexManager();
+            return iManager?.getChildRows(rParent, rel) ?? rParent.GetChildRows(rel);
+        }
 
         /// <summary>
-        /// Get rows from DB without adding them to the table
+        /// get Child Rows of a parent row, using indexes whenever possible
+        /// </summary>
+        /// <param name="rParent"></param>
+        /// <param name="relationName"></param>
+        /// <returns></returns>
+        public static DataRow[] getChildRows(this DataRow rParent, string relationName) {
+            var rel = rParent?.Table?.DataSet?.Relations[relationName];
+            var iManager = rel?.ChildTable?.DataSet?.getIndexManager();
+            return iManager?.getChildRows(rParent, rel) ?? rParent.GetChildRows(rel);
+        }
+
+        /// <summary>
+        /// get parent Rows of a row, using indexes whenever possible
+        /// </summary>
+        /// <param name="rChild"></param>
+        /// <param name="rel"></param>
+        /// <returns></returns>
+        public static DataRow[] getParentRows(this DataRow rChild, DataRelation rel) {
+            var iManager = rel?.ParentTable?.DataSet?.getIndexManager();
+            return iManager?.getParentRows(rChild, rel) ?? rChild.GetParentRows(rel);
+        }
+
+        /// <summary>
+        /// get parent Rows of a row, using indexes whenever possible
+        /// </summary>
+        /// <param name="rChild"></param>
+        /// <param name="relationName"></param>
+        /// <returns></returns>
+        public static DataRow[] getParentRows(this DataRow rChild, string relationName) {
+            var rel = rChild?.Table?.DataSet?.Relations[relationName];
+            var iManager = rel?.ParentTable?.DataSet?.getIndexManager();
+            return iManager?.getParentRows(rChild, rel) ?? rChild.GetParentRows(rel);
+        }
+
+
+        public static void copyAutoIncrementPropertiesFrom(this DataTable dest, DataTable source) {
+            RowChange.copyAutoIncrementProperties(dest, source);
+        }
+
+        /// <summary>
+        /// Get rows from DB without affecting the table. Rows are not merged to the table.
         /// </summary>
         /// <param name="T">Table to operate with</param>
         /// <param name="conn"></param>
         /// <param name="filter">criteria to be met</param>
         /// <param name="timeout">timeout in seconds. 0 means no timeout, -1 means default</param>
         /// <returns></returns>
-        public static DataRow[] _getDetachedRowsFromDb(this DataTable T, IDataAccess conn, string filter, int timeout = -1) {
-            string sql = "SELECT " + QueryCreator.ColumnNameList(T) + " from " +  DataAccess.GetTableForReading(T);
-            if (!string.IsNullOrEmpty(filter)) sql += " WHERE " + filter;
-            return _sqlDetachedGetFromDb(T, conn, sql, timeout);
+        public static async Task<DataRow[]> getDetachedRowsFromDb(this DataTable T, IDataAccess conn, object filter, int timeout = -1) {
+
+            string sql = conn.GetSelectCommand(
+                table: T.tableForReading(),
+                columns: QueryCreator.RealColumnNameList(T),
+                filter: filter
+                );
+            return await sqlDetachedGetFromDb(T, conn, sql, timeout);
         }
 
         /// <summary>
-        /// Get a set of detached rows running a sql command
+        /// Get rows from DB without affecting the table. Rows are not merged to the table.
         /// </summary>
         /// <param name="T"></param>
         /// <param name="conn"></param>
         /// <param name="sql"></param>
         /// <param name="timeout">timeout in seconds. 0 means no timeout, -1 means default</param>
         /// <returns></returns>
-        public static DataRow[] _sqlDetachedGetFromDb(this DataTable T, IDataAccess conn, string sql, int timeout = -1) {
+        public static async Task<DataRow[]> sqlDetachedGetFromDb(this DataTable T, IDataAccess conn, string sql, int timeout = -1) {
             var t = T.Clone();
-            var rows = conn.SQLRUN_INTO_EMPTY_TABLE(t, sql, timeout);
-            if (rows == null) return null;
-            var res = new List<DataRow>();
-            foreach (var genericRow in rows) {
-                var r = T.NewRow();
-                foreach (DataColumn c in T.Columns) {
-                   r[c.ColumnName] = genericRow[c.ColumnName];
-                }
-                res.Add(r);
+            try {
+                await conn.ExecuteQueryIntoTable(t, sql, timeout);
             }
-            return res.ToArray();
+            catch {
+                return null;
+            }
+            if (T.Rows.Count == 0)
+                return null;
+            return T.Select();
         }
-
-
 
         /// <summary>
         ///  Get rows from DB without adding them to the table
@@ -424,10 +516,10 @@ namespace mdl {
         /// <param name="filter"></param>
         /// <param name="timeout">timeout in seconds. 0 means no timeout, -1 means default</param>
         /// <returns></returns>
-        public static DataRow[] _getDetachedRowsFromDb(this DataTable T, IDataAccess conn, MetaExpression filter, int timeout = -1) {
-            if (filter!=null && filter.isFalse())return new DataRow[0];
-            string sFilter = filter?.toSql(conn.GetQueryHelper(), conn);
-            return T._getDetachedRowsFromDb(conn, sFilter, timeout);
+        public static async Task<DataRow[]> _getDetachedRowsFromDb(this DataTable T, IDataAccess conn, q filter, int timeout = -1) {
+            if ((!(filter is null)) && filter.isFalse())
+                return new DataRow[0];
+            return await T._getDetachedRowsFromDb(conn, filter, timeout);
         }
 
         /// <summary>
@@ -438,10 +530,11 @@ namespace mdl {
         /// <param name="filter"></param>
         /// <param name="timeout">timeout in seconds. 0 means no timeout, -1 means default</param>
         /// <returns></returns>
-        public static DataRow[] _getFromDb(this DataTable T, IDataAccess conn, MetaExpression filter, int timeout = -1) {
-            if (filter!=null && filter.isFalse())return new DataRow[0];
-            string sFilter = filter?.toSql(conn.GetQueryHelper(), conn);
-            return T._getFromDb(conn, sFilter, timeout);
+        public static async Task<DataRow[]> _getFromDb(this DataTable T, IDataAccess conn, q filter, int timeout = -1) {
+            if (!(filter is null) && filter.isFalse())
+                return new DataRow[0];
+            string sFilter = conn.Compile(filter);
+            return await T._getFromDb(conn, sFilter, timeout);
         }
 
         /// <summary>
@@ -452,9 +545,10 @@ namespace mdl {
         /// <param name="filter"></param>
         /// <param name="timeout">timeout in seconds. 0 means no timeout, -1 means default</param>
         /// <returns></returns>
-        public static DataRow[] _getFromDb(this DataTable T, IDataAccess conn, string filter, int timeout = -1) {
-            var res = T._getDetachedRowsFromDb(conn, filter, timeout);
-            if (res == null) return null;
+        public static async Task<DataRow[]> _getFromDb(this DataTable T, IDataAccess conn, string filter, int timeout = -1) {
+            var res = await T.getDetachedRowsFromDb(conn, filter: filter, timeout);
+            if (res == null)
+                return null;
             foreach (var r in res) {
                 T.Rows.Add(r);
                 r.AcceptChanges();
@@ -470,9 +564,10 @@ namespace mdl {
         /// <param name="sql"></param>
         /// <param name="timeout">timeout in seconds. 0 means no timeout, -1 means default</param>
         /// <returns></returns>
-        public static DataRow[] _sqlGetFromDb(this DataTable T, IDataAccess conn, string sql, int timeout = -1) {
-            var res = T._sqlDetachedGetFromDb(conn, sql, timeout);
-            if (res == null) return null;
+        public static async Task<DataRow[]> _sqlGetFromDb(this DataTable T, IDataAccess conn, string sql, int timeout = -1) {
+            var res = await T.sqlDetachedGetFromDb(conn, sql, timeout);
+            if (res == null)
+                return null;
             foreach (var r in res) {
                 T.Rows.Add(r);
                 r.AcceptChanges();
@@ -488,11 +583,12 @@ namespace mdl {
         /// <param name="filter"></param>
         /// <param name="timeout">timeout in seconds. 0 means no timeout, -1 means default</param>
         /// <returns></returns>
-        public static DataRow[] _get(this DataTable T, IDataAccess conn, MetaExpression filter, int timeout = -1) {
-            var found = T._Filter(filter);
-            if (found!=null && found.Length > 0) return found;
-            var sFilter = filter?.toSql(conn.GetQueryHelper(), conn);
-            return T._getFromDb(conn, sFilter, timeout);
+        public static async Task<DataRow[]> _get(this DataTable T, IDataAccess conn, q filter, int timeout = -1) {
+            var found = T.filter(filter);
+            if (found != null && found.Length > 0)
+                return found;
+            var sFilter = filter?.toSql(conn.GetQueryHelper(), conn.Security);
+            return await T._getFromDb(conn, sFilter, timeout);
         }
 
 
@@ -505,12 +601,14 @@ namespace mdl {
         /// <param name="filter"></param>
         /// <param name="timeout">timeout in seconds, 0 means no timeout, -1 means default timeout</param>
         /// <returns>Read rows</returns>
-        public static DataRow[] _mergeFromDb(this DataTable T, IDataAccess conn, MetaExpression filter, int timeout = -1) {
-            var res = T._getDetachedRowsFromDb(conn, filter, timeout);
-            if (res == null) return new DataRow[] {};
+        public static async Task<DataRow[]> _mergeFromDb(this DataTable T, IDataAccess conn, MetaExpression filter, int timeout = -1) {
+            var res = await T._getDetachedRowsFromDb(conn, filter, timeout);
+            if (res == null)
+                return new DataRow[] { };
             foreach (var r in res) {
-                DataRow found = T._First(MetaExpression.mCmp(r, T.PrimaryKey));
-                if (found!=null)   T.Rows.Remove(found);                
+                var found = T.filter(MetaExpression.mCmp(r, T.PrimaryKey)).FirstOrDefault();
+                if (found != null)
+                    T.Rows.Remove(found);
                 T.Rows.Add(r);
                 r.AcceptChanges();
             }
@@ -525,22 +623,24 @@ namespace mdl {
         /// <param name="sql"></param>
         /// <param name="timeout">timeout in seconds, 0 means no timeout, -1 means default timeout</param>
         /// <returns>Read rows</returns>
-        public static DataRow[] _sqlMergeFromDb(this DataTable T, IDataAccess conn, string sql, int timeout = -1) {
-            var res = T._sqlDetachedGetFromDb(conn, sql, timeout);
-            if (res == null) return new DataRow[] {};
+        public static async Task<DataRow[]> _sqlMergeFromDb(this DataTable T, IDataAccess conn, string sql, int timeout = -1) {
+            var res = await T.sqlDetachedGetFromDb(conn, sql, timeout);
+            if (res == null)
+                return new DataRow[] { };
             foreach (var r in res) {
-                DataRow found = T._First(MetaExpression.mCmp(r, T.PrimaryKey));
-                if (found!=null)   T.Rows.Remove(found);                
+                DataRow found = T.filter(MetaExpression.mCmp(r, T.PrimaryKey)).FirstOrDefault();
+                if (found != null)
+                    T.Rows.Remove(found);
                 T.Rows.Add(r);
                 r.AcceptChanges();
             }
             return res;
         }
 
-        
-        private static string hashColumns(DataRow r,string []columns) {
+
+        private static string hashColumns(DataRow r, string[] columns) {
             var keys = (from string field in columns.ToList() select r[field].ToString());
-            return string.Join("§",keys);
+            return string.Join("§", keys);
         }
 
         /// <summary>
@@ -550,18 +650,20 @@ namespace mdl {
         /// <param name="detachedRows">rows to merge</param>
         /// <param name="overwrite">true to overwrite, false to skip existent rows</param>
         /// <returns></returns>
-        public static DataRow  []_mergeRows(this DataTable T, DataRow []detachedRows,bool overwrite=false) {
-            var handle2 = mdl_utils.metaprofiler.StartTimer("MergeIntoDataTableWithDictionary * " + T.TableName);
+        public static DataRow[] _mergeRows(this DataTable T, DataRow[] detachedRows, bool overwrite = false) {
+            var handle2 = StartTimer("MergeIntoDataTableWithDictionary * " + T.TableName);
             var destRows = new Dictionary<string, DataRow>();
-            if (detachedRows.Length == 0) return new DataRow[] {};
+            if (detachedRows.Length == 0)
+                return new DataRow[] { };
             var resList = new List<DataRow>();
 
             if (T.Rows.Count <= 100 && detachedRows.Length <= 100) {
                 //merge standard
                 foreach (var r in detachedRows) {
-                    var found = T._First(MetaExpression.mCmp(r, T.PrimaryKey));
+                    var found = T.filter(MetaExpression.mCmp(r, T.PrimaryKey)).FirstOrDefault();
                     if (found != null) { // Row already exists
-                        if (!overwrite) continue;
+                        if (!overwrite)
+                            continue;
                         T.Rows.Remove(found);//overwrite that one
                     }
                     T.Rows.Add(r);
@@ -578,8 +680,9 @@ namespace mdl {
 
                 foreach (var r in detachedRows) {
                     string hashSource = hashColumns(r, keys);
-                    if(destRows.TryGetValue(hashSource, out var destRow)) {
-                        if(!overwrite) continue; //la salta se già c'è
+                    if (destRows.TryGetValue(hashSource, out var destRow)) {
+                        if (!overwrite)
+                            continue; //la salta se già c'è
                         T.Rows.Remove(destRow);
                     }
                     T.Rows.Add(r);
@@ -588,7 +691,7 @@ namespace mdl {
                 }
             }
 
-             mdl_utils.metaprofiler.StopTimer(handle2);
+            StopTimer(handle2);
             return resList.ToArray();
         }
 
@@ -600,12 +703,14 @@ namespace mdl {
         /// <param name="filter"></param>
         /// <param name="timeout">timeout in seconds. 0 means no timeout, -1 means default</param>
         /// <returns></returns>
-        public static DataRow[] _safeMergeFromDb(this DataTable T, IDataAccess conn, MetaExpression filter, int timeout = -1) {
-            var res = T._getDetachedRowsFromDb(conn, filter, timeout);
-            if (res == null) return new DataRow[] {};
-            if (res.Length == 0) return new DataRow[] {};
+        public static async Task<DataRow[]> _safeMergeFromDb(this DataTable T, IDataAccess conn, MetaExpression filter, int timeout = -1) {
+            var res = await T._getDetachedRowsFromDb(conn, filter, timeout);
+            if (res == null)
+                return new DataRow[] { };
+            if (res.Length == 0)
+                return new DataRow[] { };
 
-            return _mergeRows(T ,res, false);           
+            return _mergeRows(T, res, false);
         }
 
         /// <summary>
@@ -616,11 +721,12 @@ namespace mdl {
         /// <param name="sql"></param>
         /// <param name="timeout">timeout in seconds. 0 means no timeout, -1 means default</param>
         /// <returns></returns>
-        public static DataRow[] _sqlSafeMergeFromDb(this DataTable T, IDataAccess conn, string sql, int timeout = -1) {
-            var res = T._sqlDetachedGetFromDb(conn, sql, timeout);
-            if (res == null) return new DataRow[] {};
+        public static async Task<DataRow[]> _sqlSafeMergeFromDb(this DataTable T, IDataAccess conn, string sql, int timeout = -1) {
+            var res = await T.sqlDetachedGetFromDb(conn, sql, timeout);
+            if (res == null)
+                return new DataRow[] { };
 
-            return _mergeRows(T ,res, false);          
+            return _mergeRows(T, res, false);
         }
 
         /// <summary>
@@ -630,17 +736,19 @@ namespace mdl {
         /// <param name="rows"></param>
         /// <param name="withCheck">if true rows already present are removed </param>
         public static void mergeRows(this DataTable T, DataRow[] rows, bool withCheck = true) {
-            if (rows == null) return;
+            if (rows == null)
+                return;
 
             if (T.Rows.Count > 300 || rows.Length > 300) {
-                _mergeRows(T,rows,!withCheck);
+                _mergeRows(T, rows, !withCheck);
                 return;
             }
 
             foreach (var r in rows) {
                 if (withCheck) {
-                    var found = T._First(MetaExpression.mCmp(r, T.PrimaryKey));
-                    if (found!=null) T.Rows.Remove(found);
+                    var found = T.filter(q.mCmp(r, T.PrimaryKey)).FirstOrDefault();
+                    if (found != null)
+                        T.Rows.Remove(found);
                 }
                 T.Rows.Add(r);
                 r.AcceptChanges();
@@ -657,9 +765,11 @@ namespace mdl {
         /// <returns></returns>
         public static DataRow NewRowAs(this DataTable T, DataRow sample) {
             DataRow r = T.NewRow();
-            if (sample == null) return r;
+            if (sample == null)
+                return r;
             foreach (DataColumn c in T.Columns) {
-                if (sample.Table.Columns.Contains(c.ColumnName)) r[c.ColumnName] = sample[c.ColumnName];
+                if (sample.Table.Columns.Contains(c.ColumnName))
+                    r[c.ColumnName] = sample[c.ColumnName];
             }
             return r;
         }
@@ -671,8 +781,8 @@ namespace mdl {
         /// <param name="sort">string sort order</param>
         /// <param name="rv">RowState to consider</param>
         /// <returns></returns>
-        public static DataRow [] _Sort(this DataTable T, string sort, DataViewRowState rv = DataViewRowState.CurrentRows) {
-            return T.Select(null, sort, rv);            
+        public static DataRow[] _Sort(this DataTable T, string sort, DataViewRowState rv = DataViewRowState.CurrentRows) {
+            return T.Select(null, sort, rv);
         }
 
         /// <summary>
@@ -681,68 +791,120 @@ namespace mdl {
         /// <param name="d"></param>
         /// <returns></returns>
         public static IIndexManager getCreateIndexManager(this DataSet d) {
-	        if (d == null) return null;
-	        var idm = d.ExtendedProperties["IIndexManager"] as IIndexManager;
-	        if (idm != null) return idm;
+            if (d == null)
+                return null;
+            if (d.ExtendedProperties["IIndexManager"] is IIndexManager idm)
+                return idm;
             return new IndexManager(d);
         }
 
-		/// <summary>
-		/// Gets the index manager if it exists
-		/// </summary>
-		/// <param name="d"></param>
-		/// <returns></returns>
+        /// <summary>
+        /// Gets the index manager if it exists
+        /// </summary>
+        /// <param name="d"></param>
+        /// <returns></returns>
         public static IIndexManager getIndexManager(this DataSet d) {
-	        if (d == null) return null;
-			var idm= d.ExtendedProperties.ContainsKey("IIndexManager") ? d.ExtendedProperties["IIndexManager"] as IIndexManager : null;
-			if (idm == null) return null;
-			if (idm.linkedDataSet() != d) return null;
-			return idm;
-		}
+            if (d == null)
+                return null;
+            var idm = d.ExtendedProperties.ContainsKey("IIndexManager") ? d.ExtendedProperties["IIndexManager"] as IIndexManager : null;
+            if (idm == null)
+                return null;
+            if (idm.linkedDataSet() != d)
+                return null;
+            return idm;
+        }
 
-		/// <summary>
-		/// Sets the index manager 
-		/// </summary>
-		/// <param name="d"></param>
-		/// <param name="i"></param>
+        /// <summary>
+        /// Sets the index manager 
+        /// </summary>
+        /// <param name="d"></param>
+        /// <param name="i"></param>
         public static void setIndexManager(this DataSet d, IIndexManager i) {
-	        d.ExtendedProperties["IIndexManager"] = i;
+            d.ExtendedProperties["IIndexManager"] = i;
         }
 
-		/// <summary>
-		/// Sets the index manager 
-		/// </summary>
-		/// <param name="d"></param>
-		/// <param name="i"></param>
-		public static void copyIndexFrom(this DataSet dest, DataSet source) {
-			var i = new IndexManager(dest);
-			i.CopyIndexFrom(source);
-		}
+        /// <summary>
+        /// Sets the index manager 
+        /// </summary>
+        /// <param name="d"></param>
+        /// <param name="i"></param>
+        public static void copyIndexFrom(this DataSet dest, DataSet source) {
+            var i = new IndexManager(dest);
+            i.CopyIndexFrom(source);
+        }
 
-		/// <summary>
-		///  Gets the first row of a search, or null if no row is found
-		/// </summary>
-		/// <param name="T">Table to operate with</param>
-		/// <param name="filter">condition for the search</param>
-		/// <param name="env">environment (use a DataAccess for this)</param>
-		/// <param name="sort">row sorting</param>
-		/// <returns></returns>
-		public static DataRow _First(this DataTable T, MetaExpression filter, object env = null, string sort = null) {
+        /// <summary>
+        /// Search all rows that satisfies a criteria
+        /// </summary>
+        /// <param name="T">Table to operate with</param>
+        /// <param name="filter">criteria to be met</param>
+        /// <param name="env">Environment (a DataAccess is a good parameter)</param>
+        /// <param name="sort">sorting</param>
+        /// <param name="all">if all=true also deleted rows are retrived</param>
+        /// <returns></returns>
+        public static DataRow[] filter(this DataTable T, q filter, ISecurity env = null, string sort = null, bool all = false) {
+            if (filter is null)
+                filter = q.constant(true);
+            if (!(filter is null) && filter.isFalse())
+                return new DataRow[0];
             if (sort != null) {
-                DataRow [] found = T._Sort(sort);
-                foreach (DataRow r in found) {
-                    if (r.RowState != DataRowState.Deleted && filter.getBooleanResult(r, env)) {
-                        return r;
-                    }
+                return (from DataRow r in T._Sort(sort)
+                        where MetaTable.compatibleState(r.RowState, all) && filter.getBoolean(r, env)
+                        select r as DataRow)
+                        .ToArray();
+            }
+
+            if (all == false) {
+                var idm = T.DataSet.getIndexManager();
+                if (idm != null) {
+                    var dict = (filter as IGetCompDictionary)?.getMcmpDictionary();
+                    if (dict != null)
+                        return idm.getRows(T, dict);
                 }
             }
-            foreach (DataRow r in T.Rows) {
-                if (r.RowState != DataRowState.Deleted && filter.getBooleanResult(r)) {
-                    return r;
-                }
-            }
-            return null;
+            return (from DataRow r in T.Rows where MetaTable.compatibleState(r.RowState, all) && filter.getBoolean(r, env) select r).ToArray();
         }
+
+        ///// <summary>
+        /////  Gets the first row of a search, or null if no row is found
+        ///// </summary>
+        ///// <param name="T">Table to operate with</param>
+        ///// <param name="filter">condition for the search</param>
+        ///// <param name="env">environment (use a DataAccess for this)</param>
+        ///// <param name="sort">row sorting</param>
+        ///// <returns></returns>
+        //public static DataRow _First(this DataTable T, q filter, object env = null, string sort = null) {
+        //          if (sort != null) {
+        //              DataRow [] found = T._Sort(sort);
+        //              foreach (DataRow r in found) {
+        //                  if (r.RowState != DataRowState.Deleted && filter.getBooleanResult(r, env)) {
+        //                      return r;
+        //                  }
+        //              }
+        //          }
+        //          foreach (DataRow r in T.Rows) {
+        //              if (r.RowState != DataRowState.Deleted && filter.getBooleanResult(r)) {
+        //                  return r;
+        //              }
+        //          }
+        //          return null;
+        //      }
+
+        ///// <summary>
+        ///// Gets the first row of a search, or null if no row is found
+        ///// </summary>
+        ///// <param name="T">Table to operate with</param>
+        ///// <param name="filter">condition for the search</param>
+        ///// <param name="sort">row sorting</param>
+        ///// <param name="rv">DataViewRowState to be met</param>
+        ///// <returns></returns>
+        //public static DataRow _First(this DataTable T, string filter = null, string sort = null, DataViewRowState rv = DataViewRowState.CurrentRows) {
+        //    DataRow[] r = T.Select(filter, sort, rv);
+        //    if (r.Length == 0) return null;
+        //    return r[0];
+        //}
+
+
 
         /// <summary>
         /// Use  as  var myConstructor = CreateConstructor(typeof(MyClass), typeof(int), typeof(string));
@@ -788,7 +950,8 @@ namespace mdl {
         public static DataRelation defineRelation(this DataSet D, string relationName,
                 string parentTable, string childTable, params string[] columns) {
 
-            if (D.Relations.Contains(relationName)) return D.Relations[relationName];
+            if (D.Relations.Contains(relationName))
+                return D.Relations[relationName];
             DataColumn[] parent = new DataColumn[columns.Length];
             DataColumn[] child = new DataColumn[columns.Length];
             for (int i = 0; i < columns.Length; i++) {
@@ -800,19 +963,103 @@ namespace mdl {
             return rel;
         }
 
+
+        #region CHECKS FOR TRUE/FALSE UPDATES
         /// <summary>
-        /// Check if the table has changes
+        /// returns true if row (modified) is an improperly set modified row
         /// </summary>
+        /// <param name="R"></param>
         /// <returns></returns>
-        public static bool HasChanges(this DataTable T) {
-            return PostData.hasChanges(T);
+        public static bool IsFalseUpdate(this DataRow R) {
+            if (R.RowState != DataRowState.Modified)
+                return false;
+            foreach (DataColumn C in R.Table.Columns) {
+                if (C.IsTemporary())
+                    continue;
+                if (!R[C, DataRowVersion.Original].Equals(R[C, DataRowVersion.Current]))
+                    return false;
+            }
+            return true;
         }
+
+        /// <summary>
+        /// Remove false update from a DataSet, i.e. calls AcceptChanges
+        ///  for any DataRow set erroneously as modified
+        /// </summary>
+        /// <param name="DS"></param>
+        public static void RemoveFalseUpdates(this DataSet DS) {
+            foreach (DataTable T in DS.Tables) {
+                if (MetaModel.IsTemporaryTable(T))
+                    continue;
+                foreach (DataRow R in T.Rows) {
+                    if (R.RowState != DataRowState.Modified)
+                        continue;
+                    if (R.IsFalseUpdate())
+                        R.AcceptChanges();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Check if table contains any row not in Unchanged state
+        /// </summary>
+        /// <param name="t"></param>
+        /// <returns></returns>
+	    public static bool HasChanges(this DataTable t) {
+            if (t == null)
+                return false;
+            foreach (DataRow R in t.Rows) {
+                if (R.RowState == DataRowState.Unchanged)
+                    continue;
+                if (R.RowState != DataRowState.Modified)
+                    return true;
+                if (R.IsFalseUpdate()) {
+                    R.AcceptChanges();
+                    continue;
+                }
+                return true;
+            }
+            return false;
+        }
+
+        public static void RemoveFalseUpdates(this DataRow R) {
+            if (!R.IsFalseUpdate())
+                return;
+            R.AcceptChanges();
+        }
+
+        /// <summary>
+		/// Check if a Row has changes, automatically removing false updates
+		/// </summary>
+		/// <param name="R"></param>
+		/// <returns></returns>
+		public static bool HasChanges(this DataRow R) {
+            if (R.RowState == DataRowState.Detached)
+                return false;
+            if (R.RowState == DataRowState.Unchanged)
+                return false;
+            if (R.RowState == DataRowState.Added)
+                return true;
+            if (R.RowState == DataRowState.Deleted)
+                return true;
+            if (R.IsFalseUpdate()) {
+                R.AcceptChanges();
+                return false;
+            }
+            else {
+                return true;
+            }
+        }
+
+
+        #endregion
+
 
         /// <summary>
         /// Get all current rows of the table
         /// </summary>
         /// <returns></returns>
-        public static List<R> allCurrent<R>(this TypedTableBase<R> T) where R:DataRow{
+        public static List<R> allCurrent<R>(this TypedTableBase<R> T) where R : DataRow {
             return (from R r in T.Rows where r.RowState != DataRowState.Deleted select r).ToList();
         }
 
@@ -822,8 +1069,10 @@ namespace mdl {
         /// <param name="T"></param>
         public static void RemoveFalseUpdates(this DataTable T) {
             foreach (DataRow r in T.Rows) {
-                if (r.RowState != DataRowState.Modified) continue;
-                if (PostData.CheckForFalseUpdate(r)) r.AcceptChanges();
+                if (r.RowState != DataRowState.Modified)
+                    continue;
+                if (r.IsFalseUpdate())
+                    r.AcceptChanges();
             }
         }
 
@@ -832,7 +1081,7 @@ namespace mdl {
         /// </summary>
         /// <param name="T"></param>
         /// <param name="filter"></param>
-        public static void setStaticFilter(this DataTable T, string filter) => T.ExtendedProperties["filter"] = filter;
+        public static void SetStaticFilter(this DataTable T, object filter) => T.ExtendedProperties["filter"] = filter;
 
 
 
@@ -852,7 +1101,8 @@ namespace mdl {
         /// <param name="C"></param>
         /// <returns></returns>
         public static int GetMaxLen(this DataColumn C) {
-            if (C == null) return 32767;
+            if (C == null)
+                return 32767;
             if (C.DataType.ToString() == "System.Decimal") {
                 return 20;
             }
@@ -869,8 +1119,9 @@ namespace mdl {
                 return 5;
             }
 
-            if (C.ExtendedProperties["maxstringlen"] == null) return 2147483647;
-            return (int) C.ExtendedProperties["maxstringlen"];
+            if (C.ExtendedProperties["maxstringlen"] == null)
+                return 2147483647;
+            return (int)C.ExtendedProperties["maxstringlen"];
         }
 
         /// <summary>
@@ -878,7 +1129,7 @@ namespace mdl {
         /// </summary>
         public delegate bool FilterRowsDelegate(DataRow r, string listType);
 
-        
+
         /// <summary>
         /// Add a filter function to a DataTable, that will be used when 
         ///  the table will be displayed in grids
@@ -889,7 +1140,7 @@ namespace mdl {
             T.ExtendedProperties["FilterFunction"] = filter;
         }
 
-      
+
         public static FilterRowsDelegate getFilterFunction(this DataTable T) {
             return T.ExtendedProperties["FilterFunction"] as FilterRowsDelegate;
         }
@@ -908,8 +1159,9 @@ namespace mdl {
         /// <param name="C"></param>
         /// <returns></returns>
         public static bool IsDenyNull(this DataColumn C) {
-            if (C.ExtendedProperties["DenyNull"] == null) return false;
-            return ((bool) C.ExtendedProperties["DenyNull"]);
+            if (C.ExtendedProperties["DenyNull"] == null)
+                return false;
+            return ((bool)C.ExtendedProperties["DenyNull"]);
         }
 
 
@@ -921,16 +1173,114 @@ namespace mdl {
         /// <param name="deny"></param>
         public static void SetDenyZero(this DataColumn c, bool deny = true) => c.ExtendedProperties["DenyZero"] = deny;
 
-         /// <summary>
+        /// <summary>
         ///  Returns true if a DataColumn is denied to store zero values
         /// </summary>
         /// <param name="C"></param>
         /// <returns></returns>
         public static bool IsDenyZero(this DataColumn C) {
-            if (C.ExtendedProperties["DenyZero"] == null) return false;
-            return ((bool) C.ExtendedProperties["DenyZero"]);
+            if (C.ExtendedProperties["DenyZero"] == null)
+                return false;
+            return ((bool)C.ExtendedProperties["DenyZero"]);
         }
 
+
+
+        /// <summary>
+        /// Gets the expression that has been assigned to a DataColumn
+        /// </summary>
+        /// <param name="C"></param>
+        /// <returns></returns>
+        public static string GetExpression(this DataColumn C) {
+            if (!(C.ExtendedProperties[IsTempColumn] is string))
+                return null;
+            var s = C.ExtendedProperties[IsTempColumn].ToString();
+            if (s == "")
+                return null;
+            return s;
+        }
+
+
+        /// <summary>
+        /// Gets the expression that has been assigned to a DataColumn
+        /// </summary>
+        /// <param name="C"></param>
+        /// <returns></returns>
+        public static MetaExpression GetMetaExpression(this DataColumn C) {
+            return C.ExtendedProperties[IsTempColumn] as MetaExpression;
+        }
+
+
+
+        /// <summary>
+        /// Assign an expression to a given DataColumn. After this operation,
+        ///  the DataColumn is no longer considered "real"
+        /// </summary>
+        /// <param name="C"></param>
+        /// <param name="S">string (table.column) or MetaExpression</param>
+        public static void SetExpression(this DataColumn C, object S) {
+            C.ExtendedProperties[IsTempColumn] = S;
+        }
+
+        private const string IsTempColumn = "IsTemporaryColumn";
+
+        /// <summary>
+        /// Tells if a column is temporary, i.e. is not real.
+        /// </summary>
+        /// <param name="C"></param>
+        /// <returns></returns>
+        public static bool IsTemporary(this DataColumn C) {
+            return !C.IsReal();
+        }
+
+
+        /// <summary>
+        ///  Determines wheter a DataColumn is real or not. For example,
+        ///  columns that have been assigned expressions are not real.
+        ///  Also, columns whose name starts with "!" are considered not real.
+        ///  If a column is not real, it is never read/written to DB
+        /// </summary>
+        /// <param name="C"></param>
+        /// <returns></returns>
+        public static bool IsReal(this DataColumn C) {
+            if (C.ColumnName.StartsWith("!"))
+                return false;
+            if (C.ExtendedProperties[IsTempColumn] != null)
+                return false;
+            if (C.Expression == null)
+                return true;
+            if (C.Expression == "")
+                return true;
+            return false;
+        }
+
+
+        /// <summary>
+        /// Gets the Column name to use for posting a given field into DB
+        /// </summary>
+        /// <param name="C"></param>
+        /// <returns>null if column is not for posting</returns>
+        public static string PostingColumnName(this DataColumn C) {
+            //Se non c'è ForPosting Table o PostingColumn la posting column è la stessa
+            if (C.Table.ExtendedProperties["ForPosting"] == null)
+                return C.ColumnName;
+            if (C.ExtendedProperties["ForPosting"] == null)
+                return C.ColumnName;
+            if (C.ExtendedProperties["ForPosting"].ToString() == "")
+                return null;
+            //Altrimenti è la PostingColumn
+            return C.ExtendedProperties["ForPosting"].ToString();
+        }
+
+
+        /// <summary>
+        /// To avoid posting of a field, it's posting col name must be "" (not null)
+        /// </summary>
+        /// <param name="C"></param>
+        /// <param name="ColumnForPosting"></param>
+        public static void SetColumnNameForPosting(this DataColumn C, string ColumnForPosting) {
+            C.ExtendedProperties["ForPosting"] = ColumnForPosting;
+        }
 
         /// <summary>
 		/// Set the table from which T will be read. I.e. T is a virtual ALIAS for tablename.
@@ -961,8 +1311,8 @@ namespace mdl {
         /// </summary>
         /// <param name="T">Table to set as Alias</param>
         public static string tableForPosting(this DataTable T) {
-            return T.ExtendedProperties["ForPosting"]?.ToString() ?? 
-                   T.ExtendedProperties["TableForReading"]?.ToString() ?? 
+            return T.ExtendedProperties["ForPosting"]?.ToString() ??
+                   T.ExtendedProperties["TableForReading"]?.ToString() ??
                    T.TableName;
         }
 
@@ -971,7 +1321,7 @@ namespace mdl {
         /// </summary>
         /// <param name="T"></param>
         /// <param name="r"></param>
-        public static void _setLastSelected(this DataTable T,DataRow r) {
+        public static void _setLastSelected(this DataTable T, DataRow r) {
             T.ExtendedProperties["LastSelectedRow"] = r;
         }
 
@@ -981,10 +1331,13 @@ namespace mdl {
         /// <param name="T"></param>
         /// <returns></returns>
         public static DataRow _getLastSelected(this DataTable T) {
-            var r = (DataRow) T.ExtendedProperties["LastSelectedRow"];
-            if (r == null) return null;
-            if (r.RowState == DataRowState.Deleted) return null;
-            if (r.RowState == DataRowState.Detached) return null;
+            var r = (DataRow)T.ExtendedProperties["LastSelectedRow"];
+            if (r == null)
+                return null;
+            if (r.RowState == DataRowState.Deleted)
+                return null;
+            if (r.RowState == DataRowState.Detached)
+                return null;
             return r;
         }
 
@@ -1001,8 +1354,16 @@ namespace mdl {
         /// Mark this table to not be verified by Security conditions
         /// </summary>
         /// <param name="T"></param>
-        public static void setSkipSecurity(this DataTable T) {
+        public static void SetSkipSecurity(this DataTable T) {
             T.ExtendedProperties["SkipSecurity"] = true;
+        }
+
+        /// <summary>
+        /// Set the table to never be read. It is marked like a cached table that has already been read.
+        /// </summary>
+        /// <param name="T"></param>
+        public static void setCached(this DataTable T) {
+            T.ExtendedProperties["cached"] = "1";
         }
 
         /// <summary>
@@ -1011,8 +1372,9 @@ namespace mdl {
         /// </summary>
         /// <param name="T"></param>
         /// <returns></returns>
-        public static bool isCached(this DataTable T){
-            if (T.ExtendedProperties["cached"]==null) return false;
+        public static bool isCached(this DataTable T) {
+            if (T.ExtendedProperties["cached"] == null)
+                return false;
             return true;
         }
 
@@ -1022,21 +1384,16 @@ namespace mdl {
         /// </summary>
         /// <param name="T"></param>
         /// <returns>true if table should be read</returns>
-        public  static bool canRead(DataTable T){
-            if (T.ExtendedProperties["cached"]==null) return true;
-            if (T.ExtendedProperties["cached"].ToString()=="0")return true;
+        public static bool CanRead(DataTable T) {
+            if (T.ExtendedProperties["cached"] == null)
+                return true;
+            if (T.ExtendedProperties["cached"].ToString() == "0")
+                return true;
             return false;
         }
 
-        /// <summary>
-        /// Table T will never be read. It is marked like a cached table that has already been read.
-        /// </summary>
-        /// <param name="T"></param>
-        public static void lockRead(DataTable T){
-            T.ExtendedProperties["cached"]="1";
-        }
 
-       
+
 
         /// <summary>
         /// Mark a table as cached
@@ -1045,22 +1402,16 @@ namespace mdl {
         /// <param name="filter"></param>
         /// <param name="sort"></param>
         /// <param name="addBlankRow"></param>
-        public static void CacheTable(this DataTable T, string filter = null, string sort = null, bool addBlankRow = false) {
-            GetData.CacheTable(T, filter, sort, addBlankRow);
+        public static void CacheTable(this DataTable T, object filter = null, string sort = null, bool addBlankRow = false) {
+            metaModel.CacheTable(T, filter: filter, sort: sort, addBlankRow);
         }
 
+
+
         /// <summary>
-        /// Set the table to never be read. It is marked like a cached table that has already been read.
+        /// Deny table clearing when a FrehForm is invoked (clear would happen inside DO_GET)
         /// </summary>
-        /// <param name="T"></param>
-        public static void setLockRead(this DataTable T) {
-            T.ExtendedProperties["cached"] = "1";
-        }
-
-        /// <summary>
-		/// Deny table clearing when a FrehForm is invoked (clear would happen inside DO_GET)
-		/// </summary>
-		public static void setDenyClear(this DataTable T) {
+        public static void SetDenyClear(this DataTable T) {
             T.ExtendedProperties["DenyClear"] = "y";
         }
 
@@ -1096,12 +1447,12 @@ namespace mdl {
         /// <param name="child"></param>
         /// <param name="mainTable"></param>
         /// <param name="relationName"></param>
-        public static void setNotEntityChildOf(this DataTable child, DataTable mainTable, string relationName = null) {           
+        public static void setNotEntityChildOf(this DataTable child, DataTable mainTable, string relationName = null) {
             if (relationName == null) {
-                metaModel.addNotEntityChild(mainTable, child);
+                metaModel.AddNotEntityChild(mainTable, child);
             }
             else {
-                metaModel.addNotEntityChild(mainTable, relationName);
+                metaModel.AddNotEntityChild(mainTable, relationName);
             }
         }
 
@@ -1121,15 +1472,17 @@ namespace mdl {
         /// <param name="field">field name</param>
         /// <param name="o">default value wanted</param>
         public static void setDefault(this DataTable T, string field, Object o) {
-            if (!T.Columns.Contains(field)) return;
-            if (o == null) o = DBNull.Value;
+            if (!T.Columns.Contains(field))
+                return;
+            if (o == null)
+                o = DBNull.Value;
             if (o.GetType() == T.Columns[field].DataType || o == DBNull.Value) {
                 T.Columns[field].DefaultValue = o;
                 return;
             }
 
             T.Columns[field].DefaultValue =
-                mdl_utils.HelpUi.GetObjectFromString(T.Columns[field].DataType, o.ToString(), "x.y");
+                mdl.HelpUi.GetObjectFromString(T.Columns[field].DataType, o.ToString(), "x.y");
         }
 
         /// <summary>
@@ -1143,6 +1496,27 @@ namespace mdl {
             return GetMax<T>(t.Select(), field);
         }
 
+
+        /// <summary>
+        /// Sets the view Expression for a DataColumn. Expression must be in form table.fieldName
+        /// </summary>
+        /// <param name="C"></param>
+        /// <param name="expr"></param>
+        public static void SetViewExpression(this DataColumn C, string expr) {
+            C.ExtendedProperties["ViewExpression"] = expr;
+        }
+
+
+        /// <summary>
+        /// Gets the view expression assigned to a DataColumn
+        /// </summary>
+        /// <param name="C"></param>
+        /// <returns></returns>
+        public static string ViewExpression(this DataColumn C) {
+            return (string)C.ExtendedProperties["ViewExpression"];
+        }
+
+
         /// <summary>
         /// Get maximum value of a field in a Row collection
         /// </summary>
@@ -1153,20 +1527,23 @@ namespace mdl {
         public static object GetMax<T>(this IEnumerable<DataRow> rows, string field) where T : IComparable {
             object max = DBNull.Value;
             foreach (DataRow r in rows) {
-                if (r.RowState == DataRowState.Deleted) continue;
-                if (r[field] == DBNull.Value) continue;
+                if (r.RowState == DataRowState.Deleted)
+                    continue;
+                if (r[field] == DBNull.Value)
+                    continue;
                 if (max == DBNull.Value) {
                     max = r[field];
                 }
                 else {
                     T x = (T)r[field];
-                    if (x.CompareTo((T)max) > 0) max = x;
+                    if (x.CompareTo((T)max) > 0)
+                        max = x;
                 }
             }
             return max;
         }
 
-        
+
 
         /// <summary>
         /// Get Max+1 of a field in a table, 1 if no row was present
@@ -1189,23 +1566,27 @@ namespace mdl {
         public static object GetMaxPlusOne<T>(this IEnumerable<DataRow> rows, string field) where T : IComparable {
             if (typeof(T) == typeof(decimal)) {
                 object o = GetMax<decimal>(rows, field);
-                if (o == DBNull.Value) return (decimal)1;
+                if (o == DBNull.Value)
+                    return (decimal)1;
                 return ((decimal)o) + 1;
             }
             if (typeof(T) == typeof(int)) {
                 object o = GetMax<int>(rows, field);
-                if (o == DBNull.Value) return (int)1;
+                if (o == DBNull.Value)
+                    return (int)1;
                 return ((int)o) + 1;
             }
             if (typeof(T) == typeof(long)) {
                 object o = GetMax<long>(rows, field);
-                if (o == DBNull.Value) return (long)1;
+                if (o == DBNull.Value)
+                    return (long)1;
                 return ((long)o) + 1;
             }
 
             if (typeof(T) == typeof(double)) {
                 object o = GetMax<double>(rows, field);
-                if (o == DBNull.Value) return (double)1;
+                if (o == DBNull.Value)
+                    return (double)1;
                 return ((double)o) + 1;
             }
 
@@ -1222,14 +1603,17 @@ namespace mdl {
         public static object GetMin<T>(this IEnumerable<DataRow> rows, string field) where T : IComparable {
             object min = DBNull.Value;
             foreach (DataRow r in rows) {
-                if (r.RowState == DataRowState.Deleted) continue;
-                if (r[field] == DBNull.Value) continue;
+                if (r.RowState == DataRowState.Deleted)
+                    continue;
+                if (r[field] == DBNull.Value)
+                    continue;
                 if (min == DBNull.Value) {
                     min = r[field];
                 }
                 else {
                     T x = (T)r[field];
-                    if (x.CompareTo((T)min) < 0) min = x;
+                    if (x.CompareTo((T)min) < 0)
+                        min = x;
                 }
             }
             return min;
@@ -1288,55 +1672,55 @@ namespace mdl {
         public static object GetSum<T>(this IEnumerable<DataRow> rows, string field) where T : IComparable {
             if (typeof(T) == typeof(decimal)) {
                 return (from DataRow r in rows
-                    where r.RowState != DataRowState.Deleted & r[field] != DBNull.Value
-                    select (Decimal)r[field]).Sum();
+                        where r.RowState != DataRowState.Deleted & r[field] != DBNull.Value
+                        select (Decimal)r[field]).Sum();
             }
             if (typeof(T) == typeof(int)) {
                 return (from DataRow r in rows
-                    where r.RowState != DataRowState.Deleted & r[field] != DBNull.Value
-                    select (int)r[field]).Sum();
+                        where r.RowState != DataRowState.Deleted & r[field] != DBNull.Value
+                        select (int)r[field]).Sum();
             }
             if (typeof(T) == typeof(long)) {
                 return (from DataRow r in rows
-                    where r.RowState != DataRowState.Deleted & r[field] != DBNull.Value
-                    select (long)r[field]).Sum();
+                        where r.RowState != DataRowState.Deleted & r[field] != DBNull.Value
+                        select (long)r[field]).Sum();
             }
 
             if (typeof(T) == typeof(double)) {
                 return (from DataRow r in rows
-                    where r.RowState != DataRowState.Deleted & r[field] != DBNull.Value
-                    select (double)r[field]).Sum();
+                        where r.RowState != DataRowState.Deleted & r[field] != DBNull.Value
+                        select (double)r[field]).Sum();
             }
             throw new Exception($"Il tipo {typeof(T)} non è supportato dalla funzione GetSum()");
         }
 
-        
+
 
         /// <summary>
-		/// Add a selector-column to the table. AutoIncrement columns are calculated between
-		///  equal selectors-column rows
-		/// </summary>
-		/// <param name="T"></param>
-		/// <param name="columnName"></param>
+        /// Add a selector-column to the table. AutoIncrement columns are calculated between
+        ///  equal selectors-column rows
+        /// </summary>
+        /// <param name="T"></param>
+        /// <param name="columnName"></param>
         /// <param name="mask"></param>
-        public static void setSelector(this DataTable T, string columnName, UInt64 mask = 0) {
+        public static void SetSelector(this DataTable T, string columnName, UInt64 mask = 0) {
             if (mask == 0) {
-                RowChange.SetSelector(T, columnName);
+                RowChange.setSelector(T, columnName);
             }
             else {
-                RowChange.SetSelector(T, columnName, mask);
+                RowChange.setSelector(T, columnName, mask);
             }
         }
 
-   
+
 
         /// <summary>
         /// Remove a main selector in a table
         /// </summary>
         /// <param name="T"></param>
         /// <param name="columnName"></param>
-        public static void clearSelector(this DataTable T, string columnName) {
-            RowChange.ClearSelector(T, columnName);
+        public static void ClearSelector(this DataTable T, string columnName) {
+            RowChange.clearSelector(T, columnName);
         }
 
         /// <summary>
@@ -1346,17 +1730,8 @@ namespace mdl {
         /// <param name="sourceColumn">autoincrement column</param>
         /// <param name="columnName">selector column</param>
         /// <param name="mask"></param>
-        public static void setMySelector(this DataTable T, string sourceColumn, string columnName, UInt64 mask) {
-            RowChange.SetMySelector(T.Columns[sourceColumn], columnName, mask);
-        }
-
-        /// <summary>
-        /// Remove a selector from a column 
-        /// </summary>
-        /// <param name="T"></param>
-        /// <param name="columnName"></param>
-        public static void clearMySelector(this DataTable T, string columnName) {
-            RowChange.ClearMySelector(T, columnName);
+        public static void SetSelector(this DataColumn c, string columnName, UInt64 mask = 0) {
+            RowChange.setMySelector(c, columnName, mask);
         }
 
         /// <summary>
@@ -1376,13 +1751,38 @@ namespace mdl {
 		/// if does not exists another row with the same PREFIX for the ID, the newID=1
 		/// else newID = max(ID of same PREFIX-ed rows) + 1
 		/// </remarks>
-		static public void setAutoincrement(this DataTable T, string field,
-                string prefix,
-                string middle,
-                int length,
+		static public void SetAutoincrement(this DataColumn c,
+                string prefix = null,
+                string middle = null,
+                int length = 0,
                 bool linear = false) {
-            var c = T.Columns[field];
-            RowChange.MarkAsAutoincrement(c, prefix, middle, length, linear);
+            RowChange.markAsAutoincrement(c, prefix, middle, length, linear);
+        }
+
+        /// <summary>
+		/// Tells whether a Column is a AutoIncrement 
+		/// </summary>
+		/// <param name="C"></param>
+		/// <returns>true if Column is Auto Increment</returns>
+        static public bool IsAutoIncrement(this DataColumn C) {
+            return RowChange.isAutoIncrement(C);
+        }
+
+        /// <summary>
+        /// Tells whether a Column is a Custom AutoIncrement one
+        /// </summary>
+        /// <param name="C"></param>
+        /// <returns>true if Column is Custom Auto Increment</returns>
+        static public bool IsCustomAutoIncrement(this DataColumn C) {
+            return RowChange.isCustomAutoIncrement(C);
+        }
+
+        /// <summary>
+        /// Removes autoincrement property from a DataColumn
+        /// </summary>
+        /// <param name="C"></param>
+        static internal void clearAutoIncrement(this DataColumn C) {
+            RowChange.clearAutoIncrement(C);
         }
 
         /// <summary>
@@ -1392,7 +1792,7 @@ namespace mdl {
         /// <param name="field"></param>
         static public void clearAutoIncrement(this DataTable T, string field) {
             var c = T.Columns[field];
-            RowChange.ClearAutoIncrement(c);
+            RowChange.clearAutoIncrement(c);
         }
 
         /// <summary>
@@ -1414,7 +1814,7 @@ namespace mdl {
 		/// <param name="field"></param>
 		static public void clearCustomAutoIncrement(this DataTable T, string field) {
             DataColumn c = T.Columns[field];
-            RowChange.ClearCustomAutoIncrement(c);
+            RowChange.clearCustomAutoIncrement(c);
         }
 
         /// <summary>
@@ -1434,7 +1834,7 @@ namespace mdl {
         /// <param name="min"></param>
         public static void setMinimumTempValue(this DataTable T, string field, int min) {
             DataColumn c = T.Columns[field];
-            RowChange.setMinimumTempValue(c, min);
+            RowChange.SetMinimumTempValue(c, min);
         }
 
         /// <summary>
@@ -1444,8 +1844,10 @@ namespace mdl {
         /// <param name="field"></param>
         public static int getMinimumTempValue(this DataTable T, string field) {
             var c = T.Columns[field];
-            if (c.ExtendedProperties["minimumTempValue"] == null) return 0;
-            if (c.ExtendedProperties["minimumTempValue"].GetType() != typeof(int)) return 0;
+            if (c.ExtendedProperties["minimumTempValue"] == null)
+                return 0;
+            if (c.ExtendedProperties["minimumTempValue"].GetType() != typeof(int))
+                return 0;
             return Convert.ToInt32(c.ExtendedProperties["minimumTempValue"]);
         }
 
@@ -1458,24 +1860,6 @@ namespace mdl {
             PostData.SetPostingOrder(T, order);
         }
 
-        /// <summary>
-		/// Tells MDE that a table is temporary and should 
-		///  not be used for calling stored procedure, messages, logs, or updates.
-		/// Temporary tables are never read or written to db by the library
-		/// </summary>
-		/// <param name="T">Table to mark</param>
-		/// <param name="createblankrow">true if a row has to be added to table</param>
-		public static void setTemporaryTable(this DataTable T, bool createblankrow = false) {
-            PostData.MarkAsTemporaryTable(T, createblankrow);
-        }
-
-        /// <summary>
-        /// Undo "setTemporaryTable"
-        /// </summary>
-        /// <param name="T"></param>
-        public static void setRealTable(this DataTable T) {
-            PostData.MarkAsRealTable(T);
-        }
 
 
         /// <summary>
@@ -1483,14 +1867,14 @@ namespace mdl {
         /// </summary>
         /// <param name="r">Row to be evaluated</param>
         /// <param name="C">optional column to evaluate, otherwise all temporary column are evaluated</param>
-        public static void calcTemporaryID(this DataRow r,DataColumn C=null) {
+        public static void calcTemporaryID(this DataRow r, DataColumn C = null) {
             if (C != null) {
-                RowChange.CalcTemporaryID(r, C);
+                RowChange.calcTemporaryID(r, C);
             }
             else {
-                RowChange.CalcTemporaryID(r.Table, r);
+                RowChange.CalcTemporaryID(r);
             }
-            
+
         }
 
         /// <summary>
@@ -1502,10 +1886,10 @@ namespace mdl {
         /// <param name="sample"></param>
         /// <returns></returns>
         public static IEnumerable<R> f_EqObj<R>(this TypedTableBase<R> tab, string field, object sample) where R : DataRow {
-	        var idx = tab.DataSet?.getIndexManager()?.getIndex(tab,field);
-	        if (idx != null) {
-		        return Array.ConvertAll(idx.getRows(idx.hash.getFromDictionary(new Dictionary<string, object>(){{field,q.getField(field,sample)}})), item=>item as R);
-	        }
+            var idx = tab.DataSet?.getIndexManager()?.getIndex(tab, field);
+            if (idx != null) {
+                return Array.ConvertAll(idx.getRows(idx.hash.getFromDictionary(new Dictionary<string, object>() { { field, q.getField(field, sample) } })), item => item as R);
+            }
             return f_EqObj(tab.allCurrent(), field, sample);
         }
 
@@ -1517,10 +1901,10 @@ namespace mdl {
         /// <param name="sample"></param>
         /// <returns></returns>
         public static IEnumerable<DataRow> f_EqObj(this DataTable tab, string field, object sample) {
-	        var idx = tab.DataSet?.getIndexManager()?.getIndex(tab,field);
-	        if (idx != null) {
-		        return idx.getRows(idx.hash.getFromDictionary(new Dictionary<string, object>(){{field, q.getField(field,sample)}}));
-	        }
+            var idx = tab.DataSet?.getIndexManager()?.getIndex(tab, field);
+            if (idx != null) {
+                return idx.getRows(idx.hash.getFromDictionary(new Dictionary<string, object>() { { field, q.getField(field, sample) } }));
+            }
             return f_Eq(tab.Select(), field, sample);
         }
 
@@ -1535,7 +1919,7 @@ namespace mdl {
         public static IEnumerable<R> f_EqObj<R>(this IEnumerable<R> rows, string field, object sample) where R : DataRow {
             var o = MetaExpression.getField(field, sample);
             var m = MetaExpression.eq(field, o);
-            return (from R r in rows where m.getBooleanResult(r) select r);
+            return (from R r in rows where m.getBoolean(r) select r);
         }
 
 
@@ -1565,7 +1949,8 @@ namespace mdl {
                     break;
                 }
             }
-            if (foundRel == null) return null;
+            if (foundRel == null)
+                return null;
             var filterRelation = foundRel(row);
             return table.Filter(filterRelation).FirstOrDefault();
         }
@@ -1596,7 +1981,8 @@ namespace mdl {
                     break;
                 }
             }
-            if (foundRel == null) yield break;
+            if (foundRel == null)
+                yield break;
             var filterRelation = foundRel(row);
             foreach (S result in table.Filter(filterRelation)) {
                 yield return result;
@@ -1641,9 +2027,11 @@ namespace mdl {
                     }
                 }
             }
-            if (foundRel == null) yield break;            
+            if (foundRel == null)
+                yield break;
             var filterRelation = foundRel(row);
-            foreach (S result in table.Filter(filterRelation)) yield return result;            
+            foreach (S result in table.Filter(filterRelation))
+                yield return result;
         }
 
         /// <summary>
@@ -1655,72 +2043,78 @@ namespace mdl {
         /// <param name="table"></param>
         /// <param name="relationName"></param>
         /// <returns></returns>
-        public static IEnumerable<S> related<R,S>(this IEnumerable<R> rows, 
+        public static IEnumerable<S> related<R, S>(this IEnumerable<R> rows,
             MetaTableBase<S> table,
-            string relationName=null) where R: DataRow where S:MetaRow {
+            string relationName = null) where R : DataRow where S : MetaRow {
             // ReSharper disable once PossibleMultipleEnumeration
             R first = rows.First();
             var currTable = first.Table.TableName;
             MetaExpressionGenerator foundRel = null;
-            foreach(DataRelation rel in table.ParentRelations) {
-              if (rel.RelationName == relationName) {
+            foreach (DataRelation rel in table.ParentRelations) {
+                if (rel.RelationName == relationName) {
                     foundRel = MetaExpression.parent(rel);
                     break;
                 }
-              if (rel.ChildTable.TableName == currTable) {
+
+                if (rel.ChildTable.TableName == currTable) {
                     foundRel = MetaExpression.parent(rel);
                     break;
                 }
             }
+
             if (foundRel == null) {
                 foreach (DataRelation rel in table.ChildRelations) {
                     if (rel.RelationName == relationName) {
                         foundRel = MetaExpression.child(rel);
                         break;
                     }
+
                     if (rel.ParentTable.TableName == currTable) {
                         foundRel = MetaExpression.child(rel);
                         break;
                     }
                 }
             }
-            if (foundRel == null) yield break;
+
+            if (foundRel == null)
+                yield break;
             // ReSharper disable once PossibleMultipleEnumeration
-            foreach(R curr in rows) {
+            foreach (R curr in rows) {
                 var filterRelation = foundRel(curr);
-                foreach (S result in table.Filter(filterRelation)) yield return result;
+                foreach (S result in table.Filter(filterRelation))
+                    yield return result;
             }
         }
 
         /// <summary>
-        /// Query table for field  =  object
+        /// Query table for field  =  object, eventually using an index when available
         /// </summary>
         /// <typeparam name="R"></typeparam>
         /// <param name="tab"></param>
         /// <param name="field"></param>
         /// <param name="o"></param>
         /// <returns></returns>
-        public static IEnumerable<R>  f_Eq<R>(this TypedTableBase<R> tab, string field, object o) where R : DataRow {
-	        var idx = tab.DataSet?.getIndexManager()?.getIndex(tab,field);
-	        if (idx != null) {
-		        return Array.ConvertAll(idx.getRows(idx.hash.getFromDictionary(new Dictionary<string, object>(){{field,o}})), item=>item as R);
-	        }
+        public static IEnumerable<R> f_Eq<R>(this TypedTableBase<R> tab, string field, object o) where R : DataRow {
+            var idx = tab.DataSet?.getIndexManager()?.getIndex(tab, field);
+            if (idx != null) {
+                return Array.ConvertAll(idx.getRows(idx.hash.getFromDictionary(new Dictionary<string, object>() { { field, o } })), item => item as R);
+            }
             return f_Eq(tab.allCurrent(), field, o);
         }
 
         /// <summary>
-        /// Query table for field  =  object
+        /// Query table for field  =  object, eventually using an index when available
         /// </summary>
         /// <param name="tab"></param>
         /// <param name="field"></param>
         /// <param name="o"></param>
         /// <returns></returns>
         public static IEnumerable<DataRow> f_Eq(this DataTable tab, string field, object o) {
-	        var idx = tab.DataSet?.getIndexManager()?.getIndex(tab,field);
-	        if (idx != null) {
-		        return idx.getRows(idx.hash.getFromDictionary(new Dictionary<string, object>(){{field,o}}));
-	        }
-	        
+            var idx = tab.DataSet?.getIndexManager()?.getIndex(tab, field);
+            if (idx != null) {
+                return idx.getRows(idx.hash.getFromDictionary(new Dictionary<string, object>() { { field, o } }));
+            }
+
             return f_Eq(tab.Select(), field, o);
         }
 
@@ -1733,8 +2127,8 @@ namespace mdl {
         /// <param name="o"></param>
         /// <returns></returns>
         public static IEnumerable<R> f_Eq<R>(this IEnumerable<R> rows, string field, object o) where R : DataRow {
-	        var m = MetaExpression.eq(field, o);
-            return (from R r in rows where m.getBooleanResult(r) select r);
+            var m = MetaExpression.eq(field, o);
+            return (from R r in rows where m.getBoolean(r) select r);
         }
 
         /// <summary>
@@ -1770,7 +2164,7 @@ namespace mdl {
         /// <returns></returns>
         public static IEnumerable<R> f_Ne<R>(this IEnumerable<R> rows, string field, object o) where R : DataRow {
             var m = MetaExpression.ne(field, o);
-            return (from R r in rows where m.getBooleanResult(r) select r);
+            return (from R r in rows where m.getBoolean(r) select r);
         }
 
         /// <summary>
@@ -1807,7 +2201,7 @@ namespace mdl {
         public static IEnumerable<R> f_NeObj<R>(this IEnumerable<R> rows, string field, object sample) where R : DataRow {
             object o = MetaExpression.getField(field, sample);
             MetaExpression m = MetaExpression.ne(field, o);
-            return (from R r in rows where m.getBooleanResult(r) select r);
+            return (from R r in rows where m.getBoolean(r) select r);
         }
 
         /// <summary>
@@ -1840,7 +2234,7 @@ namespace mdl {
         /// <returns></returns>
         public static IEnumerable<R> f_isNull<R>(this IEnumerable<R> Rows, string field) where R : DataRow {
             MetaExpression m = MetaExpression.isNull(field);
-            return (from R r in Rows where m.getBooleanResult(r) select r);
+            return (from R r in Rows where m.getBoolean(r) select r);
         }
 
         /// <summary>
@@ -1873,7 +2267,7 @@ namespace mdl {
         /// <returns></returns>
         public static IEnumerable<R> f_isNotNull<R>(this IEnumerable<R> Rows, string field) where R : DataRow {
             MetaExpression m = MetaExpression.isNotNull(field);
-            return (from R r in Rows where m.getBooleanResult(r) select r);
+            return (from R r in Rows where m.getBoolean(r) select r);
         }
 
         /// <summary>
@@ -1911,11 +2305,11 @@ namespace mdl {
         /// <param name="R3"></param>
         /// <param name="R4"></param>
         /// <returns></returns>
-        public delegate bool joinCondition4<r1, r2, r3,r4>(r1 R1, r2 R2, r3 R3, r4 R4);
+        public delegate bool joinCondition4<r1, r2, r3, r4>(r1 R1, r2 R2, r3 R3, r4 R4);
 
 
 
-   
+
 
         /// <summary>
         /// Evaluates an inner join between two ienumerables
@@ -1930,12 +2324,13 @@ namespace mdl {
                 where r1 : DataRow where r2 : DataRow {
             foreach (r1 R1 in t1) {
                 foreach (r2 R2 in t2) {
-                    if (joinFun(R1, R2)) yield return new Tuple<r1, r2>(R1, R2);
+                    if (joinFun(R1, R2))
+                        yield return new Tuple<r1, r2>(R1, R2);
                 }
             }
         }
 
-      
+
 
         /// <summary>
         /// Evaluates an outer join between two ienumerables
@@ -1946,20 +2341,21 @@ namespace mdl {
         /// <param name="t2">secondi list to join</param>
         /// <param name="joinFun">condition to apply for the join</param>
         /// <returns></returns>
-        public static IEnumerable<Tuple<r1, r2>> LeftJoin<r1, r2>(this IEnumerable<r1> t1, IEnumerable<r2> t2, joinCondition2<r1,r2> joinFun)
+        public static IEnumerable<Tuple<r1, r2>> LeftJoin<r1, r2>(this IEnumerable<r1> t1, IEnumerable<r2> t2, joinCondition2<r1, r2> joinFun)
                     where r1 : DataRow where r2 : DataRow {
             foreach (r1 R1 in t1) {
                 bool anyFound = false;
-                foreach(r2 R2 in t2) {                    
+                foreach (r2 R2 in t2) {
+                    anyFound = true;
                     if (joinFun(R1, R2)) {
-                        anyFound = true;
                         yield return new Tuple<r1, r2>(R1, R2);
                     }
-                }       
-                if (!anyFound) yield return new Tuple<r1, r2>(R1, null);
+                }
+                if (!anyFound)
+                    yield return new Tuple<r1, r2>(R1, null);
             }
         }
-     
+
 
         /// <summary>
         ///  Evaluates an inner join between a join and another ienumerable
@@ -1971,14 +2367,14 @@ namespace mdl {
         /// <param name="t3">list to join</param>
         /// <param name="joinFun"></param>
         /// <returns></returns>
-        public static IEnumerable<Tuple<r1, r2,r3>> Join<r1, r2,r3>(this IEnumerable<Tuple<r1, r2>> list, IEnumerable<r3> t3, joinCondition3<r1,r2,r3> joinFun)
-                   where r1 : DataRow where r2 : DataRow where r3: DataRow {
-            foreach (var tup in list) {                
+        public static IEnumerable<Tuple<r1, r2, r3>> Join<r1, r2, r3>(this IEnumerable<Tuple<r1, r2>> list, IEnumerable<r3> t3, joinCondition3<r1, r2, r3> joinFun)
+                   where r1 : DataRow where r2 : DataRow where r3 : DataRow {
+            foreach (var tup in list) {
                 foreach (r3 R3 in t3) {
                     if (joinFun(tup.Item1, tup.Item2, R3)) {
-                        yield return new Tuple<r1, r2,r3>(tup.Item1, tup.Item2, R3);
+                        yield return new Tuple<r1, r2, r3>(tup.Item1, tup.Item2, R3);
                     }
-                    
+
                 }
             }
         }
@@ -1998,12 +2394,13 @@ namespace mdl {
             foreach (var tup in list) {
                 bool anyFound = false;
                 foreach (r3 R3 in t3) {
+                    anyFound = true;
                     if (joinFun(tup.Item1, tup.Item2, R3)) {
-                        anyFound = true;
                         yield return new Tuple<r1, r2, r3>(tup.Item1, tup.Item2, R3);
                     }
                 }
-                if (!anyFound) yield return new Tuple<r1, r2, r3>(tup.Item1, tup.Item2, null);
+                if (!anyFound)
+                    yield return new Tuple<r1, r2, r3>(tup.Item1, tup.Item2, null);
             }
         }
 
@@ -2018,13 +2415,13 @@ namespace mdl {
         /// <param name="t4"></param>
         /// <param name="joinFun"></param>
         /// <returns></returns>
-        public static IEnumerable<Tuple<r1, r2, r3,r4>> Join<r1, r2, r3,r4>(this IEnumerable<Tuple<r1, r2,r3>> list, IEnumerable<r4> t4, 
-                            joinCondition4<r1, r2, r3,r4> joinFun)
+        public static IEnumerable<Tuple<r1, r2, r3, r4>> Join<r1, r2, r3, r4>(this IEnumerable<Tuple<r1, r2, r3>> list, IEnumerable<r4> t4,
+                            joinCondition4<r1, r2, r3, r4> joinFun)
                    where r1 : DataRow where r2 : DataRow where r3 : DataRow where r4 : DataRow {
             foreach (var tup in list) {
                 foreach (r4 R4 in t4) {
-                    if (joinFun(tup.Item1, tup.Item2, tup.Item3,R4)) {
-                        yield return new Tuple<r1, r2, r3,r4>(tup.Item1, tup.Item2, tup.Item3, R4);
+                    if (joinFun(tup.Item1, tup.Item2, tup.Item3, R4)) {
+                        yield return new Tuple<r1, r2, r3, r4>(tup.Item1, tup.Item2, tup.Item3, R4);
                     }
                 }
             }
@@ -2052,29 +2449,23 @@ namespace mdl {
                         yield return new Tuple<r1, r2, r3, r4>(tup.Item1, tup.Item2, tup.Item3, R4);
                     }
                 }
-                if (!anyFound) yield return new Tuple<r1, r2, r3, r4>(tup.Item1, tup.Item2, tup.Item3, null);
+                if (!anyFound)
+                    yield return new Tuple<r1, r2, r3, r4>(tup.Item1, tup.Item2, tup.Item3, null);
             }
         }
 
 
-       
+
         /// <summary>
         /// Return true if table has any row 
         /// </summary>
         /// <param name="t"></param>
         /// <returns></returns>
-        public static bool _hasRows(this DataTable t) {
+        public static bool hasRows(this DataTable t) {
             return t?.Rows.Count > 0;
         }
 
-        /// <summary>
-        /// Return true if table has no row 
-        /// </summary>
-        /// <param name="t"></param>
-        /// <returns></returns>
-        public static bool _isEmpty(this DataTable t) {
-            return t==null || t.Rows.Count == 0;
-        }
+
 
         /// <summary>
         /// Check if collection is not empty
@@ -2100,8 +2491,9 @@ namespace mdl {
         /// <typeparam name="r"></typeparam>
         /// <param name="collection"></param>
         /// <param name="operation"></param>
-        public static void _forEach<r>(this IEnumerable<r> collection, Action<r> operation)  {
-            if (collection == null) return;
+        public static void _forEach<r>(this IEnumerable<r> collection, Action<r> operation) {
+            if (collection == null)
+                return;
             foreach (r R in collection) {
                 operation(R);
             }
@@ -2112,7 +2504,7 @@ namespace mdl {
         /// Get names of all column given
         /// </summary>
         /// <param name="collection"></param>
-        public static string[] _names(this DataColumnCollection collection)  {
+        public static string[] _names(this DataColumnCollection collection) {
             var res = new List<string>();
             foreach (DataColumn c in collection) {
                 res.Add(c.ColumnName);
@@ -2121,15 +2513,9 @@ namespace mdl {
             return res.ToArray();
         }
 
-        /// <summary>
-        /// Do something for each DataColumn
-        /// </summary>
-        /// <param name="collection"></param>
-        /// <param name="operation"></param>
-        public static void _forEach(this DataColumnCollection collection, Action<DataColumn> operation)  {
-            if (collection == null) return;
-            foreach (DataColumn c in collection) {
-                operation(c);
+        public static void _forEach(this DataSet d, Action<DataTable> operation) {
+            foreach (DataTable t in d.Tables) {
+                operation(t);
             }
         }
 
@@ -2137,14 +2523,37 @@ namespace mdl {
         /// Do something for each DataColumn
         /// </summary>
         /// <param name="collection"></param>
-        /// <param name="condition"></param>
-        public static bool _any(this DataColumnCollection collection, Func<DataColumn,bool> condition)  {
-            if (collection == null) return false;
+        /// <param name="operation"></param>
+        public static void _forEach(this DataColumnCollection collection, Action<DataColumn> operation) {
+            if (collection == null)
+                return;
             foreach (DataColumn c in collection) {
-                if (condition(c))return true;
+                operation(c);
             }
-            return false;
         }
+
+
+        public static IEnumerable<DataRelation> Enum(this DataRelationCollection rels) {
+            foreach (DataRelation r in rels)
+                yield return r;
+        }
+        public static IEnumerable<DataColumn> Enum(this DataColumnCollection cols) {
+            foreach (DataColumn c in cols)
+                yield return c;
+        }
+
+        ///// <summary>
+        ///// Do something for each DataColumn
+        ///// </summary>
+        ///// <param name="collection"></param>
+        ///// <param name="condition"></param>
+        //public static bool _any(this DataColumnCollection collection, Func<DataColumn,bool> condition)  {
+        //    if (collection == null) return false;
+        //    foreach (DataColumn c in collection) {
+        //        if (condition(c))return true;
+        //    }
+        //    return false;
+        //}
 
 
         /// <summary>
@@ -2153,7 +2562,7 @@ namespace mdl {
         /// <typeparam name="TR"></typeparam>
         /// <param name="item"></param>
         /// <param name="operation"></param>
-        public static TR __do<TR>(this TR item, Action<TR> operation)  {
+        public static TR __do<TR>(this TR item, Action<TR> operation) {
             operation(item);
             return item;
         }
@@ -2177,8 +2586,9 @@ namespace mdl {
         /// <param name="collection"></param>
         /// <param name="mapFunc">mapping function</param>
         /// <returns></returns>
-        public static S[] _Map<R,S>(this IEnumerable<R> collection, Func<R,S> mapFunc) {
-            return (from R r in collection select mapFunc(r)).ToArray();
+        public static S[] Map<R, S>(this IEnumerable<R> collection, Func<R, S> mapFunc) {
+            return collection.Select(mapFunc).ToArray();
+            //return (from R r in collection select mapFunc(r)).ToArray();
         }
 
         /// <summary>
@@ -2189,9 +2599,9 @@ namespace mdl {
         /// <param name="collection"></param>
         /// <param name="keyFunc">mapping function</param>
         /// <returns></returns>
-        public static Dictionary<TS,TR> _KeyBy<TR, TS>(this IEnumerable<TR> collection, Func<TR, TS> keyFunc) {
+        public static Dictionary<TS, TR> _KeyBy<TR, TS>(this IEnumerable<TR> collection, Func<TR, TS> keyFunc) {
             var dict = new Dictionary<TS, TR>();
-            foreach(var r in collection) {
+            foreach (var r in collection) {
                 dict[keyFunc(r)] = r;
             }
             return dict;
@@ -2215,7 +2625,7 @@ namespace mdl {
         public static void _forEach<TR>(this IEnumerable<TR> collection, operateOnRowIndex<TR> operation) {
             var i = 0;
             foreach (var r in collection) {
-                operation(r,i);
+                operation(r, i);
                 i++;
             }
         }
@@ -2226,8 +2636,8 @@ namespace mdl {
         /// <param name="collection"></param>
         /// <param name="field"></param>
         /// <returns></returns>
-        public static IEnumerable<object>  _Pick<TR>(this IEnumerable<TR> collection, string field) {
-            return collection.Select(r => q.getField(field,r));
+        public static IEnumerable<object> Pick<TR>(this IEnumerable<TR> collection, string field) {
+            return collection.Select(r => q.getField(field, r));
         }
 
         /// <summary>
@@ -2237,10 +2647,12 @@ namespace mdl {
         /// <param name="collection"></param>
         /// <param name="filter"></param>
         /// <returns></returns>
-        public static IEnumerable<TR> _Filter<TR>(this IEnumerable<TR> collection, Predicate<TR> filter)  {
-            if (collection == null) yield break;
+        public static IEnumerable<TR> _Filter<TR>(this IEnumerable<TR> collection, Predicate<TR> filter) {
+            if (collection == null)
+                yield break;
             foreach (var r in collection) {
-                if (filter(r)) yield return r;
+                if (filter(r))
+                    yield return r;
                 //if(filter(R))result.Add(R);
             }
             //return result;
@@ -2264,7 +2676,7 @@ namespace mdl {
         /// <param name="collection"></param>
         /// <param name="filter"></param>
         /// <returns></returns>
-        public static TR _Find<TR>(this IEnumerable<TR> collection, Predicate<TR> filter) where TR:class {
+        public static TR _Find<TR>(this IEnumerable<TR> collection, Predicate<TR> filter) where TR : class {
             return collection?.FirstOrDefault(r => filter(r));
         }
 
@@ -2275,12 +2687,14 @@ namespace mdl {
         /// <param name="collection"></param>
         /// <returns></returns>
         public static IEnumerable<TR> _Tail<TR>(this IEnumerable<TR> collection) where TR : class {
-            if (collection == null) yield break ;
+            if (collection == null)
+                yield break;
             var first = true;
             foreach (var r in collection) {
-                if (!first) yield return r;
+                if (!first)
+                    yield return r;
                 first = false;
-            }            
+            }
         }
 
         /// <summary>
@@ -2290,14 +2704,16 @@ namespace mdl {
         /// <param name="collection"></param>
         /// <returns></returns>
         public static IEnumerable<TR> _Initial<TR>(this IEnumerable<TR> collection) where TR : class {
-            if (collection == null) yield break ;
+            if (collection == null)
+                yield break;
             TR lastElement = null;
             foreach (var r in collection) {
-                if (lastElement != null) yield return lastElement;
+                if (lastElement != null)
+                    yield return lastElement;
                 lastElement = r;
-            }            
+            }
         }
-        
+
 
         /// <summary>
         /// Return first row of a collection
@@ -2306,7 +2722,7 @@ namespace mdl {
         /// <param name="collection"></param>
         /// <returns></returns>
         public static TR _First<TR>(this IEnumerable<TR> collection) where TR : class {
-            return collection?.FirstOrDefault();            
+            return collection?.FirstOrDefault();
         }
 
         /// <summary>
@@ -2350,9 +2766,9 @@ namespace mdl {
         /// <param name="accumulator">function to evaluates, first parameter is previous value of the aggregation, second is current element </param>
         /// <param name="startValue">Start value for the aggregation function</param>
         /// <returns></returns>
-        public static TR _Reduce<TR,TS>(this IEnumerable<TS> collection, accumulate<TR,TS> accumulator, TR startValue ){
+        public static TR _Reduce<TR, TS>(this IEnumerable<TS> collection, accumulate<TR, TS> accumulator, TR startValue) {
             var curr = startValue;
-            foreach(var s in collection) {
+            foreach (var s in collection) {
                 curr = accumulator(curr, s);
             }
             return curr;
@@ -2375,7 +2791,7 @@ namespace mdl {
                 }
                 else {
                     curr = accumulator(curr, s);
-                }                
+                }
             }
             return curr;
         }
@@ -2389,7 +2805,8 @@ namespace mdl {
         /// <returns></returns>
         public static int _FindIndex<TR>(this TR[] collection, Predicate<TR> condition) {
             for (var i = 0; i < collection.Length; i++) {
-                if (condition(collection[i])) return i;
+                if (condition(collection[i]))
+                    return i;
             }
             return -1;
         }
@@ -2403,8 +2820,9 @@ namespace mdl {
         /// <param name="condition"></param>
         /// <returns></returns>
         public static int _FindLastIndex<r>(this r[] collection, Predicate<r> condition) {
-            for (var i = collection.Length; i >=0; i--) {
-                if (condition(collection[i])) return i;
+            for (var i = collection.Length; i >= 0; i--) {
+                if (condition(collection[i]))
+                    return i;
             }
             return -1;
         }
@@ -2418,8 +2836,8 @@ namespace mdl {
         /// <param name="condition">Predicate for searching rows in the collection</param>
         /// <param name="_then">action to be taken when any row is found, it takes the first found row as a parameter</param>
         /// <param name="_else">action to be taken  when no row is found</param>
-        public static void _IfExists<r>(this IEnumerable<r> collection, Predicate<r> condition, 
-                        Action<r> _then=null, Action _else=null) where r:class{
+        public static void _IfExists<r>(this IEnumerable<r> collection, Predicate<r> condition,
+                        Action<r> _then = null, Action _else = null) where r : class {
             var found = collection._Find(condition);
             if (found != null) {
                 _then?.Invoke(found);
@@ -2439,7 +2857,8 @@ namespace mdl {
         public static void _IfNotExists<r>(this IEnumerable<r> collection, Predicate<r> condition,
                    Action _then) where r : class {
             var found = collection._Find(condition);
-            if (found == null) _then();            
+            if (found == null)
+                _then();
         }
 
         /// <summary>
@@ -2451,15 +2870,17 @@ namespace mdl {
         /// <param name="parentTable"></param>
         /// <param name="condition"></param>
         /// <returns></returns>
-        public static IEnumerable<TR> _whereParent<TR,TS>(this IEnumerable<TR> rows, MetaTableBase<TS> parentTable,Predicate<TS> condition)
-                where TR:DataRow where TS:MetaRow {
-             foreach(var r in rows) {
+        public static IEnumerable<TR> _whereParent<TR, TS>(this IEnumerable<TR> rows, MetaTableBase<TS> parentTable, Predicate<TS> condition)
+                where TR : DataRow where TS : MetaRow {
+            foreach (var r in rows) {
                 var parentRow = r.parent(parentTable);
-                if (parentRow == null) continue;
-                if (condition(parentRow)) yield return r;
+                if (parentRow == null)
+                    continue;
+                if (condition(parentRow))
+                    yield return r;
             }
         }
-       
+
         ///// <summary>
         ///// Filters a collection with a predicate
         ///// </summary>
@@ -2478,12 +2899,12 @@ namespace mdl {
         /// <param name="expr"></param>
         /// <returns></returns>
         public static object[] _Select(this object[] source,
-             params object[] expr         
+             params object[] expr
             ) {
-            var expressions = expr._Map(o => MetaExpression.fromObject(o, true));
+            var expressions = expr.Map(o => MetaExpression.fromObject(o, true));
             var l = new List<MetaExpression>();
             var someGroupingFound = false;
-            foreach(var e in expressions) {
+            foreach (var e in expressions) {
                 if (e.isGroupingFunction()) {
                     someGroupingFound = true;
                 }
@@ -2515,18 +2936,18 @@ namespace mdl {
              MetaExpression[] expressions,
             MetaExpression[] groupBy = null
             ) {
-           
+
             int noName = 0;
-            var result= new List<RowObject>();
-            
+            var result = new List<RowObject>();
+
 
             if (groupBy == null) {
-                if (expressions == null || expressions.Length==0) {                    
+                if (expressions == null || expressions.Length == 0) {
                     return source;
                 }
                 var lookup2 = new Dictionary<string, int>();
                 var len2 = expressions.Length;
-                for (var i=0;i< len2; i++) {
+                for (var i = 0; i < len2; i++) {
                     var field = expressions[i].Alias;
                     if (field == null) {
                         noName += 1;
@@ -2539,10 +2960,10 @@ namespace mdl {
                     for (var i = 0; i < len2; i++) {
                         arr[i] = expressions[i].apply(r);
                     }
-                    result.Add(new RowObject(lookup2,arr));                    
+                    result.Add(new RowObject(lookup2, arr));
                 }
                 return result.ToArray();
-                
+
             }
             //int handler2 = metaprofiler.StartTimer("source.GroupBy");
             var groups = source.GroupBy(p => namedKeyList(p, groupBy));
@@ -2559,7 +2980,7 @@ namespace mdl {
                 lookup[field] = i;
             }
 
-            foreach (var g in groups) {                
+            foreach (var g in groups) {
                 var rowsFromGroup = g.ToArray();
                 var arr = new object[len];
                 for (var i = 0; i < len; i++) {
@@ -2583,6 +3004,7 @@ namespace mdl {
 
 
     }
+
 
     /// <summary>
     /// Table reference, used for joining table. 
@@ -2868,7 +3290,7 @@ namespace mdl {
                 foreach (R2 R2 in _source2) {
                     Tuple<R1, R2> t = new Tuple<R1, R2>(R1, R2);
 
-                    if (_condition.getBooleanResult(t)) {
+                    if (_condition.getBoolean(t)) {
                         someFound = true;
                         yield return t;
                     }
@@ -2887,7 +3309,7 @@ namespace mdl {
                 foreach (R2 R2 in _source2) {
                     Tuple<R1, R2> t = new Tuple<R1, R2>(R1, R2);
 
-                    if (_condition.getBooleanResult(t)) {
+                    if (_condition.getBoolean(t)) {
                         someFound = true;
                         yield return t;
                     }
@@ -3013,7 +3435,7 @@ namespace mdl {
                 foreach (R3 r3 in _source2) {
                     Tuple<R1, R2,R3> t = new Tuple<R1, R2, R3>(r.Item1, r.Item2,r3);
 
-                    if (_condition.getBooleanResult(t)) {
+                    if (_condition.getBoolean(t)) {
                         someFound = true;
                         yield return t;
                     }
@@ -3032,7 +3454,7 @@ namespace mdl {
                 foreach (R3 r3 in _source2) {
                     Tuple<R1, R2, R3> t = new Tuple<R1, R2, R3>(r.Item1, r.Item2, r3);
 
-                    if (_condition.getBooleanResult(t)) {
+                    if (_condition.getBoolean(t)) {
                         someFound = true;
                         yield return t;
                     }
@@ -3115,7 +3537,7 @@ namespace mdl {
                 foreach (R4 r4 in _source2) {
                     Tuple<R1, R2, R3,R4> t = new Tuple<R1, R2, R3,R4>(r.Item1, r.Item2, r.Item3,r4);
 
-                    if (_condition.getBooleanResult(t)) {
+                    if (_condition.getBoolean(t)) {
                         someFound = true;
                         yield return t;
                     }
@@ -3134,7 +3556,7 @@ namespace mdl {
                 foreach (R4 r4 in _source2) {
                     Tuple<R1, R2, R3, R4> t = new Tuple<R1, R2, R3, R4>(r.Item1, r.Item2, r.Item3, r4);
 
-                    if (_condition.getBooleanResult(t)) {
+                    if (_condition.getBoolean(t)) {
                         someFound = true;
                         yield return t;
                     }
@@ -3336,17 +3758,17 @@ namespace mdl {
         /// <param name="env">environment (use a DataAccess for this)</param>
         /// <param name="sort">row sorting</param>
         /// <returns></returns>
-        public R First(MetaExpression filter, object env = null, string sort = null) {
+        public R First(MetaExpression filter, ISecurity env = null, string sort = null) {
             if (sort != null) {
                 R[] found = Sort(sort);
                 foreach (R r in found) {
-                    if (r.RowState != DataRowState.Deleted && filter.getBooleanResult(r, env)) {
+                    if (r.RowState != DataRowState.Deleted && filter.getBoolean(r, env)) {
                         return r;
                     }
                 }
             }
             foreach (R r in Rows) {
-                if (r.RowState != DataRowState.Deleted && filter.getBooleanResult(r)) {
+                if (r.RowState != DataRowState.Deleted && filter.getBoolean(r)) {
                     return r;
                 }
             }
@@ -3358,7 +3780,7 @@ namespace mdl {
         /// </summary>
         /// <returns></returns>
         public string ColumnNameList() {
-            return QueryCreator.ColumnNameList(this);
+            return QueryCreator.RealColumnNameList(this);
         }
         /// <summary>
         /// get a sorted array of rows 
@@ -3380,10 +3802,10 @@ namespace mdl {
         /// <param name="sort">sorting</param>
         /// <param name="all">if all=true also deleted rows are retrived</param>
         /// <returns></returns>
-        public R[] Filter(MetaExpression filter, object env = null, string sort = null, bool all = false) {
+        public R[] Filter(MetaExpression filter, ISecurity env = null, string sort = null, bool all = false) {
             if (sort != null) {
                 return (from R r in Sort(sort)
-                        where compatibleState(r.RowState, all) && filter.getBooleanResult(r, env)
+                        where compatibleState(r.RowState, all) && filter.getBoolean(r, env)
                         select r as R)
                         .ToArray();
             }
@@ -3400,7 +3822,7 @@ namespace mdl {
 	            }
             }
 
-            return (from R r in Rows where compatibleState(r.RowState, all) && filter.getBooleanResult(r, env) select r).ToArray();
+            return (from R r in Rows where compatibleState(r.RowState, all) && filter.getBoolean(r, env) select r).ToArray();
 
         }
 
@@ -3438,12 +3860,13 @@ namespace mdl {
         /// <returns></returns>
         public R[] detachedSqlRunFromDb(IDataAccess Conn, string sql, int timeout = -1) {
             var t = Clone();
-            var rows = Conn.SQLRUN_INTO_EMPTY_TABLE(t, sql,timeout);
+            Conn.ExecuteQueryIntoEmptyTable(t, sql,timeout).GetAwaiter().GetResult();
+            
             //var rows = Conn.readObjectArray(sql, timeout, out errMess);
             //if (errMess != null) return null;
-            if (rows == null) return null;
+            if (t.Rows.Count==0) return null;
             var res = new List<R>();
-            foreach (var genericRow in rows) {
+            foreach (DataRow genericRow in t.Rows) {
                 var r = NewRow() as R;
                 foreach (DataColumn c in Columns) {
                     r[c.ColumnName] = genericRow[c.ColumnName];
@@ -3466,7 +3889,7 @@ namespace mdl {
         /// <returns></returns>
         public R[] getDetachedRowsFromDb(IDataAccess Conn, MetaExpression filter, int timeout = -1) {
             if (filter!=null && filter.isFalse())return new R[0];
-            string sFilter = filter?.toSql(Conn.GetQueryHelper(), Conn);
+            string sFilter = filter?.toSql(Conn.GetQueryHelper(), Conn.Security);
             return getDetachedRowsFromDb(Conn, sFilter, timeout);
         }
 
@@ -3481,7 +3904,7 @@ namespace mdl {
             if (filter!=null && filter.isFalse())return new R[0];
             R[] found = Filter(filter);
             if (found != null && found.Length > 0) return found;
-            string sFilter = filter?.toSql(Conn.GetQueryHelper(), Conn);
+            string sFilter = filter?.toSql(Conn.GetQueryHelper(), Conn.Security);
             return getFromDb(Conn, sFilter, timeout);
         }
 
@@ -3494,7 +3917,7 @@ namespace mdl {
         /// <returns></returns>
         public R[] getFromDb(IDataAccess conn, MetaExpression filter, int timeout = -1) {
             if (filter!=null && filter.isFalse())return new R[0];
-            string sFilter = filter?.toSql(conn.GetQueryHelper(), conn);
+            string sFilter = filter?.toSql(conn.GetQueryHelper(), conn.Security);
             return getFromDb(conn, sFilter, timeout);
         }
 
@@ -3568,7 +3991,7 @@ namespace mdl {
         public virtual R [] readTableJoined(IDataAccess conn, string table2, 
             MetaExpression filterTable1, MetaExpression filterTable2, 
             params string[] columns) {
-            string sql = conn.getJoinSql(this, table2, filterTable1, filterTable2, columns);       
+            string sql = conn.GetJoinSql(this, table2, filterTable1, filterTable2, columns);       
             return sqlMergeFromDb(conn,sql);
         }
 
@@ -3584,7 +4007,7 @@ namespace mdl {
         public virtual R [] safeReadTableJoined(IDataAccess conn, string table2, 
             MetaExpression filterTable1, MetaExpression filterTable2, 
             params string[] columns) {
-            string sql = conn.getJoinSql(this, table2, filterTable1, filterTable2, columns);       
+            string sql = conn.GetJoinSql(this, table2, filterTable1, filterTable2, columns);       
             return sqlSafeMergeFromDb(conn,sql);
         }
 
@@ -3601,7 +4024,7 @@ namespace mdl {
         public virtual R [] readDetachedJoin(IDataAccess conn, string table2, 
             MetaExpression filterTable1, MetaExpression filterTable2, 
             params string[] columns) {
-            string sql = conn.getJoinSql(this, table2, filterTable1, filterTable2, columns);            
+            string sql = conn.GetJoinSql(this, table2, filterTable1, filterTable2, columns);            
             return detachedSqlRunFromDb(conn,sql);
         }
 
@@ -3847,7 +4270,7 @@ namespace mdl {
 		/// <param name="Parent"></param>
 		/// <returns></returns>
 		public bool IsSubEntityOf(DataTable Parent) {
-            return QueryCreator.IsSubEntity(this, Parent);
+            return MetaModel.IsSubEntity(this, Parent);
         }
 
         /// <summary>
@@ -5131,7 +5554,7 @@ namespace mdl {
 			    //return t._Filter(q.mCmp(sample, fields));
 			    if (index == null) {
 				    var filter = q.mCmp(sample, fields);
-				    return (from DataRow  r in t.Rows where MetaTable.compatibleState(r.RowState, false) && filter.getBooleanResult(r) select r).ToArray();
+				    return (from DataRow  r in t.Rows where MetaTable.compatibleState(r.RowState, false) && filter.getBoolean(r) select r).ToArray();
 				    //t._Filter(q.mCmp(keyValues));
 			    }
 		    }
@@ -5143,7 +5566,7 @@ namespace mdl {
 		    if (index == null && autoIndex) index = checkCreateIndex(t, fields, true);
 		    if (index == null) {
 			    var filter = q.mCmp(sample, fields);
-			    return (from DataRow  r in t.Rows where MetaTable.compatibleState(r.RowState, false) && filter.getBooleanResult(r) select r).FirstOrDefault();
+			    return (from DataRow  r in t.Rows where MetaTable.compatibleState(r.RowState, false) && filter.getBoolean(r) select r).FirstOrDefault();
 		    }
 		    return index.getRow(index.hash.getFromObject(sample));
 	    }
@@ -5154,7 +5577,7 @@ namespace mdl {
 		    if (index == null && autoIndex) index = checkCreateIndex(t, fields, false);
 		    if (index == null) {
 			    var filter = q.mCmp(keyValues);
-			    return (from DataRow  r in t.Rows where MetaTable.compatibleState(r.RowState, false) && filter.getBooleanResult(r) select r).ToArray();
+			    return (from DataRow  r in t.Rows where MetaTable.compatibleState(r.RowState, false) && filter.getBoolean(r) select r).ToArray();
 			    //t._Filter(q.mCmp(keyValues));
 		    }
 		    return index.getRows(index.hash.getFromDictionary(keyValues));
@@ -5165,7 +5588,7 @@ namespace mdl {
 		    if (index == null && autoIndex) index = checkCreateIndex(t, fields, true);
 		    if (index == null) {
 			    var filter = q.mCmp(keyValues);
-			    return (from DataRow  r in t.Rows where MetaTable.compatibleState(r.RowState, false) && filter.getBooleanResult(r) select r).FirstOrDefault();
+			    return (from DataRow  r in t.Rows where MetaTable.compatibleState(r.RowState, false) && filter.getBoolean(r) select r).FirstOrDefault();
 		    }
 		    return index.getRow(index.hash.getFromDictionary(keyValues));
 	    }
@@ -5371,13 +5794,13 @@ namespace mdl {
 	        }
         }
         public void resume(bool keepIndexes, params DataTable [] tt) {
-	        int handle =  mdl_utils.metaprofiler.StartTimer("resume indexes");
+	        int handle =  mdl_utils.MetaProfiler.StartTimer("resume indexes");
 	        foreach (var t in tt) {
 		        foreach (var i in getIndexes()) {
 			        if (i.tableName == t.TableName) i.resume(keepIndexes);
 		        }
 	        }
-             mdl_utils.metaprofiler.StopTimer(handle);
+             mdl_utils.MetaProfiler.StopTimer(handle);
         }
 
         
@@ -5473,18 +5896,18 @@ namespace mdl {
 	    }
 
 	    public DataRow [] getRows(DataTable t, object sample, params string[] fields) {
-		    return t._Filter(q.mCmp(sample, fields));
+		    return t.filter(q.mCmp(sample, fields));
 	    }
 
 	    public DataRow getRow(DataTable t, object sample, params string[] fields) {
-		    return t._Filter(q.mCmp(sample, fields)).FirstOrDefault();
+		    return t.filter(q.mCmp(sample, fields)).FirstOrDefault();
 	    }
 
 	    public DataRow[] getRows(DataTable t, Dictionary<string, object> keyValues) {
-		    return t._Filter(q.mCmp(keyValues));
+		    return t.filter(q.mCmp(keyValues));
 	    }
 	    public DataRow getRow(DataTable t, Dictionary<string, object> keyValues) {
-		    return t._Filter(q.mCmp(keyValues)).FirstOrDefault();
+		    return t.filter(q.mCmp(keyValues)).FirstOrDefault();
 	    }
 
 	    public DataRow[] getChildRows(DataRow r, DataRelation rel) {
@@ -5663,13 +6086,7 @@ namespace mdl {
         }
 
       
-        /// <summary>
-        /// Check if this row has been modified. False if it is unchanged 
-        /// </summary>
-        /// <returns></returns>
-        public bool HasChanges() {
-            return PostData.CheckRowForUpdates(this);
-        }
+       
     }
  
 }

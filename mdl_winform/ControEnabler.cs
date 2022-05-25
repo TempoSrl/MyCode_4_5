@@ -149,7 +149,7 @@ namespace mdl_winform {
                 //20/3/18: abilitiamo / disabilitiamo i controlli customautoincrement alla stessa stregua di quelli normali
                 //21/3/18 rimuovo ||RowChange.IsCustomAutoIncrement(T.Columns[field]) per non 
                 //  intervenire sulle gestioni custom
-                if (RowChange.IsAutoIncrement(T.Columns[field])) {
+                if (T.Columns[field].IsAutoIncrement()) {
                     //Disable autoincrement properties on insert mode
                     doDisable(c, drawMode == HelpForm.drawmode.insert); //hide autoincrements on insert 
                     return;
@@ -174,7 +174,7 @@ namespace mdl_winform {
             var t1 = mdl_utils.tagUtils.GetStandardTag(c.Tag);
             var t2 = mdl_utils.tagUtils.GetSearchTag(c.Tag);
             if (t1 == t2) {
-                if (!QueryCreator.IsSubEntity(T, _primaryTable)) {
+                if (!MetaModel.IsSubEntity(T, _primaryTable)) {
                     //Disable all controls except subentity fields
                     doDisable(c, false);
                     return;

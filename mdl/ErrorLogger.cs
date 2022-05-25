@@ -6,6 +6,7 @@ using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using mdl_utils;
 
 namespace mdl {
     /// <summary>
@@ -16,8 +17,7 @@ namespace mdl {
         /// <summary>
         /// This is set when a shutdown is necessary
         /// </summary>
-         bool unrecoverableError { get; set; }
-
+        bool unrecoverableError { get; set; }
 
 
         /// <summary>
@@ -44,10 +44,10 @@ namespace mdl {
         /// <param name="dataAccess"></param>
         /// <param name="controller"></param>
         /// <param name="meta"></param>
-        void logException(string main, 
-            Exception exception = null, 
-            ISecurity security=null , 
-            IDataAccess dataAccess=null,
+        void logException(string main,
+            Exception exception = null,
+            ISecurity security = null,
+            IDataAccess dataAccess = null,
             object controller = null,
             IMetaData meta = null);
 
@@ -55,14 +55,14 @@ namespace mdl {
         /// Adds an event to a local log
         /// </summary>
         /// <param name="e"></param>
-        void markEvent(string e);
+        void MarkEvent(string e);
 
 
         /// <summary>
         /// Adds a warn (not an error) to a local log
         /// </summary>
         /// <param name="e"></param>
-        void warnEvent(string e);
+        void WarnEvent(string e);
     }
 
     /// <summary>
@@ -76,6 +76,9 @@ namespace mdl {
             _message = message;
             _type = type;
         }
+
+
+
         /// <summary>
         /// Address where access to db are logged, actually https://ticket.temposrl.it/LiveLog/
         /// </summary>
@@ -87,13 +90,13 @@ namespace mdl {
         public static string errorLogUrl = "https://ticket.temposrl.it/LiveLog/DoEasy.aspx";
 
 
-        public void send() {
+        public void Send() {
             string req = "";
             try {
-                var w = new WebClient {BaseAddress = errorLogBaseAddress};
+                var w = new WebClient { BaseAddress = errorLogBaseAddress };
                 req = $"{errorLogUrl}?{_type}={_message}";
 
-                string URI =errorLogUrl;
+                string URI = errorLogUrl;
                 var reqparm = new System.Collections.Specialized.NameValueCollection {
                         { _type, _message }
                     };
@@ -125,7 +128,7 @@ namespace mdl {
     /// <summary>
     /// Implements logging facilities
     /// </summary>
-    public class ErrorLogger : IErrorLogger {
+    public class ErrorLogger :IErrorLogger {
 
         /// <summary>
         /// Set if application should be closed
@@ -134,7 +137,7 @@ namespace mdl {
         /// <summary>
         /// Default logger for the application
         /// </summary>
-        public static ErrorLogger Logger= new ErrorLogger();
+        public static ErrorLogger Logger = new ErrorLogger();
 
         /// <summary>
         /// Application name used for error logging
@@ -145,7 +148,7 @@ namespace mdl {
         ///  Adds an event to a local log
         /// </summary>
         /// <param name="e"></param>
-        public virtual void markEvent(string e) {
+        public virtual void MarkEvent(string e) {
             var msg = DateTime.Now.ToString("HH:mm:ss.fff") + ":" + e;
             Trace.WriteLine(msg);
             Trace.Flush();
@@ -155,7 +158,7 @@ namespace mdl {
         ///  Adds an event to a local log
         /// </summary>
         /// <param name="e"></param>
-        public virtual void warnEvent(string e) {
+        public virtual void WarnEvent(string e) {
             var msg = $"$${DateTime.Now.ToString("HH:mm:ss.fff")}:{e}";
             Trace.WriteLine(msg);
             Trace.Flush();
@@ -167,9 +170,9 @@ namespace mdl {
         /// <param name="e"></param>
         /// <param name="msg"></param>
         /// <returns></returns>
-        public virtual string formatException(Exception e, string msg="") {
-            msg = msg ?? "";       
-            return $"{DateTime.Now.ToString("HH:mm:ss.fff")}:{msg}\n{QueryCreator.GetErrorString(e)}";
+        public virtual string formatException(Exception e, string msg = "") {
+            msg = msg ?? "";
+            return $"{DateTime.Now.ToString("HH:mm:ss.fff")}:{msg}\n{ErrorLogger.GetErrorString(e)}";
         }
 
 
@@ -183,8 +186,8 @@ namespace mdl {
         /// <param name="controller"></param>
         /// <param name="meta"></param>
         public virtual void logException(string main, Exception exception = null, ISecurity security = null,
-            IDataAccess dataAccess = null , 
-            object  controller= null,
+            IDataAccess dataAccess = null,
+            object controller = null,
             IMetaData meta = null) {
             //string ErrorLogUrl = "http://ticket.temposrl.it/LiveLog/DoEasy.aspx";
             //if (meta != null && security == null) {
@@ -199,83 +202,86 @@ namespace mdl {
 
             string msg = "";
             string errmsg = main ?? "";
-            
-            errmsg = $"AppExecutable:{AppDomain.CurrentDomain.BaseDirectory}{AppDomain.CurrentDomain.SetupInformation?.ApplicationName}\n\r"+errmsg;
-       
-            
+
+            errmsg = $"AppExecutable:{AppDomain.CurrentDomain.BaseDirectory}{AppDomain.CurrentDomain.SetupInformation?.ApplicationBase}\n\r" + errmsg;
+
+
             try {
                 string datacont = "";
                 if (security != null) {
                     if (security.GetSys("datacontabile") != null) {
-                        datacont = security.GetDataContabile().ToString("d");
+                        datacont = ((DateTime)security.GetSys("datacontabile")).ToString("d");
                     }
                     msg +=
-                            "nomedb=" + mdl_utils.Quoting.quotedstrvalue(security.GetSys("database"), true) + ";" +
-                            "server=" + mdl_utils.Quoting.quotedstrvalue(security.GetSys("server"), true) + ";" +
-                            "username=" + mdl_utils.Quoting.quotedstrvalue(security.GetSys("user"), true) + ";" +
-                            "machine=" + mdl_utils.Quoting.quotedstrvalue(security.GetSys("computername"), false) + ";" +
-                            "dep=" + mdl_utils.Quoting.quotedstrvalue(security.GetSys("userdb"), false) + ";" +
-                            "esercizio=" + mdl_utils.Quoting.quotedstrvalue(security.GetSys("esercizio"), false) + ";" +
-                            "datacont=" + mdl_utils.Quoting.quotedstrvalue(datacont, false) + ";";
+                            "nomedb=" + mdl_utils.Quoting.quote(security.GetSys("database"), true) + ";" +
+                            "server=" + mdl_utils.Quoting.quote(security.GetSys("server"), true) + ";" +
+                            "username=" + mdl_utils.Quoting.quote(security.GetSys("user"), true) + ";" +
+                            "machine=" + mdl_utils.Quoting.quote(security.GetSys("computername"), false) + ";" +
+                            "dep=" + mdl_utils.Quoting.quote(security.GetSys("userdb"), false) + ";" +
+                            "esercizio=" + mdl_utils.Quoting.quote(security.GetSys("esercizio"), false) + ";" +
+                            "datacont=" + mdl_utils.Quoting.quote(datacont, false) + ";";
                 }
                 else {
                     msg +=
-                            "username=" + mdl_utils.Quoting.quotedstrvalue(noNull(Environment.UserName), true) + ";" +
+                            "username=" + mdl_utils.Quoting.quote(noNull(Environment.UserName), true) + ";" +
                             "machine=" +
-                             mdl_utils.Quoting.quotedstrvalue(
-                                noNull(Environment.MachineName) + "-" + noNull(DataAccess.GetOSVersion()), false) + ";";
+                             mdl_utils.Quoting.quote(
+                                noNull(Environment.MachineName) + "-" +
+                                noNull(Environment.OSVersion.VersionString), false) + ";";
                 }
 
 
                 string lasterr = dataAccess?.SecureGetLastError();
                 if (!string.IsNullOrEmpty(lasterr)) {
-                    msg += "dberror=" + mdl_utils.Quoting.quotedstrvalue(lasterr, false) + ";";
+                    msg += "dberror=" + mdl_utils.Quoting.quote(lasterr, false) + ";";
                 }
                 errmsg += "\r\n" + GetOuput();
-                msg += "err=" + mdl_utils.Quoting.quotedstrvalue(noNull(errmsg), false);
+                msg += "err=" + mdl_utils.Quoting.quote(noNull(errmsg), false);
 
                 string internalMsg = "";
                 if (applicationName != null) {
-	                msg += "app=" + mdl_utils.Quoting.quotedstrvalue(applicationName, true) +";";
+                    msg += "app=" + mdl_utils.Quoting.quote(applicationName, true) + ";";
                 }
-               
+
 
 
                 if (exception != null) {
-                    var except = QueryCreator.GetErrorString(exception);
-                    if (except.Length > 2800) except = except.Substring(0, 2800);
+                    var except = ErrorLogger.GetErrorString(exception);
+                    if (except.Length > 2800)
+                        except = except.Substring(0, 2800);
                     internalMsg += except + "\n";
                     Trace.WriteLine(exception.ToString());
                 }
 
                 if (internalMsg != "") {
-	                msg += ";msg=" + mdl_utils.Quoting.quotedstrvalue(internalMsg, false);
+                    msg += ";msg=" + mdl_utils.Quoting.quote(internalMsg, false);
                 }
-                
+
 
                 byte[] b2 = mdl_utils.CryptDecrypt.CryptString(msg);
                 var ss2 = mdl_utils.Quoting.ByteArrayToString(b2);
 
                 var sm = new SendMessage(ss2, "z");
-                sm.send();
+                sm.Send();
                 //var TT= Task.Run(() => sm.send() ); I fear that application could be closed in the meanwhile so I do the operation syncronously
-                
-                
+
+
 
             }
-            catch(Exception e) {
-	            Trace.WriteLine("Richiesta fallita:"+e.ToString());
+            catch (Exception e) {
+                Trace.WriteLine("Richiesta fallita:" + e.ToString());
             }
 
 
         }
 
         protected static object noNull(object o) {
-            if (o == null) return "null";
+            if (o == null)
+                return "null";
             return o == DBNull.Value ? "DBNull" : o;
         }
 
-        public  static string GetOuput() {
+        public static string GetOuput() {
             string outputview = "";
             foreach (TraceListener tl in Trace.Listeners) {
                 //Vede se ha proprietà StringBuilder Errors
@@ -294,17 +300,36 @@ namespace mdl {
         }
 
 
+
+        /// <summary>
+        /// Get a string representation of an Exception (includes InnerException)
+        /// </summary>
+        /// <param name="E"></param>
+        /// <returns></returns>
+        public static string GetErrorString(Exception E) {
+            if (E == null)
+                return "";
+            var msg = HelpUi.GetPrintable(E.ToString());
+            //        if (E is SqlException) {
+            //if (!msg.Contains(E.StackTrace))msg += E.StackTrace;
+            //        }
+            //if (E.InnerException != null) {
+            //    msg += "\r\nInnerException:\r\n" + GetPrintable(E.InnerException.ToString());
+            //}
+            return msg;
+        }
+
         /// <summary>
         /// Marks an Exception and set Last Error
         /// </summary>
         /// <param name="e"></param>
         /// <param name="main">Main description</param>       
-        public virtual void markException(Exception e, string main="") {
-            string msg = formatException( e,main);
+        public virtual void markException(Exception e, string main = "") {
+            string msg = formatException(e, main);
             Trace.WriteLine(msg);
             Trace.Flush();
         }
 
-        
+
     }
 }

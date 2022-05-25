@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Data;
 using mdl;
+using q = mdl.MetaExpression;
 
 namespace mdl_winform
 {
@@ -127,13 +128,13 @@ namespace mdl_winform
         /// Gives SQL condition to get roots rows from tree_table
         /// </summary>
         /// <returns></returns>
-        string RootsCondition_C();
+        MetaExpression RootsCondition_C();
 
-        /// <summary>
-        /// Sql condition to get roots from DB
-        /// </summary>
-        /// <returns></returns>
-        string RootsCondition_SQL();
+		/// <summary>
+		/// Sql condition to get roots from DB
+		/// </summary>
+		/// <returns></returns>
+		MetaExpression RootsCondition_SQL();
 
         /// <summary>
         /// Fills the treeview with the nodes taken from all tree_table rows
@@ -216,10 +217,10 @@ namespace mdl_winform
 
         
 
-        void calcTreeViewDataAccess(IGetData getData, QueryHelper q);
+        void calcTreeViewDataAccess(IGetData getData);
 
 
-        void Start(string rootfilterSql, bool clear);
+        void Start(q rootfilterSql, bool clear);
 
         DataRow selectRow(DataRow R, string ListType);
 
@@ -265,8 +266,8 @@ namespace mdl_winform
 	    }
 
         readonly node_dispatcher dispatcher;
-        readonly string _rootConditionC;
-        readonly string _rootConditionSql;
+        readonly MetaExpression _rootConditionC;
+        readonly MetaExpression _rootConditionSql;
 
 		/// <summary>
 		/// Enables/Disables automatic events for the treeview
@@ -294,8 +295,8 @@ namespace mdl_winform
         /// </summary>
         /// <param name="getData"></param>
         /// <param name="q"></param>
-	    public virtual void calcTreeViewDataAccess(IGetData getData, QueryHelper q) {
-	        _treeDataAccess = new mdl.TreeViewDataAccess(getData, q);
+	    public virtual void calcTreeViewDataAccess(IGetData getData) {
+	        _treeDataAccess = new mdl.TreeViewDataAccess(getData);
 	    }
         /// <summary>
         /// Creates a manager for a tree-view
@@ -309,8 +310,8 @@ namespace mdl_winform
 			DataTable treeTable,
 			TreeView tree,
 			node_dispatcher dispatcher,
-			string rootConditionC,
-            string rootConditionSql
+			MetaExpression rootConditionC,
+			MetaExpression rootConditionSql
 			) {
 			DoubleClickForSelect=true;
 			this.TreeTable= treeTable;
@@ -358,14 +359,14 @@ namespace mdl_winform
 		/// Gives SQL condition to get roots rows from tree_table
 		/// </summary>
 		/// <returns></returns>
-		public virtual string RootsCondition_C(){
+		public virtual MetaExpression RootsCondition_C(){
 			return _rootConditionC;
 		}
         /// <summary>
         /// Sql condition to get roots from DB
         /// </summary>
         /// <returns></returns>
-        public virtual string RootsCondition_SQL() {
+        public virtual MetaExpression RootsCondition_SQL() {
             return _rootConditionSql;
         }
 
@@ -374,7 +375,7 @@ namespace mdl_winform
 		/// </summary>
 		/// <param name="T"></param>
 		/// <returns></returns>
-		public static string RootsCondition_C(DataTable T){
+		public static MetaExpression RootsCondition_C(DataTable T){
 			var m = GetManager(T);
 		    return m?.RootsCondition_C();
 		}
@@ -384,7 +385,7 @@ namespace mdl_winform
         /// </summary>
         /// <param name="T"></param>
         /// <returns></returns>
-        public static string RootsCondition_SQL(DataTable T) {
+        public static MetaExpression RootsCondition_SQL(DataTable T) {
             var m = GetManager(T);
             return m?.RootsCondition_SQL();
         }
@@ -415,7 +416,7 @@ namespace mdl_winform
 
 			var sort = TreeTable.getSorting();
 			if (filter==null) return;
-            var roots = TreeTable.Select(cfilter, sort);
+            var roots = TreeTable.filter(cfilter, sort:sort);
 			AutoEventsEnabled=false;
 			tree.Enabled=false;
 			foreach (var rootRow in roots){
@@ -440,7 +441,7 @@ namespace mdl_winform
 				var test = parentNode.Nodes[0];
 				if (test.Tag==null) parentNode.Nodes.Clear();
 			}
-			var childList = parentRow.iGetChildRows(AutoChildRelation);
+			var childList = parentRow.getChildRows(AutoChildRelation);
 			foreach(var childRow in childList){
 				if (childRow==parentRow) continue;
 				if (!security.CanSelect(childRow)){
@@ -560,12 +561,11 @@ namespace mdl_winform
             n.Nodes.Clear();
 			_treeDataAccess.expandChilds(new[] {r});
 			var added=false;
-			var filterChild = QueryCreator.WHERE_REL_CLAUSE(
-						r, AutoChildRelation.ParentColumns, AutoChildRelation.ChildColumns,
-						DataRowVersion.Default,false);
+			var filterChild = q.mGetChilds(r, AutoChildRelation);
+				//q.WHERE_REL_CLAUSE(r, AutoChildRelation.ParentColumns, AutoChildRelation.ChildColumns,DataRowVersion.Default,false);
 			var sort= r.Table.getSorting();
 			//foreach(DataRow Rci in R.GetChildRows(AutoChildRelation)){
-			foreach(var rci in r.Table.Select(filterChild,sort)){
+			foreach(var rci in r.Table.filter(filterChild,sort:sort)){
 				if (!security.CanSelect(rci)){
 					rci.Delete();
 					rci.AcceptChanges();
@@ -853,23 +853,23 @@ namespace mdl_winform
         /// </summary>
         /// <param name="rootfilterSql"></param>
         /// <param name="clear"></param>
-        public virtual void Start(string rootfilterSql, bool clear) {
+        public virtual void Start(q rootfilterSql, bool clear) {
             if (TreeTable.ExtendedProperties[HelpForm.FilterTree] == null) {
                 FixedData = false;
                 var nonRoots = TreeTable.Select(); // T.Select("NOT (" + rootfilter + ")");
 
-                _treeDataAccess.DO_GET_TABLE_ROOTS(TreeTable, rootfilterSql, clear);
+                _treeDataAccess.GetTableRoots(TreeTable, rootfilterSql, clear);
                 foreach (var child in nonRoots) {
-                    _treeDataAccess.DO_GET_PARENTS(child, true, autoParentRelation(TreeTable));
+                    _treeDataAccess.GetParents(child, true, autoParentRelation(TreeTable));
                 }
             }
             else {
                 FixedData = true;
                 var list = (DataTable)TreeTable.ExtendedProperties[HelpForm.FilterTree];
-                mdl_utils.DataSetUtils.CopyPrimaryKey(list, TreeTable);
+                DataSetUtils.CopyPrimaryKey(list, TreeTable);
                 foreach (DataRow toCopy in list.Rows) {
-                    var searchfilter = QueryCreator.WHERE_KEY_CLAUSE(toCopy, DataRowVersion.Default, false);
-                    if (TreeTable.Select(searchfilter).Length > 0) continue;
+                    var searchfilter = q.keyCmp(toCopy); //QueryCreator.WHERE_KEY_CLAUSE(toCopy, DataRowVersion.Default, false);
+                    if (TreeTable.filter(searchfilter).Length > 0) continue;
 
                     var newR = TreeTable.NewRow();
                     foreach (DataColumn col in TreeTable.Columns) newR[col] = toCopy[col.ColumnName];
@@ -877,9 +877,9 @@ namespace mdl_winform
                     newR.AcceptChanges();
                 }
                 foreach (DataRow toCopy in list.Rows) {
-                    var searchfilter = QueryCreator.WHERE_KEY_CLAUSE(toCopy, DataRowVersion.Default, false);
-                    var found = TreeTable.Select(searchfilter)[0];
-                    _treeDataAccess.DO_GET_PARENTS(found, false, autoParentRelation(TreeTable));
+                    var searchfilter = q.keyCmp(toCopy); //QueryCreator.WHERE_KEY_CLAUSE(toCopy, DataRowVersion.Default, false);
+                    var found = TreeTable.filter(searchfilter)[0];
+                    _treeDataAccess.GetParents(found, false, autoParentRelation(TreeTable));
                 }
             }
             FillNodes();
@@ -894,10 +894,10 @@ namespace mdl_winform
 		/// <param name="startValueWanted"></param>
 		/// <param name="startFieldWanted"></param>
 		/// <returns></returns>
-		public DataRow  startWithField(string startCondition,
+		public DataRow  startWithField(q startCondition,
             string startValueWanted,
             string startFieldWanted) {
-			staticModel.clear(TreeTable); 
+			staticModel.Clear(TreeTable); 
             var r = _treeDataAccess.GetSpecificChild(TreeTable, startCondition, startValueWanted, startFieldWanted);
             if (r == null) {
                 return null;
@@ -905,15 +905,15 @@ namespace mdl_winform
 
             //checks if any filter is present
             if (TreeTable.ExtendedProperties[HelpForm.FilterTree] != null) {
-                var rowkey = QueryCreator.WHERE_KEY_CLAUSE(r, DataRowVersion.Default, false);
+                var rowkey = q.keyCmp(r);
                 var list = (DataTable)TreeTable.ExtendedProperties[HelpForm.FilterTree];
-                var founded = list.Select(rowkey);
+                var founded = list.filter(rowkey);
                 if (founded.Length == 0) {
                     return null;
                 }
             }
 
-            var filter = GetData.MergeFilters(startCondition, RootsCondition_SQL());
+            var filter = q.and(startCondition, RootsCondition_SQL());
 
             Start(filter, false);
 
@@ -932,15 +932,15 @@ namespace mdl_winform
         public DataRow selectRow(DataRow r, string listType) {
             if (r == null) return null;
             //Verify if R is already in Tree
-            var keyfilter = QueryCreator.WHERE_REL_CLAUSE(r, TreeTable.PrimaryKey,
-                TreeTable.PrimaryKey, DataRowVersion.Default, false);
-            var existent = TreeTable.Select(keyfilter);
+            var keyfilter = q.mCmp(r, TreeTable.PrimaryKey);
+			//TreeTable.PrimaryKey, DataRowVersion.Default, false);
+            var existent = TreeTable.filter(keyfilter);
             var toSelect = existent.Length == 0 ? _treeDataAccess.GetByKey(TreeTable, r) : existent[0];
             if (toSelect == null) {
                 return null;
             }
 
-            _treeDataAccess.DO_GET_PARENTS(toSelect, true, autoParentRelation(TreeTable));
+            _treeDataAccess.GetParents(toSelect, true, autoParentRelation(TreeTable));
             tree.SelectedNode = null;
             FillNodes(TreeTable);
             SelectNode(toSelect);

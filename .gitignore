@@ -3,3 +3,22 @@
 ################################################################################
 
 /mdl/packages
+/mdl/bin/Debug
+/mdl/obj/Debug
+
+/mdl_webform/bin/Debug
+/mdl_webform/obj/Debug
+
+/mdl_windows/bin/Debug
+/mdl_windows/obj/Debug
+
+/mdl_winform/bin/Debug
+/mdl_winform/obj/Debug
+
+
+/mdl_utils/bin/Debug
+/mdl_utils/obj/Debug
+
+/mdl_language/bin/Debug
+/mdl_language/obj/Debug
+/.vs/MDL_4.5/v16

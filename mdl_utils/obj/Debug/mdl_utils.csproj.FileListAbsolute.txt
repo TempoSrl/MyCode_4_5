@@ -2,8 +2,5 @@ D:\progetti\MDL_4.5\mdl_utils\bin\Debug\mdl_utils.dll
 D:\progetti\MDL_4.5\mdl_utils\bin\Debug\mdl_utils.pdb
 D:\progetti\MDL_4.5\mdl_utils\obj\Debug\mdl_utils.csproj.AssemblyReference.cache
 D:\progetti\MDL_4.5\mdl_utils\obj\Debug\mdl_utils.csproj.CoreCompileInputs.cache
-D:\progetti\MDL_4.5\mdl_utils\obj\Debug\mdl_utils.csproj.CopyComplete
 D:\progetti\MDL_4.5\mdl_utils\obj\Debug\mdl_utils.dll
 D:\progetti\MDL_4.5\mdl_utils\obj\Debug\mdl_utils.pdb
-D:\progetti\MDL_4.5\mdl_utils\bin\Debug\mdl_language.dll
-D:\progetti\MDL_4.5\mdl_utils\bin\Debug\mdl_language.pdb

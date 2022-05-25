@@ -1200,7 +1200,7 @@ namespace mdl_winform {
              foreach (DataRow r in dt.Rows) {
                  for (int i = 0; i < dt.Columns.Count; i++) {
                      var align = HelpUi.GetAlignForColumn(dt.Columns[i]);
-                     string campo = (align == mdl_utils.HorizontalAlignment.Right)
+                     string campo = (align == mdl.HorizontalAlignment.Right)
                          ? r[i].ToString().PadLeft(lunghezza[i], ' ')
                          : r[i].ToString().PadRight(lunghezza[i], ' ');
                      if (i < dt.Columns.Count - 1) {

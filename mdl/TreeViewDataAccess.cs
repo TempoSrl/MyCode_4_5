@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Data;
+using q = mdl.MetaExpression;
+
 
 namespace mdl {
     /// <summary>
@@ -13,7 +16,7 @@ namespace mdl {
         /// <param name="T">DataTable to Get from DataBase</param>
         /// <param name="filter">Filter to apply in order to retrieve roots</param>
         /// <param name="clear">true if table has to be cleared</param>
-        void DO_GET_TABLE_ROOTS(DataTable T, string filter, bool clear);
+        void GetTableRoots(DataTable T, q filter, bool clear);
 
 		/// <summary>
 		/// Gets all necessary rows from table in order to rebuild R genealogy
@@ -21,7 +24,7 @@ namespace mdl {
 		/// <param name="R"></param>
 		/// <param name="AddChild">when true, all child of every parent found are retrieved  </param>
 		/// <param name="autoParentRelation"></param>
-		void DO_GET_PARENTS(DataRow R, bool AddChild, DataRelation autoParentRelation);
+		void GetParents(DataRow R, bool AddChild, DataRelation autoParentRelation);
 
         /// <summary>
         /// Gets a row from a table T taking the first row by the filter
@@ -35,7 +38,7 @@ namespace mdl {
         /// <param name="startfield"></param>
         /// <returns>null if no row was found</returns>
         DataRow GetSpecificChild(DataTable T,
-            string StartCondition,
+            q StartCondition,
             string startval,
             string startfield);
       
@@ -63,10 +66,7 @@ namespace mdl {
         /// </summary>
         public IGetData getData;
 
-        /// <summary>
-        /// QueryHelper used for d access
-        /// </summary>
-        public QueryHelper Qhs;
+       
 
         /// <summary>
         /// MetaModel used
@@ -78,9 +78,8 @@ namespace mdl {
         /// </summary>
         /// <param name="getData"></param>
         /// <param name="qhs"></param>
-        public TreeViewDataAccess(IGetData getData, QueryHelper qhs) {
-            this.getData = getData;
-            this.Qhs = qhs;
+        public TreeViewDataAccess(IGetData getData) {
+            this.getData = getData;           
             model = MetaFactory.factory.getSingleton<IMetaModel>();
         }
       
@@ -92,7 +91,7 @@ namespace mdl {
         public void expandChilds(DataRow[] toExpand) {
             if (toExpand.Length == 0) return;
             var T = toExpand[0].Table;
-            var toVisit = new Hashtable {[T.TableName] = T};
+            var toVisit = new HashSet<string> {T.TableName};
             getData.GetAllChildRows(toExpand, toVisit, null);
         }
 
@@ -102,11 +101,11 @@ namespace mdl {
         /// <param name="T">DataTable to Get from DataBase</param>
         /// <param name="filter">Filter to apply in order to retrieve roots</param>
         /// <param name="clear">true if table has to be cleared</param>
-        public void DO_GET_TABLE_ROOTS(DataTable T, string filter, bool clear) {
+        public void GetTableRoots(DataTable T, q filter, bool clear) {
             //getData.ReadCached();           //HO RIMOSSO questa riga nella fase di refactoring 
-            if (!model.canRead(T)) return;
+            if (!model.CanRead(T)) return;
             //string sort = GetData.GetSorting(T,null);
-            getData.DO_GET_TABLE(T, null, filter, clear, null, null);
+            getData.GetTable(T,filter:filter,clear: clear);
 
             //TableHasBeenRead(T); //HO RIMOSSO questa riga nella fase di refactoring 
         }
@@ -118,16 +117,16 @@ namespace mdl {
         /// <param name="r"></param>
         /// <param name="addChild">when true, all child of every parent found are retrieved </param>
         /// <param name="autoParentRelation"></param>
-        public void DO_GET_PARENTS(DataRow r, bool addChild, DataRelation autoParentRelation) {
-            var handle = mdl_utils.metaprofiler.StartTimer("DO_GET_PARENTS");
+        public void GetParents(DataRow r, bool addChild, DataRelation autoParentRelation) {
+            var handle = mdl_utils.MetaProfiler.StartTimer("DO_GET_PARENTS");
             try {
                 var parents = new DataRow[20];
                 parents[0] = r;
                 var found = 1;
 
-                var allowed = new Hashtable();
+                var allowed = new HashSet<string>();
                 var T = r.Table;
-                allowed[T.TableName] = T;
+                allowed.Add(T.TableName);
 
                 var autoParent = autoParentRelation;//GetAutoParentRelation(T);
                 if (autoParent == null) return;
@@ -135,10 +134,10 @@ namespace mdl {
                 while (found < 20) {
                     //Gets the parent of Parents[found-1];
                     var child = parents[found - 1];
-                    var res = getData.GetParentRows(child, allowed, null);
+                    var res = getData.GetParentRows(child, allowed, null).GetAwaiter().GetResult();
 
                     //finds parent of Child
-                    var foundparents = child.iGetParentRows(autoParent);
+                    var foundparents = child.getParentRows(autoParent);
                     if (foundparents.Length != 1) break;
                     parents[found] = foundparents[0];
                     found++;
@@ -154,7 +153,7 @@ namespace mdl {
                 expandChilds(list);
             }
             finally {
-                mdl_utils.metaprofiler.StopTimer(handle);
+                mdl_utils.MetaProfiler.StopTimer(handle);
             }
         }
 
@@ -165,7 +164,7 @@ namespace mdl {
         /// <param name="key">DataRow with the same key as wanted row</param>
         /// <returns>null if row was not found</returns>
         public virtual DataRow GetByKey(DataTable dest, DataRow key) {
-            return getData.GetByKey(dest, key);
+            return getData.GetByKey(dest, key).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -180,12 +179,12 @@ namespace mdl {
         /// <param name="startfield"></param>
         /// <returns>null if no row was found</returns>
         public DataRow GetSpecificChild(DataTable T,
-            string StartCondition,
+            q StartCondition,
             string startval,
             string startfield) {
             //if (!startval.Contains("%")) startval += "%";
-            string filter = Qhs.AppAnd(StartCondition, Qhs.Like(startfield, startval));
-            getData.DO_GET_TABLE(T, "len(" + startfield + ")", filter, true, "1", null);
+            var filter = q.and(StartCondition, q.like(startfield, startval));
+            getData.GetTable(T, sortBy: "len(" + startfield + ")", filter:filter, top: "1");
             if (T.Rows.Count == 0) return null;
             return T.Rows[0];
         }

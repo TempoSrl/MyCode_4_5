@@ -9,6 +9,7 @@ using System.Text;
 using System.Reflection;
 using System.Drawing.Imaging;
 using mdl;
+using q = mdl.MetaExpression;
 
 namespace mdl_winform
 {
@@ -102,7 +103,7 @@ namespace mdl_winform
 			InitializeComponent();
 			utils.SetColorOneTime(this, true);
 			this.DS=DS;
-            PostData.RemoveFalseUpdates(DS);
+			DS.RemoveFalseUpdates();            
 			this.Meta= controller.meta;
 			this.controller = controller;
 
@@ -928,7 +929,7 @@ namespace mdl_winform
             if (chkTabMod.Checked) {
                 string res = "";
                 foreach (DataTable T in DS.Tables) {
-                    if (!PostData.hasChanges(T)) continue;
+                    if (!T.HasChanges()) continue;
                     res += T.TableName + " ";
                 }
                 txtResult.Text = res;
@@ -1005,19 +1006,19 @@ namespace mdl_winform
 		}
 
 		private void btnViewOutput_Click(object sender, System.EventArgs e) {
-            txtOutput.Text = mdl_utils.metaprofiler.ShowAll(); ;
+            txtOutput.Text = mdl_utils.MetaProfiler.ShowAll(); ;
 		}
 
 		private void btnEnableProfile_Click(object sender, System.EventArgs e) {
-			mdl_utils.metaprofiler.Enabled=true;
+			mdl_utils.MetaProfiler.Enabled=true;
 		}
 
 		private void btnDisableProfiler_Click(object sender, System.EventArgs e) {
-			mdl_utils.metaprofiler.Enabled=false;
+			mdl_utils.MetaProfiler.Enabled=false;
 		}
 
 		private void btnResetTimers_Click(object sender, System.EventArgs e) {
-			mdl_utils.metaprofiler.Reset();
+			mdl_utils.MetaProfiler.Reset();
             txtOutput.Text = "";
 		}
 
@@ -1026,7 +1027,7 @@ namespace mdl_winform
 			long freetot = GC.GetTotalMemory(true);
 			string mem= "GC.GetTotalMemory(false)="+free+"\r\n";
 			mem+= "GC.GetTotalMemory(true)="+freetot+"\r\n";
-			txtMemory.Text+= QueryCreator.GetPrintable(mem);
+			txtMemory.Text+= HelpUi.GetPrintable(mem);
 		}
 
 		private void btnGCCollect_Click(object sender, System.EventArgs e) {
@@ -1058,9 +1059,9 @@ namespace mdl_winform
 
         private void btnPingServer_Click(object sender, EventArgs e) {
             DateTime myA = DateTime.Now;
-            object Ta = Conn.DO_SYS_CMD("select getdate()");
+            object Ta = Conn.ExecuteScalar("select getdate()").GetAwaiter().GetResult();
             DateTime myB = DateTime.Now;
-            object Tb = Conn.DO_SYS_CMD("select getdate()");
+            object Tb = Conn.ExecuteScalar("select getdate()").GetAwaiter().GetResult();
             DateTime T1 = (DateTime) (Ta);
             DateTime T2 = (DateTime) (Tb);
 
@@ -1125,7 +1126,7 @@ namespace mdl_winform
                     return;            
             }
                         
-            Conn.AddExtendedProperty(t);
+            DataAccess.addExtendedProperty(Conn,t).GetAwaiter().GetResult();
             
             
             UpdateType updateType = UpdateType.insertAndUpdate;
@@ -1213,7 +1214,7 @@ namespace mdl_winform
                 for (i = 0; i < pkLenght; i++) {
                     HasKey = true;
                     wherecond += T.PrimaryKey[i].ColumnName + " = " +
-						mdl_utils.Quoting.quotedstrvalue(row[T.PrimaryKey[i].ColumnName], true) +
+						mdl_utils.Quoting.quote(row[T.PrimaryKey[i].ColumnName], true) +
                         " AND ";
                 }
                 if ((updateType != UpdateType.bulkinsert) && (!HasKey)) continue;
@@ -1289,8 +1290,8 @@ namespace mdl_winform
             int colcount = row.Table.Columns.Count;
             for (int i = 0; i < colcount; i++) {
                 string valore = ConvertCRLFData
-                    ? QueryCreator.GetPrintable(mdl_utils.Quoting.quotedstrvalue(row[i], true))
-                    : mdl_utils.Quoting.quotedstrvalue(row[i], true);
+                    ? HelpUi.GetPrintable(mdl_utils.Quoting.quote(row[i], true))
+                    : mdl_utils.Quoting.quote(row[i], true);
                 s += valore + ",";
             }
             s = s.Remove(s.Length - 1, 1);
@@ -1305,9 +1306,9 @@ namespace mdl_winform
                 if (T.Columns[i].ExtendedProperties["iskey"].ToString().ToUpper() == "S") continue;
                 string valore = "";
                 if (ConvertCRLFData)
-                    valore = QueryCreator.GetPrintable(mdl_utils.Quoting.quotedstrvalue(row[i], true));
+                    valore = HelpUi.GetPrintable(mdl_utils.Quoting.quote(row[i], true));
                 else
-                    valore = mdl_utils.Quoting.quotedstrvalue(row[i], true);
+                    valore = mdl_utils.Quoting.quote(row[i], true);
                 s += T.Columns[i].ColumnName + " = " + valore + ",";
             }
             s = s.Remove(s.Length - 1, 1);
@@ -1317,7 +1318,7 @@ namespace mdl_winform
 
         private void cmbTabella_SelectedIndexChanged(object sender, EventArgs e) {
             if (cmbTabella.SelectedItem == null || cmbTabella.SelectedItem.ToString()=="") return;
-            txtSelectCond.Text = _security.SelectCondition(cmbTabella.SelectedItem.ToString(), true);
+            txtSelectCond.Text = _security.SelectCondition(cmbTabella.SelectedItem.ToString()).toADO();
         }
 
         private void btnSaveScreen_Click(object sender, EventArgs e) {
@@ -1344,7 +1345,7 @@ namespace mdl_winform
                         diff += " " + c.ColumnName;
                     }
                 }
-                string k = QueryCreator.WHERE_KEY_CLAUSE(r1,DataRowVersion.Current,false);
+                string k = q.keyCmp(r1).toADO();
                 shower.Show(this, "Riga:" + k + " campi:" + diff, "Differenze");
             }
         }

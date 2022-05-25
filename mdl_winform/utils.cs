@@ -10,9 +10,13 @@ using mdl;
 using DialogResult = System.Windows.Forms.DialogResult;
 using LM = mdl_language.LanguageManager;
 using mdl_utils;
+using q = mdl.MetaExpression;
+
 
 namespace mdl_winform {
     public class utils {
+
+       
 
         /// <summary>
         /// Restituisce una stringa vuota se è NULL la stringa passata
@@ -149,43 +153,43 @@ namespace mdl_winform {
             var QHS = conn.GetQueryHelper();
             MetaFactory.factory.getSingleton<IFormCreationListener>()?.create(F,null);
             F.Show();
-            conn.Reset(true);
-            ArrayList Tables = dbanalyzer.TableListFromDB(conn);
+            conn.Descriptor.Reset();
+            ArrayList Tables = dbanalyzer.TableListFromDB(conn).GetAwaiter().GetResult();
             F.pBar.Maximum = Tables.Count;
             foreach (string tablename in Tables) {
                 F.pBar.Increment(1);
-                if (conn.RUN_SELECT_COUNT("customobject", QHS.CmpEq("objectname", tablename), false) > 0) {
+                if (conn.Count("customobject",filter: q.eq("objectname", tablename)).GetAwaiter().GetResult() > 0) {
                     continue;
                 }
                 //Application.DoEvents();
-                dbstructure DBS = conn.GetStructure(tablename);
+                dbstructure DBS = conn.Descriptor.GetStructure(tablename,conn).GetAwaiter().GetResult();
                 if (DBS.customobject.Rows.Count == 0) {
                     DataRow newobj = DBS.customobject.NewRow();
                     newobj["objectname"] = tablename;
                     newobj["isreal"] = "S";
                     DBS.customobject.Rows.Add(newobj);
                 }
-                dbanalyzer.ReadColumnTypes(DBS.columntypes, tablename, conn);
+                dbanalyzer.ReadColumnTypes(DBS.columntypes, tablename, conn).GetAwaiter().GetResult();
             }
-            ArrayList Views = dbanalyzer.ViewListFromDB(conn);
+            ArrayList Views = dbanalyzer.ViewListFromDB(conn).GetAwaiter().GetResult();
             F.Text = "Analisi struttura viste";
             F.pBar.Value = 0;
             F.pBar.Maximum = Views.Count;
             foreach (string tablename in Views) {
                 F.pBar.Increment(1);
-                if (conn.RUN_SELECT_COUNT("customobject", QHS.CmpEq("objectname", tablename), false) > 0) {
+                if (conn.Count("customobject", q.eq("objectname", tablename)).GetAwaiter().GetResult() > 0){
                     continue;
                 }
 
                 //Application.DoEvents();
-                dbstructure DBS = (dbstructure)conn.GetStructure(tablename);
+                dbstructure DBS = (dbstructure)conn.Descriptor.GetStructure(tablename,conn).GetAwaiter().GetResult();
                 if (DBS.customobject.Rows.Count == 0) {
                     DataRow newobj = DBS.customobject.NewRow();
                     newobj["objectname"] = tablename;
                     newobj["isreal"] = "N";
                     DBS.customobject.Rows.Add(newobj);
                 }
-                dbanalyzer.ReadColumnTypes(DBS.columntypes, tablename, conn);
+                dbanalyzer.ReadColumnTypes(DBS.columntypes, tablename, conn).GetAwaiter().GetResult();
             }
             F.Close();
         }
@@ -263,9 +267,9 @@ namespace mdl_winform {
         /// </summary>
         /// <param name="c"></param>
         public static void SetColor(Control c) {
-	        var s = mdl_utils.metaprofiler.StartTimer($"SetColor * {c?.GetType()}");
+	        var s = mdl_utils.MetaProfiler.StartTimer($"SetColor * {c?.GetType()}");
 	        if (c == null) {
-		        mdl_utils.metaprofiler.StopTimer(s);
+		        mdl_utils.MetaProfiler.StopTimer(s);
 		        return;
 	        }
 
@@ -292,7 +296,7 @@ namespace mdl_winform {
                 tb.DrawMode = TabDrawMode.OwnerDrawFixed;
                 tb.DrawItem -= Tb_DrawItem;
                 tb.DrawItem += Tb_DrawItem;
-                mdl_utils.metaprofiler.StopTimer(s);
+                mdl_utils.MetaProfiler.StopTimer(s);
                 return;
             }
 
@@ -308,7 +312,7 @@ namespace mdl_winform {
                 }
 
                 g.Refresh();
-                mdl_utils.metaprofiler.StopTimer(s);
+                mdl_utils.MetaProfiler.StopTimer(s);
 
                 return;
             }
@@ -347,7 +351,7 @@ namespace mdl_winform {
                     b.EnabledChanged -= Cmb_EnabledChanged;
                     b.EnabledChanged += Cmb_EnabledChanged;
                 }
-                mdl_utils.metaprofiler.StopTimer(s);
+                mdl_utils.MetaProfiler.StopTimer(s);
 
                 return;
 
@@ -369,7 +373,7 @@ namespace mdl_winform {
 
                 cmb.EnabledChanged -= Cmb_EnabledChanged;
                 cmb.EnabledChanged += Cmb_EnabledChanged;
-                mdl_utils.metaprofiler.StopTimer(s);
+                mdl_utils.MetaProfiler.StopTimer(s);
 
                 return;
             }
@@ -384,7 +388,7 @@ namespace mdl_winform {
                     T.BackColor = formcolors.TextBoxNormalBackColor();
                     T.ForeColor = formcolors.TextBoxNormalForeColor();
                 }
-                mdl_utils.metaprofiler.StopTimer(s);
+                mdl_utils.MetaProfiler.StopTimer(s);
 
                 return;
             }
@@ -402,7 +406,7 @@ namespace mdl_winform {
 
                 T.EnabledChanged -= Cmb_EnabledChanged;
                 T.EnabledChanged += Cmb_EnabledChanged;
-                mdl_utils.metaprofiler.StopTimer(s);
+                mdl_utils.MetaProfiler.StopTimer(s);
 
                 return;
             }
@@ -420,7 +424,7 @@ namespace mdl_winform {
 
                 T.EnabledChanged -= Cmb_EnabledChanged;
                 T.EnabledChanged += Cmb_EnabledChanged;
-                mdl_utils.metaprofiler.StopTimer(s);
+                mdl_utils.MetaProfiler.StopTimer(s);
 
                 return;
             }
@@ -428,19 +432,19 @@ namespace mdl_winform {
             if (c is TreeView) {
                 ((TreeView) c).BackColor = formcolors.TreeBackColor();
                 ((TreeView) c).ForeColor = formcolors.TreeForeColor();
-                mdl_utils.metaprofiler.StopTimer(s);
+                mdl_utils.MetaProfiler.StopTimer(s);
                 return;
             }
 
             if (c is DataGrid gg) {
                 gg.BackgroundColor = formcolors.GridBackgroundColor();
-                mdl_utils.metaprofiler.StopTimer(s);
+                mdl_utils.MetaProfiler.StopTimer(s);
                 return;
             }
 
             c.BackColor = formcolors.MainBackColor();
             c.ForeColor = formcolors.MainForeColor();
-            mdl_utils.metaprofiler.StopTimer(s);
+            mdl_utils.MetaProfiler.StopTimer(s);
         }
 
 
@@ -457,7 +461,7 @@ namespace mdl_winform {
 	                //metaprofiler.StopTimer(ss);
 	                return;
                 }
-                var s = mdl_utils.metaprofiler.StartTimer($"paintGbox * {g.Name}");
+                var s = mdl_utils.MetaProfiler.StartTimer($"paintGbox * {g.Name}");
                 try {
 
                     //get the text size in groupbox
@@ -482,7 +486,7 @@ namespace mdl_winform {
                 catch {
                     // ignored
                 }
-				mdl_utils.metaprofiler.StopTimer(s);
+				mdl_utils.MetaProfiler.StopTimer(s);
             //}
             //metaprofiler.StopTimer(ss);
         }

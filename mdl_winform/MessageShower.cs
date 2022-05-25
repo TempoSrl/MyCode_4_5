@@ -111,7 +111,7 @@ namespace mdl_winform {
 
         public virtual void showException(object o, string msg, Exception e, string logUrl) {
              wf.Form f = o as wf.Form;
-            if (registerErrorMessages)errorMessages.Add($"{msg}:{QueryCreator.GetErrorString(e)}");
+            if (registerErrorMessages)errorMessages.Add($"{msg}:{ErrorLogger.GetErrorString(e)}");
             if (skipMessagesBox) return;
             var m = FormController.GetMetaData(f);
             var MSG = new FrmShowException(msg, e, m) {logurl = logUrl};

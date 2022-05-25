@@ -21,14 +21,7 @@ namespace mdl {
         string Name { get; set; }
 
         IMetaDataDispatcher dispatcher { get; set; }
-        
-
-      
-
-       
-
-      
-
+    
 
         /// <summary>
         /// Name of the table that stores the entity. If SourceRow is present, it is
@@ -67,7 +60,7 @@ namespace mdl {
         /// </summary>
         /// <param name="listingType"></param>
         /// <returns></returns>
-        string GetStaticFilter(string listingType);
+        MetaExpression GetStaticFilter(string listingType);
 
 
         /// <summary>
@@ -153,14 +146,14 @@ namespace mdl {
         /// </summary>
         /// <param name="T"></param>
         /// <returns></returns>
-        string GetFilterForInsert(DataTable T);
+        MetaExpression GetFilterForInsert(DataTable T);
 
         /// <summary>
         /// Used to filter combobox when main table is in search mode
         /// </summary>
         /// <param name="T"></param>
         /// <returns></returns>
-        string GetFilterForSearch(DataTable T);
+        MetaExpression GetFilterForSearch(DataTable T);
 
         /// <summary>
         /// Sets default values for fields. This is necessary when those do not allow 
@@ -186,7 +179,7 @@ namespace mdl {
         /// <param name="parentRow">Parent Row of the new Row to create, or null if no parent is present</param>
         /// <param name="T">Table in which row has to be added</param>
         /// <returns>new row, child of ParentRow when that is given</returns>
-        DataRow Get_New_Row(DataRow parentRow, DataTable T, string editType=null);
+        DataRow GetNewRow(DataRow parentRow, DataTable T, string editType=null);
 
 
       
@@ -207,11 +200,11 @@ namespace mdl {
         /// </summary>
         string DefaultListType { get; set; }
 
-    
+
         /// <summary>
         /// Filter used only one time, at form activation
         /// </summary>
-        string FirstSearchFilter { get; set; }
+        MetaExpression FirstSearchFilter { get; set; }
 
        
 

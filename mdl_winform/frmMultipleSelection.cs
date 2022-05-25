@@ -6,7 +6,7 @@ using System.ComponentModel;
 using System.Windows.Forms;
 using System.Data;
 using mdl;
-
+using q = mdl.MetaExpression;
 
 namespace mdl_winform {
     /// <summary>
@@ -35,7 +35,7 @@ namespace mdl_winform {
         string filter;
         string filterSQL;
         string listingtype;
-        string notentitychildfilter;
+        q notentitychildfilter;
         private System.Windows.Forms.ContextMenu cmenuAdd;
         private System.Windows.Forms.MenuItem btnAddAll;
         private System.Windows.Forms.MenuItem btnAddNone;
@@ -78,9 +78,9 @@ namespace mdl_winform {
             this.SourceTable = SourceTable;
             this.filter = filter;
             this.filterSQL = filterSQL;
-            this.sorting = GetData.GetSorting(SourceTable, null);
+            this.sorting = SourceTable.getSorting();
             this.listingtype = listingtype;
-            this.tablename = DataAccess.GetTableForReading(SourceTable);
+            this.tablename = SourceTable.tableForReading();
 
 
             Text = Title;
@@ -88,8 +88,8 @@ namespace mdl_winform {
             labToAdd.Text = labelToAdd;
 
             DataTable primaryTable = SourceTable.DataSet.Tables[linked.TableName];
-            metaModel.addNotEntityChild(primaryTable, SourceTable);
-            notentitychildfilter = metaModel.getNotEntityChildFilter(SourceTable);               
+            metaModel.AddNotEntityChild(primaryTable, SourceTable);
+            notentitychildfilter = metaModel.GetNotEntityChildFilter(SourceTable);               
             //entitychildfilter= "NOT("+notentitychildfilter+")";
 
             initTables();
@@ -114,39 +114,38 @@ namespace mdl_winform {
 
             string columnlist = QueryCreator.SortedColumnNameList(SourceTable);
 
-            Added = Conn.CreateTableByName(tablename, columnlist);
+            Added = Conn.CreateTable(tablename, columnlist).GetAwaiter().GetResult();
             Added.TableName = "added";
             Added.Namespace = SourceTable.Namespace;
 
             myDS.Tables.Add(Added);
-            DataAccess.SetTableForReading(Added, tablename);
+            Added.setTableForReading(tablename);
             CopyKeyWhenBlank(SourceTable, Added);
 
-            ToAdd = Conn.CreateTableByName(tablename, columnlist);
+            ToAdd = Conn.CreateTable(tablename, columns:columnlist).GetAwaiter().GetResult();
             ToAdd.TableName = "toadd";
             myDS.Tables.Add(ToAdd);
-            DataAccess.SetTableForReading(ToAdd, tablename);
+            ToAdd.setTableForReading(tablename);
             CopyKeyWhenBlank(SourceTable, ToAdd);
 
             //Riempie la Table delle righe "ToAdd" prendendole dal DB. Questa tabella 
             // contiene anche righe già "added" in memoria, che vanno quindi escluse. 
             //Inoltre va integrata con righe che erano "added" e sono state rimosse
             // in memoria
-            Conn.RUN_SELECT_INTO_TABLE(ToAdd, sorting, filterSQL, null, true);
+            Conn.SelectIntoTable(ToAdd, orderBy:sorting, filter:filterSQL);
 
             //Riempie la Table delle righe "Added". Questa contiene anche righe che sono
             // state rimosse in memoria, e quindi vanno rimosse (e integrate a "ToAdd")
-            QueryCreator.MergeDataTable(Added, SourceTable);
+            DataSetUtils.MergeDataTable(Added, SourceTable);
 
             //Per tutte le righe rimosse in memoria (che rispettano il filtro): le toglie da 
             // Added e le mette in ToAdd.
-            string tomovefilter = GetData.MergeFilters(notentitychildfilter, filter);
-            DataRow[] RowsToMove = Added.Select(tomovefilter);
+            q tomovefilter = q.and(notentitychildfilter, filter);
+            DataRow[] RowsToMove = Added.filter(tomovefilter);
             foreach (DataRow ToMove in RowsToMove) {
-                string verifyexistentfilter = QueryCreator.WHERE_KEY_CLAUSE(ToMove,
-                        DataRowVersion.Default, false);
+                var verifyexistentfilter = q.keyCmp(ToMove);
                 //Just for sure I remove from ToAdd those rows I'm going to add to it!
-                DataRow[] ToRemoveFromToAdd = ToAdd.Select(verifyexistentfilter);
+                DataRow[] ToRemoveFromToAdd = ToAdd.filter(verifyexistentfilter);
                 foreach (DataRow ToRemFromToAdd in ToRemoveFromToAdd) {
                     ToRemFromToAdd.Delete();
                     ToRemFromToAdd.AcceptChanges();
@@ -163,7 +162,7 @@ namespace mdl_winform {
 
             //Per tutte le righe rimosse in memoria rimanenti (ossia che NON rispettano
             // il filtro) : le rimuovo da Added
-            DataRow[] ToRemoveFromAdded = Added.Select(notentitychildfilter);
+            DataRow[] ToRemoveFromAdded = Added.filter(notentitychildfilter);
             foreach (DataRow ToRemFromAdded in ToRemoveFromAdded) {
                 ToRemFromAdded.Delete();
                 if (ToRemFromAdded.RowState != DataRowState.Detached) ToRemFromAdded.AcceptChanges();
@@ -172,8 +171,8 @@ namespace mdl_winform {
             //Per tutte le righe rimaste in Added: le rimuove da ToAdd
             DataRow[] ToRemoveFromToAdd2 = Added.Select();
             foreach (DataRow ToRemFromToAdd in ToRemoveFromToAdd2) {
-                string ToRemKeyFilter = QueryCreator.WHERE_KEY_CLAUSE(ToRemFromToAdd, DataRowVersion.Default, false);
-                DataRow[] ToRemove = ToAdd.Select(ToRemKeyFilter);
+                q ToRemKeyFilter = q.keyCmp(ToRemFromToAdd);
+                DataRow[] ToRemove = ToAdd.filter(ToRemKeyFilter);
                 foreach (DataRow ToRem in ToRemove) {
                     ToRem.Delete();
                     if (ToRem.RowState != DataRowState.Detached) ToRem.AcceptChanges();
@@ -465,9 +464,8 @@ namespace mdl_winform {
             DataRow[] ToAddRows = ToAdd.Select();
             List<DataRow> rowsToUnlink = new List<DataRow>();
             foreach (DataRow ToUnlinkRow in ToAddRows) {
-                string unlinkkeyfilter = QueryCreator.WHERE_KEY_CLAUSE(ToUnlinkRow,
-                                DataRowVersion.Default, false);
-                DataRow[] ToUnlinkRows = SourceTable.Select(unlinkkeyfilter);
+                q unlinkkeyfilter = q.keyCmp(ToUnlinkRow);
+                DataRow[] ToUnlinkRows = SourceTable.filter(unlinkkeyfilter);
                 if (ToUnlinkRows.Length == 0) continue;
                 DataRow ToUnlink = ToUnlinkRows[0];
                 rowsToUnlink.Add(ToUnlink);                
@@ -478,9 +476,8 @@ namespace mdl_winform {
             //Collega le righe presenti in Added, aggiungendole se non presenti
             DataRow[] AddedRows = Added.Select();
             foreach (DataRow ToLinkRow in AddedRows) {
-                string linkkeyfilter = QueryCreator.WHERE_KEY_CLAUSE(ToLinkRow,
-                            DataRowVersion.Default, false);
-                DataRow[] TolinkRows = SourceTable.Select(linkkeyfilter);
+                q linkkeyfilter = q.keyCmp(ToLinkRow);
+                DataRow[] TolinkRows = SourceTable.filter(linkkeyfilter);
                 DataRow AddedRow;
                 if (TolinkRows.Length == 0) {
                     //La riga va aggiunta

@@ -15,6 +15,7 @@ using mdl;
 using mdl_windows;
 using mdl_winform;
 using mdl_utils;
+using q = mdl.MetaExpression;
 using static mdl_utils.tagUtils;
 
 
@@ -451,10 +452,10 @@ namespace mdl_winform {
                 var childRel = childTable.ParentRelations[0];
                 var parentTable = childRel.ParentTable;
                 var currParent = GetCurrChildRow(parentRow, parentTable);
-                var currChilds = currParent?.iGetChildRows(childRel); //corretto 2017, c'era rel ma rel è sempre null
+                var currChilds = currParent?.getChildRows(childRel); //corretto 2017, c'era rel ma rel è sempre null
                 return currChilds?.Length == 1 ? currChilds[0] : null;
             }
-            var childs = parentRow.iGetChildRows(rel);
+            var childs = parentRow.getChildRows(rel);
             return childs.Length == 1 ? childs[0] : null;
         }
 
@@ -482,10 +483,10 @@ namespace mdl_winform {
                 var myRel = parentTable.ChildRelations[0];
                 var childTable = myRel.ChildTable;
                 var currChild = GetCurrParentRow(childRow, childTable);
-                var currParents = currChild?.iGetParentRows(myRel);
+                var currParents = currChild?.getParentRows(myRel);
                 return currParents?.Length == 1 ? currParents[0] : null;
             }
-            var parents = childRow.iGetParentRows(rel);
+            var parents = childRow.getParentRows(rel);
             return parents.Length == 1 ? parents[0] : null;
         }
 
@@ -509,10 +510,10 @@ namespace mdl_winform {
                 var myRel = parent.ChildRelations[0];
                 var childTable = myRel.ChildTable;
                 var currChild = GetCurrParentRow(primary, childTable);
-                var currParents = currChild?.iGetParentRows(myRel);
+                var currParents = currChild?.getParentRows(myRel);
                 return currParents?.Length != 1 ? null : currParents[0];
             }
-            var parents = primary.iGetParentRows(rel);
+            var parents = primary.getParentRows(rel);
             if (parents.Length == 1) return parents[0];
             if (parents.Length == 0) return null;
             var firstval = parents[0][field].ToString().ToUpper().TrimEnd();
@@ -607,9 +608,9 @@ namespace mdl_winform {
         ///   </remarks>
         public void GetControls(Form F) {
             //MarkEvent("GetControls on form "+F.Text+" called.\n\r");
-            int handle = metaprofiler.StartTimer("myBeforeRowSelect()");
+            int handle = MetaProfiler.StartTimer("myBeforeRowSelect()");
             IterateGetControls(F.Controls);
-            metaprofiler.StopTimer(handle);
+            MetaProfiler.StopTimer(handle);
 
         }
 
@@ -1069,13 +1070,13 @@ namespace mdl_winform {
         /// <param name="g"></param>
         /// <param name="T"></param>
         static public void SetGridStyle(DataGrid g, DataTable T) {
-            var setStyleHandle = metaprofiler.StartTimer("SetGridStyle");
+            var setStyleHandle = MetaProfiler.StartTimer("SetGridStyle");
             //if (G.DataSource == null) return;
 
             g.AllowNavigation = false;
             foreach (DataGridTableStyle dgt in g.TableStyles) {
                 if (dgt.MappingName == T.TableName) {
-                    metaprofiler.StopTimer(setStyleHandle);
+                    MetaProfiler.StopTimer(setStyleHandle);
                     return;
                 }
             }
@@ -1139,7 +1140,7 @@ namespace mdl_winform {
             FormController.addEditEventToGrid(g);
 
 
-            metaprofiler.StopTimer(setStyleHandle);
+            MetaProfiler.StopTimer(setStyleHandle);
         }
 
 
@@ -1160,7 +1161,7 @@ namespace mdl_winform {
         /// <param name="G"></param>
         /// <param name="T"></param>
         public static void SetDataGrid(DataGrid G, DataTable T) {
-            var setgridhandle = metaprofiler.StartTimer("SetDataGrid(DataGrid G, DataTable T)");
+            var setgridhandle = MetaProfiler.StartTimer("SetDataGrid(DataGrid G, DataTable T)");
             SetGridStyle(G, T);
         
 
@@ -1189,19 +1190,20 @@ namespace mdl_winform {
                 }
 
                 //MarkEvent("Formatting grid...");
-                var formatting = metaprofiler.StartTimer("Format grid");
+                var formatting = MetaProfiler.StartTimer("Format grid");
                 var format = new formatgrids(G);
                 format.AutosizeColumnWidth();
-                metaprofiler.StopTimer(formatting);
+                MetaProfiler.StopTimer(formatting);
 
 
             }
 
             //MarkEvent("Grid Formatted.");
-            metaprofiler.StopTimer(setgridhandle);
+            MetaProfiler.StopTimer(setgridhandle);
         }
 
 
+        static QueryHelper qhc = MetaFactory.factory.getSingleton<CQueryHelper>();
 
         void setDataGrid(DataGrid g) {
 	        if (g == null) return;
@@ -1236,9 +1238,9 @@ namespace mdl_winform {
                 var res2 = GetCurrentRow(g, out var tempT2, out var tempRow2);
                 if (!res2) tempRow2 = null;
                 string k1 = null;
-                if (tempRow1 != null) k1 = QueryCreator.WHERE_KEY_CLAUSE(tempRow1, DataRowVersion.Default, false);
+                if (tempRow1 != null) k1 = qhc.CmpKey(tempRow1);
                 string k2 = null;
-                if (tempRow2 != null) k2 = QueryCreator.WHERE_KEY_CLAUSE(tempRow2, DataRowVersion.Default, false);
+                if (tempRow2 != null) k2 = qhc.CmpKey(tempRow2);
                 if (k1 != k2) ControlChanged(g, null);
             }
 
@@ -1374,14 +1376,14 @@ namespace mdl_winform {
         }
 
         static DataTable getFilteredTable(DataTable T, string listType) {
-            var filteredhandle = metaprofiler.StartTimer("GetFilteredTable");
+            var filteredhandle = MetaProfiler.StartTimer("GetFilteredTable");
             //MarkEvent("Get Filtered table of "+T.TableName+"."+list_type);
             var parentRelation = (string) T.ExtendedProperties["ParentRelation"];
             var filter = T.getFilterFunction();
             if ((T.ExtendedProperties["gridmaster"] == null) &&
                 (filter == null) &&
                 (parentRelation == null)) {
-                metaprofiler.StopTimer(filteredhandle);
+                MetaProfiler.StopTimer(filteredhandle);
                 return T;
             }
 
@@ -1399,7 +1401,7 @@ namespace mdl_winform {
             filteredTables[listType] = newDt;
             var t2 = newDt;
             t2.BeginLoadData();
-            staticModel.clear(t2); //T2.Clear();
+            staticModel.Clear(t2); //T2.Clear();
 
             //if (ParentRelation!=null){
             var childRows = T.Select(parentRelation, T.getSorting());
@@ -1416,7 +1418,7 @@ namespace mdl_winform {
             t2.EndLoadData();
             t2.AcceptChanges();
             t2.ExtendedProperties["UnfilteredTable"] = T;
-            metaprofiler.StopTimer(filteredhandle);
+            MetaProfiler.StopTimer(filteredhandle);
             return t2;
         }
 
@@ -1439,7 +1441,7 @@ namespace mdl_winform {
 
             var dv = drv.DataView;
 
-            var rk = QueryCreator.WHERE_KEY_CLAUSE(r, DataRowVersion.Default, false);
+            var rk = qhc.CmpKey(r);
             if ((rk == "") || (rk == null)) return;
 
             if (dv.Sort == "") {
@@ -1448,7 +1450,7 @@ namespace mdl_winform {
                 for (var index = 0; index < tv.Rows.Count; index++) {
                     if (tv.Rows[index].RowState == DataRowState.Deleted) continue;
                     count++;
-                    var rFk2 = QueryCreator.WHERE_KEY_CLAUSE(tv.Rows[index],DataRowVersion.Default, false);
+                    var rFk2 = qhc.CmpKey(tv.Rows[index]);
                     if (rFk2 == rk) {
                         g.CurrentRowIndex = count;
                         GridSelectRow(g, count);
@@ -1467,7 +1469,7 @@ namespace mdl_winform {
 
             var i = 0;
             foreach (var rf in found) {
-                var rFk = QueryCreator.WHERE_KEY_CLAUSE(rf, DataRowVersion.Default, false);
+                var rFk = qhc.CmpKey(rf);
                 if (rFk == rk) {
                     ClearSelection(g);
                     g.CurrentRowIndex = i;
@@ -1640,10 +1642,10 @@ namespace mdl_winform {
 	        public gridTableManager(IMetaModel model, DataTable t, DataGrid g) {
 		        this.t = t;
 		        this.g = g;		        
-		        model.setAction(t, TableAction.beginLoad, beginLoadGridTable, true);
-		        model.setAction(t, TableAction.endLoad, endLoadGridTable, true);
-                model.setAction(t, TableAction.startClear, beginClearAction, true);
-                model.setAction(t, TableAction.endClear, endClearAction, true);               
+		        model.SetAction(t, TableAction.beginLoad, beginLoadGridTable, true);
+		        model.SetAction(t, TableAction.endLoad, endLoadGridTable, true);
+                model.SetAction(t, TableAction.startClear, beginClearAction, true);
+                model.SetAction(t, TableAction.endClear, endClearAction, true);               
             }
             static IMetaModel staticmodel = MetaFactory.factory.getSingleton<IMetaModel>();
 
@@ -1700,8 +1702,8 @@ namespace mdl_winform {
 		        this.t = t;
 		        this.c = c;
 		        
-		        model.setAction(t, TableAction.beginLoad, beginLoadComboTable,true);
-		        model.setAction(t, TableAction.endLoad, endLoadComboTable,true);
+		        model.SetAction(t, TableAction.beginLoad, beginLoadComboTable,true);
+		        model.SetAction(t, TableAction.endLoad, endLoadComboTable,true);
 	        }
 
 	        void beginLoadComboTable(DataTable T) {
@@ -1734,8 +1736,8 @@ namespace mdl_winform {
 		        this.t = t;
 		        this.c = c;
 
-                model.setAction(t, TableAction.beginLoad, beginLoad, true);
-                model.setAction(t, TableAction.endLoad, endLoad, true);
+                model.SetAction(t, TableAction.beginLoad, beginLoad, true);
+                model.SetAction(t, TableAction.endLoad, endLoad, true);
 	        }
 
 	        void beginLoad(DataTable T) {
@@ -2071,7 +2073,7 @@ namespace mdl_winform {
 
 
             eventManager.DisableAutoEvents();
-            model.clear(myDt); // myDT.Clear();
+            model.Clear(myDt); // myDT.Clear();
             Nav.Update();
             //EnableAutoEvents(); //it was here
 
@@ -2212,7 +2214,7 @@ namespace mdl_winform {
             var selectedRow = dv.Row;
             
             var selectedTable = selectedRow.Table;
-            var key = QueryCreator.WHERE_KEY_CLAUSE(selectedRow, DataRowVersion.Default, false);
+            var key = qhc.CmpKey(selectedRow);
             var T = DS.Tables[selectedTable.TableName];
             var myRows = T.Select(key);
             return myRows.Length == 1 ? myRows[0] : null;
@@ -2376,7 +2378,7 @@ namespace mdl_winform {
             if (rowChanged != null && rowChanged.RowState == DataRowState.Detached) rowChanged = null;
             if (rowChanged == null) rowChanged = defaultRow;
 
-            var changehandle = metaprofiler.StartTimer("Inside ControlChange()");
+            var changehandle = MetaProfiler.StartTimer("Inside ControlChange()");
             SetLastSelected(changed, rowChanged);
             BeforeRowSelect?.Invoke(changed, rowChanged);
 
@@ -2386,7 +2388,7 @@ namespace mdl_winform {
                     IterateFillRelatedControls(c.Parent.Controls, c, changed, rowChanged);
             }
             else {
-                var cr = new crono("CC");
+                var cr = new Crono("CC");
                 var ctrl = FormController.GetController(c.FindForm());
                 eventManager.dispatch(new StartMainRowSelectionEvent(rowChanged));
                 if (ctrl != null) {
@@ -2399,7 +2401,7 @@ namespace mdl_winform {
                 FormController.setLastLoadTime(cr.GetDuration());
 
             }
-            metaprofiler.StopTimer(changehandle);
+            MetaProfiler.StopTimer(changehandle);
 
             AfterRowSelect?.Invoke(changed, rowChanged);
         }
@@ -2440,11 +2442,11 @@ namespace mdl_winform {
         /// <param name="rootfilterSql"></param>
         /// <param name="clear"></param>
         /// <returns></returns>
-        public bool StartTreeView(TreeView treeView, string rootfilterSql, bool clear) {
+        public bool StartTreeView(TreeView treeView, q rootfilterSql, bool clear) {
             string tname = GetField(treeView.Tag.ToString(), 0);
             DataTable T = DS.Tables[tname];
             if (T == null) return false;
-
+            
             var tm = TreeViewManager.GetManager(T);
             if (tm == null) return false;
             tm.Start(rootfilterSql, clear);
@@ -2467,7 +2469,7 @@ namespace mdl_winform {
         /// <param name="startValueWanted"></param>
         /// <param name="startFieldWanted"></param>
         /// <returns></returns>
-        public bool SetTreeByStart(TreeView C, string startCondition,
+        public bool SetTreeByStart(TreeView C, q startCondition,
             string startValueWanted,
             string startFieldWanted) {
             //MarkEvent("SetTreeByStart START");
@@ -2531,7 +2533,7 @@ namespace mdl_winform {
         /// <param name="Cs"></param>
         /// <returns></returns>
         List<Control> getSortedControlList(Control.ControlCollection Cs) {
-            int handle = metaprofiler.StartTimer("GetSortedControlList");
+            int handle = MetaProfiler.StartTimer("GetSortedControlList");
             List<Control> L = new List<Control>(Cs.Count);
             //create a list of all control to fill in Cs, putting comboboxes and grids in front of
             // the list (from position 0 to pos. ncombos)
@@ -2562,7 +2564,7 @@ namespace mdl_winform {
                 }
             }
             if (ncombos < 2) {
-                metaprofiler.StopTimer(handle);
+                MetaProfiler.StopTimer(handle);
                 return L;
             }
 
@@ -2593,16 +2595,16 @@ namespace mdl_winform {
                     if (mustbreak) break;
                 }
             }
-            metaprofiler.StopTimer(handle);
+            MetaProfiler.StopTimer(handle);
             return L;
         }
 
         void iterateFillControls(Control.ControlCollection Cs) {
             var List = getSortedControlList(Cs);
             foreach (Control c in List) {
-                int fillhandle = metaprofiler.StartTimer("FillControl(C)");
+                int fillhandle = MetaProfiler.StartTimer("FillControl(C)");
                 FillControl(c);
-                metaprofiler.StopTimer(fillhandle);
+                MetaProfiler.StopTimer(fillhandle);
                 if (!c.HasChildren) continue;
                 if (isManagedCollection(c)) continue;
                 iterateFillControls(c.Controls);
@@ -2790,11 +2792,11 @@ namespace mdl_winform {
 
             //sets & fills datagrid
             if (c is DataGrid) {
-                int gridhandle = metaprofiler.StartTimer("SetDataGrid(G)");
+                int gridhandle = MetaProfiler.StartTimer("SetDataGrid(G)");
                 //if (C.Enabled)	
                 setDataGrid((DataGrid) c);
                 controller.setColor(c);
-                metaprofiler.StopTimer(gridhandle);
+                MetaProfiler.StopTimer(gridhandle);
                 return;
             }
 
@@ -2835,7 +2837,7 @@ namespace mdl_winform {
                         var extraRel = QueryCreator.GetParentChildRel(primaryTable, extraTable);
                         if(extraRel == null)
                             continue;
-                        var childRow = currPrimary.iGetChildRows(extraRel);
+                        var childRow = currPrimary.getChildRows(extraRel);
                         if(childRow.Length != 1)
                             continue;
                         var toConsider = childRow[0];
@@ -2938,7 +2940,7 @@ namespace mdl_winform {
         /// <param name="filter">filter to apply when getting root nodes</param>
         /// <param name="skipPrimary">if true, no action is done if tree-table is 
         ///		primary table</param>
-        public void FilteredPreFillTree(TreeView c, string filter, bool skipPrimary) {
+        public void FilteredPreFillTree(TreeView c, q filter, bool skipPrimary) {
             var table = GetTableName(c.Tag.ToString());
             if (table == primaryTable.TableName) MainTableSelector = c;
 
@@ -2954,7 +2956,7 @@ namespace mdl_winform {
             //Checks that the table is not a child of another table. Infact in that case,
             // the list will be built depending of the selected row of the other table
             //if ((filter==null) && (T.ParentRelations.Count>0)) return;
-            filter = GetData.MergeFilters(filter, tm.RootsCondition_SQL());
+            filter = q.and(filter, tm.RootsCondition_SQL());
             eventManager.DisableAutoEvents();
             StartTreeView(c, filter, true);
             eventManager.EnableAutoEvents();
@@ -3082,11 +3084,11 @@ namespace mdl_winform {
                 if ((Source != null) && (tablewanted != null) && (Source.TableName != tablewanted)) return;
                 //Il prefill non deve quasi mai impostare il valore, ma solo la tabella!!!!
                 //MarkEvent("To prefill "+Co.Name+"...");
-                int handlecombo = metaprofiler.StartTimer("filteredPreFillCombo3 * " + Co.Name);
+                int handlecombo = MetaProfiler.StartTimer("filteredPreFillCombo3 * " + Co.Name);
                 //Co.SuspendLayout();
                 comboBoxManager.filteredPreFillCombo((ComboBox) Co, null, false, selList);
                 //Co.ResumeLayout();
-                metaprofiler.StopTimer(handlecombo);
+                MetaProfiler.StopTimer(handlecombo);
                 //MarkEvent(Co.Name+" prefilled.");
                 return;
             }
@@ -3125,7 +3127,7 @@ namespace mdl_winform {
         /// <param name="filter"></param>
         /// <param name="freshvalue"></param>
         [Obsolete("Use comboBoxManager.filteredPreFillCombo(comboBoxManager.filteredPreFillCombo(ComboBox, string, bool))")]
-        public void FilteredPreFillCombo(ComboBox C, string filter, bool freshvalue) {
+        public void FilteredPreFillCombo(ComboBox C, q filter, bool freshvalue) {
             comboBoxManager.filteredPreFillCombo(C, filter, freshvalue, null);
         }
 
@@ -3140,7 +3142,7 @@ namespace mdl_winform {
         /// <param name="selList"></param>
         /// <param name="dmode"></param>
         [Obsolete("Use comboBoxManager.filteredPreFillCombo with same parameters")]
-        public void FilteredPreFillCombo(ComboBox C, string filter, bool freshvalue, List<SelectBuilder> selList, HelpForm.drawmode dmode) {
+        public void FilteredPreFillCombo(ComboBox C, q filter, bool freshvalue, List<SelectBuilder> selList, HelpForm.drawmode dmode) {
             comboBoxManager.filteredPreFillCombo(C, filter, freshvalue, selList);
         }
 
@@ -3221,7 +3223,7 @@ namespace mdl_winform {
             iterateControlsSelList(F.Controls, PreFillControls, selList);
             if (selList.Count > 0) {
                 //var conn = MetaData.getConnection(F);
-                conn.MULTI_RUN_SELECT(selList);
+                conn.MultipleSelect(selList).GetAwaiter().GetResult();
             }
         }
 
@@ -3238,7 +3240,7 @@ namespace mdl_winform {
 
             if (selList.Count > 0) {
                 //var conn = MetaData.getConnection(F);
-                conn.MULTI_RUN_SELECT(selList);
+                conn.MultipleSelect(selList).GetAwaiter().GetResult();
             }
         }
 
@@ -3656,8 +3658,8 @@ namespace mdl_winform {
         /// <param name="r">Row to search</param>
         /// <returns>Row found in T with same key of given Row</returns>
         public static DataRow FindExternalRow(DataTable T, DataRow r) {
-            var condition = QueryCreator.WHERE_REL_CLAUSE(r, T.PrimaryKey, T.PrimaryKey, DataRowVersion.Default, false);
-            var found = T.Select(condition);
+            var condition = q.keyCmp(r);
+            var found = T.filter(condition);
             return found.Length == 0 ? null : found[0];
         }
 
@@ -3695,7 +3697,7 @@ namespace mdl_winform {
                 if(tablename == null) return false;
                 T = DS.Tables[tablename];
                 if(T == null) {
-                    ErrorLogger.Logger.markEvent("Nel dataset non esiste la tabella " + tablename);
+                    ErrorLogger.Logger.MarkEvent("Nel dataset non esiste la tabella " + tablename);
                     return false;
                 }
 
@@ -3727,7 +3729,7 @@ namespace mdl_winform {
                 if(tablename == null) return false;
                 T = DS.Tables[tablename];
                 if(T == null) {
-                    ErrorLogger.Logger.markEvent("Nel dataset non esiste la tabella " + tablename);
+                    ErrorLogger.Logger.MarkEvent("Nel dataset non esiste la tabella " + tablename);
                     return false;
                 }
                 var node = tree.SelectedNode;
@@ -3863,8 +3865,8 @@ namespace mdl_winform {
                 if (tt == null) return;
                 var tt2 = DS.Tables[tt.TableName];
                 if (tt2.ParentRelations.Count > 0) {
-                    model.clear(tt);
-                    model.clear(tt2);
+                    model.Clear(tt);
+                    model.Clear(tt2);
                 }
                 //if (ComboBoxToRefilter) comboBoxManager.resetComboBoxSource((ComboBox) C, TT.TableName, dmode);
                 //((ComboBox) C).SelectedIndex = -1;
@@ -3887,11 +3889,11 @@ namespace mdl_winform {
             }
 
             if (c is DataGrid g) {
-	            var s = metaprofiler.StartTimer($"Clear grid {g.Name}");
+	            var s = MetaProfiler.StartTimer($"Clear grid {g.Name}");
                 g.SuspendLayout();
                 g.SetDataBinding(null, "");
                 g.ResumeLayout();
-                metaprofiler.StopTimer(s);
+                MetaProfiler.StopTimer(s);
                 return;
             }
 
@@ -3913,10 +3915,10 @@ namespace mdl_winform {
         /// </summary>
         /// <param name="f"></param>
         public void ClearForm(Form f) {
-	        int startClear = metaprofiler.StartTimer("ClearForm * " + f.Name);
+	        int startClear = MetaProfiler.StartTimer("ClearForm * " + f.Name);
 	        controller =  FormController.GetController(f); // f.getInstance<IFormController>();
             iterateClear(f.Controls);
-            metaprofiler.StopTimer(startClear);
+            MetaProfiler.StopTimer(startClear);
             //ReEnable();
         }
 
@@ -3946,7 +3948,7 @@ namespace mdl_winform {
 
         #region Calcolo della Search Condition
 
-        string getSearchCombo(ComboBox c, DataColumn col, string condition) {
+        q getSearchCombo(ComboBox c, DataColumn col, q condition) {
             if (c.SelectedValue == null) return condition;
             if (c.SelectedIndex == 0) return condition;
             string search = GetSearchTag(c.Tag);
@@ -3958,7 +3960,7 @@ namespace mdl_winform {
             if (o == null) return condition;
 
             try {
-                return GetData.MergeFilters(condition,QueryCreator.comparelikefields(searchcol, o, o.GetType(), true)
+                return q.and(condition,q.likeOrEqual(searchcol, o)
                 );
             }
             catch {
@@ -3972,8 +3974,8 @@ namespace mdl_winform {
         /// </summary>
         /// <param name="f"></param>
         /// <returns></returns>
-        public string GetSearchCondition(Form f) {
-            var condition = "";
+        public MetaExpression GetSearchCondition(Form f) {
+            q condition = null;
             return iterateGetSearchCondition(f.Controls, condition);
         }
 
@@ -3983,12 +3985,12 @@ namespace mdl_winform {
         /// <param name="cs"></param>
         /// <param name="table"></param>
         /// <returns></returns>
-        public string GetSpecificCondition(Control.ControlCollection cs, string table) {
-            var condition = "";
+        public q GetSpecificCondition(Control.ControlCollection cs, string table) {
+            q condition = null;
             return iterateGetSpecificSearchCondition(cs, condition, table);
         }
 
-        string iterateGetSearchCondition(IEnumerable cs, string condition) {
+        q iterateGetSearchCondition(IEnumerable cs, q condition) {
             foreach (Control c in cs) {
                 if (isManagedCollection(c)) {
                     condition = getSearchFromManagedCollection(c, condition);
@@ -4003,7 +4005,7 @@ namespace mdl_winform {
             return condition;
         }
 
-        string getSearchRadioButton(RadioButton c, DataColumn col, string condition, string tag) {
+        q getSearchRadioButton(RadioButton c, DataColumn col, q condition, string tag) {
             string Tag = GetSearchTag(tag);
             string searchcol = GetColumnName(Tag);
             int pos = Tag.IndexOf(':');
@@ -4013,7 +4015,7 @@ namespace mdl_winform {
                     var O = HelpUi.GetObjectFromString(col.DataType, cvalue, null);
                     if (O == null) return condition;
                     try {
-                        return GetData.MergeFilters(condition, QueryCreator.comparelikefields(searchcol, O, O.GetType(), true));
+                        return q.and(condition, q.likeOrEqual(searchcol, O));
                     }
                     catch {
                     }
@@ -4031,19 +4033,19 @@ namespace mdl_winform {
                 var val = 1;
                 val <<= (nbit);
                 var tocompare = val;
-                var cond = "";
+                q cond = null;
                 if (negato) {
                     tocompare = 0;
                 }
-                if (c.Checked)cond = $"(({searchcol} & {val})={tocompare})";
-                return GetData.MergeFilters(condition, cond);
+                if (c.Checked)cond = q.eq(q.bitAnd(searchcol,val),tocompare); // $"(({searchcol} & {val})={tocompare})";
+                return q.and(condition, cond);
 
             }
             return condition;
         }
 
 
-        string iterateGetSpecificSearchCondition(IEnumerable cs, string condition, string table) {
+        q iterateGetSpecificSearchCondition(IEnumerable cs, q condition, string table) {
             foreach (Control c in cs) {
                 if (isManagedCollection(c)) continue;
                 condition = getSpecificSearchCondition(c, condition, table);
@@ -4055,7 +4057,7 @@ namespace mdl_winform {
         }
 
 
-        string getSearchFromManagedCollection(Control c, string condition) {
+        q getSearchFromManagedCollection(Control c, q condition) {
             string tag = GetSearchTag(c.Tag);
             if (tag == null) return condition;
             if (!(c is GroupBox)) return condition;
@@ -4071,7 +4073,7 @@ namespace mdl_winform {
             return null;
         }
 
-        string getSearchFromValueSigned(GroupBox c, string condition) {
+        q getSearchFromValueSigned(GroupBox c, q condition) {
             var tag = GetSearchTag(c.Tag);
             if (tag == null) return condition;
 
@@ -4097,16 +4099,14 @@ namespace mdl_winform {
             if (!sign) o = invertSign(o);
 
             try {
-                return GetData.MergeFilters(condition,
-                    QueryCreator.comparelikefields(colname,
-                        o, o.GetType(), true));
+                return q.and(condition,q.likeOrEqual(colname,o));
             }
             catch {
                 return condition;
             }
         }
 
-        string getSearchFromControl(Control c, DataColumn col, string condition, string tag) {
+        q getSearchFromControl(Control c, DataColumn col, q condition, string tag) {
 	        try {
 		        //source is the field to fill in the control
 		        if (c is ComboBox) {
@@ -4150,7 +4150,7 @@ namespace mdl_winform {
                         T = DS.Tables[tabname];
                         if (T.Columns.Contains(colname)) return T.Columns[colname];
                     }
-                    T = conn.CreateTableByName(tabname, "*");
+                    T = conn.CreateTable(tabname).GetAwaiter().GetResult();
                     return T.Columns.Contains(colname) ? T.Columns[colname] : new DataColumn(colname, typeof(string));
                 case "C": return new DataColumn(colname, typeof(decimal));
                 case "N": return new DataColumn(colname, typeof(decimal));
@@ -4160,7 +4160,7 @@ namespace mdl_winform {
             return new DataColumn(colname, typeof(string));
         }
 
-        string getSearchCondition(Control C, string condition) {
+        q getSearchCondition(Control C, q condition) {
             var tag = GetSearchTag(C.Tag);
             var tag2 = GetStandardTag(C.Tag);
             if (tag == null) return condition;
@@ -4184,7 +4184,7 @@ namespace mdl_winform {
         }
 
 
-        string getSpecificSearchCondition(Control c, string condition, string specTable) {
+        q getSpecificSearchCondition(Control c, q condition, string specTable) {
             if (c.Enabled == false) return condition;
 
             var tag = GetStandardTag(c.Tag);
@@ -4206,7 +4206,7 @@ namespace mdl_winform {
             return getSearchFromControl(c, col, condition, tag);
         }
 
-        string getSearchRichText(RichTextBox T, DataColumn col, string condition) {
+        q getSearchRichText(RichTextBox T, DataColumn col, q condition) {
             if (T.Text == "") return condition;
             var tag = GetSearchTag(T.Tag);
             var searchcol = GetColumnName(tag);
@@ -4222,18 +4222,15 @@ namespace mdl_winform {
             }
 
             if (o == null) return condition;
-            string fmt = GetFieldLower(tag, 2);
             try {
-                return GetData.MergeFilters(condition,
-                    QueryCreator.comparelikefields(searchcol,
-                        o, o.GetType(), true));
+                return q.and(condition,q.likeOrEqual(searchcol,o));
             }
             catch {
                 return condition;
             }
         }
 
-        string getSearchText(TextBox T, DataColumn col, string condition) {
+        q getSearchText(TextBox T, DataColumn col, q condition) {
             if (T.Text == "") return condition;
             string tag = GetSearchTag(T.Tag);
             string searchcol = GetColumnName(tag);
@@ -4254,18 +4251,22 @@ namespace mdl_winform {
                 (HelpUi.IsOnlyTimeStyle(fmt)) && (o != DBNull.Value) &&
                 (!o.Equals(HelpUi.EmptyDate()))) {
                 var dt = Convert.ToDateTime(o);
-                string filter = $"(DATEPART(hh,{searchcol})={dt.Hour})AND(DATEPART(n,{searchcol})={dt.Minute})AND(DATEPART(s,{searchcol})={dt.Second})";
-                return GetData.MergeFilters(condition, filter);
+                //string filter = $"(DATEPART(hh,{searchcol})={dt.Hour})AND(DATEPART(n,{searchcol})={dt.Minute})AND(DATEPART(s,{searchcol})={dt.Second})";
+                q filter = q.eq(q.GetDatePart(searchcol,DatePart.hour) , dt.Hour) &
+                    q.eq(q.GetDatePart(searchcol, DatePart.minute), dt.Minute) &
+                    q.eq(q.GetDatePart(searchcol, DatePart.second), dt.Second);
+
+                return q.and(condition, filter);
             }
             try {
-                return GetData.MergeFilters(condition, QueryCreator.comparelikefields(searchcol,o, o.GetType(), true));
+                return q.and(condition, q.likeOrEqual(searchcol,o));
             }
             catch {
                 return condition;
             }
         }
 
-        string getSearchCheckBox(CheckBox c, DataColumn col, string condition, string tag) {
+        q getSearchCheckBox(CheckBox c, DataColumn col, q condition, string tag) {
             if (c.CheckState == CheckState.Indeterminate) return condition;
 
             string Tag = GetSearchTag(tag);
@@ -4284,14 +4285,20 @@ namespace mdl_winform {
                 int Nbit = Convert.ToInt32(values);
                 int val = 1;
                 val <<= (Nbit);
-                string cond;
+                q cond;
                 bool valore = c.Checked;
                 if (negato) valore = !valore;
-                if (valore)
-                    cond = $"(({searchcol} & {val})={val})";
-                else
-                    cond = $"(({searchcol} & {val})=0)";
-                return GetData.MergeFilters(condition, cond);
+                if (valore) {
+                    //cond = $"(({searchcol} & {val})={val})";
+                    cond = q.eq(q.bitAnd(searchcol,val),val);
+
+                }
+				else {
+                    //cond = $"(({searchcol} & {val})=0)";
+                    cond = q.eq(q.bitAnd(searchcol, val), 0);
+                }
+                    
+                return q.and(condition, cond);
             }
 
             var yvalue = values.Split(new char[] {':'}, 2)[0].Trim();
@@ -4302,9 +4309,7 @@ namespace mdl_winform {
             var o = HelpUi.GetObjectFromString(col.DataType, newvalue, null);
             if (o == null) return condition;
             try {
-                return GetData.MergeFilters(condition,
-                    QueryCreator.comparelikefields(searchcol,
-                        o, o.GetType(), true));
+                return q.and(condition,q.likeOrEqual(searchcol,o));
             }
             catch {
                 return condition;
@@ -4318,7 +4323,7 @@ namespace mdl_winform {
         #region Funzioni di gestione ValueSigned and ManagedCollections
 
         bool isManagedCollection(Control c) {
-            var handle = metaprofiler.StartTimer("IsManagedCollection");
+            var handle = MetaProfiler.StartTimer("IsManagedCollection");
             try {
                 if (!(c is GroupBox)) return false;
                 var tag = GetStandardTag(c.Tag);
@@ -4326,7 +4331,7 @@ namespace mdl_winform {
                 return GetFieldLower(tag, 2) == "valuesigned";
             }
             finally {
-                metaprofiler.StopTimer(handle);
+                MetaProfiler.StopTimer(handle);
             }
         }
 
@@ -4470,7 +4475,7 @@ namespace mdl_winform {
         /// <param name="freshvalue"></param>
         /// <param name="dmode"></param>
         [Obsolete("comboBoxManager.filteredPreFillCombo(C, filter, freshvalue)")]
-        public void FilteredPreFillCombo(ComboBox C, string filter, bool freshvalue, drawmode dmode) {
+        public void FilteredPreFillCombo(ComboBox C, q filter, bool freshvalue, drawmode dmode) {
             comboBoxManager.filteredPreFillCombo(C, filter, freshvalue);
         }
 
@@ -4690,14 +4695,13 @@ namespace mdl_winform {
                 var parentChildRel = QueryCreator.GetParentChildRel(mastertable, gridtable);
                 if (parentChildRel == null) return;
                 var masterRow = GetLastSelected(DS.Tables[gridmaster]);
-                string cond;
+                q cond;
                 if (masterRow != null) {
-                    cond = QueryCreator.WHERE_REL_CLAUSE(masterRow,
-                        parentChildRel.ParentColumns, parentChildRel.ChildColumns,
-                        DataRowVersion.Default, true);
+                    cond =q.mGetParents(masterRow, parentChildRel);
+                        //QueryCreator.WHERE_REL_CLAUSE(masterRow,parentChildRel.ParentColumns, parentChildRel.ChildColumns,DataRowVersion.Default, true);
                 }
                 else {
-                    cond = "(1=0)";
+                    cond = q.constant(false); // "(1=0)";
                 }
                 gridtable.ExtendedProperties["ParentRelation"] = cond;
             }
@@ -4721,11 +4725,10 @@ namespace mdl_winform {
 
                 DataRelation parentChildRel = QueryCreator.GetParentChildRel(changed, gridtable);
                 if (parentChildRel == null) return;
-                string cond = null;
+                q cond = null;
                 if (changedRow != null) {
-                    cond = QueryCreator.WHERE_REL_CLAUSE(changedRow,
-                        parentChildRel.ParentColumns, parentChildRel.ChildColumns,
-                        DataRowVersion.Default, true);
+                    cond = q.mGetParents(changedRow, parentChildRel);
+                        //QueryCreator.WHERE_REL_CLAUSE(changedRow,parentChildRel.ParentColumns, parentChildRel.ChildColumns,DataRowVersion.Default, true);
                 }
                 gridtable.ExtendedProperties["ParentRelation"] = cond;
             }
@@ -4734,9 +4737,9 @@ namespace mdl_winform {
             }
 
 
-            var gridhandle = metaprofiler.StartTimer("SetDataGrid(G)");
+            var gridhandle = MetaProfiler.StartTimer("SetDataGrid(G)");
             setDataGrid((DataGrid) g);
-            metaprofiler.StopTimer(gridhandle);
+            MetaProfiler.StopTimer(gridhandle);
 
         }
 

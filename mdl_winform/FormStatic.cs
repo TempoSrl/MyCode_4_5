@@ -15,7 +15,7 @@ namespace mdl_winform {
 
      public interface ICustomViewListForm {
 	    void  init(IWinFormMetaData linked, string columnlist,
-		    string mergedfilter, string searchtable, string listingType, 
+            MetaExpression mergedfilter, string searchtable, string listingType, 
             DataTable toMerge, 
             string sorting, 
             int top,
@@ -118,49 +118,49 @@ namespace mdl_winform {
                 string datacont = "";
                 if (security != null) {
                     if (security.GetSys("datacontabile") != null) {
-                        datacont = security.GetDataContabile().ToString("d");
+                        datacont = ((DateTime)security.GetSys("datacontabile")).ToString("d");
                     }
                     msg +=
-                            "nomedb=" + mdl_utils.Quoting.quotedstrvalue(security.GetSys("database"), true) + ";" +
-                            "server=" + mdl_utils.Quoting.quotedstrvalue(security.GetSys("server"), true) + ";" +
-                            "username=" + mdl_utils.Quoting.quotedstrvalue(security.GetSys("user"), true) + ";" +
-                            "machine=" + mdl_utils.Quoting.quotedstrvalue(security.GetSys("computername"), false) + ";" +
-                            "dep=" + mdl_utils.Quoting.quotedstrvalue(security.GetSys("userdb"), false) + ";" +
-                            "esercizio=" + mdl_utils.Quoting.quotedstrvalue(security.GetSys("esercizio"), false) + ";" +
-                            "datacont=" + mdl_utils.Quoting.quotedstrvalue(datacont, false) + ";";
+                            "nomedb=" + mdl_utils.Quoting.quote(security.GetSys("database"), true) + ";" +
+                            "server=" + mdl_utils.Quoting.quote(security.GetSys("server"), true) + ";" +
+                            "username=" + mdl_utils.Quoting.quote(security.GetSys("user"), true) + ";" +
+                            "machine=" + mdl_utils.Quoting.quote(security.GetSys("computername"), false) + ";" +
+                            "dep=" + mdl_utils.Quoting.quote(security.GetSys("userdb"), false) + ";" +
+                            "esercizio=" + mdl_utils.Quoting.quote(security.GetSys("esercizio"), false) + ";" +
+                            "datacont=" + mdl_utils.Quoting.quote(datacont, false) + ";";
                 }
                 else {
                     msg +=
-                            "username=" + mdl_utils.Quoting.quotedstrvalue(noNull(Environment.UserName), true) + ";" +
+                            "username=" + mdl_utils.Quoting.quote(noNull(Environment.UserName), true) + ";" +
                             "machine=" +
-                            mdl_utils.Quoting.quotedstrvalue(
-                                noNull(Environment.MachineName) + "-" + noNull(DataAccess.GetOSVersion()), false) + ";";
+                            mdl_utils.Quoting.quote(
+                                noNull(Environment.MachineName) + "-" + noNull(GetOSVersion()), false) + ";";
                 }
 
 
                 string lasterr = dataAccess?.SecureGetLastError();
                 if (!string.IsNullOrEmpty(lasterr)) {
-                    msg += "dberror=" + mdl_utils.Quoting.quotedstrvalue(lasterr, false) + ";";
+                    msg += "dberror=" + mdl_utils.Quoting.quote(lasterr, false) + ";";
                 }
                 errmsg += "\r\n" + ErrorLogger.GetOuput();
-                msg += "err=" + mdl_utils.Quoting.quotedstrvalue(noNull(errmsg), false);
+                msg += "err=" + mdl_utils.Quoting.quote(noNull(errmsg), false);
 
                 string internalMsg = "";
                 if (ErrorLogger.applicationName != null) {
-                    msg += "app=" + mdl_utils.Quoting.quotedstrvalue(ErrorLogger.applicationName, true) + ";";
+                    msg += "app=" + mdl_utils.Quoting.quote(ErrorLogger.applicationName, true) + ";";
                 }
 
 
 
                 if (exception != null) {
-                    var except = QueryCreator.GetErrorString(exception);
+                    var except = ErrorLogger.GetErrorString(exception);
                     if (except.Length > 2800) except = except.Substring(0, 2800);
                     internalMsg += except + "\n";
                     Trace.WriteLine(exception.ToString());
                 }
 
                 if (internalMsg != "") {
-                    msg += ";msg=" + mdl_utils.Quoting.quotedstrvalue(internalMsg, false);
+                    msg += ";msg=" + mdl_utils.Quoting.quote(internalMsg, false);
                 }
 
 
@@ -168,7 +168,7 @@ namespace mdl_winform {
                 var ss2 = mdl_utils.Quoting.ByteArrayToString(b2);
 
                 var sm = new mdl.SendMessage(ss2, "z");
-                sm.send();
+                sm.Send();
                 //var TT= Task.Run(() => sm.send() ); I fear that application could be closed in the meanwhile so I do the operation syncronously
 
 
@@ -180,6 +180,71 @@ namespace mdl_winform {
 
 
         }
+
+        /// <summary>
+        /// Gets OS Version
+        /// </summary>
+        /// <returns></returns>
+        public static string GetOSVersion() {
+            switch (Environment.OSVersion.Platform) {
+                case PlatformID.Win32S:
+                    return "Win 3.1";
+                case PlatformID.Win32Windows:
+                    switch (Environment.OSVersion.Version.Minor) {
+                        case 0:
+                            return "Win95";
+                        case 10:
+                            return "Win98";
+                        case 90:
+                            return "WinME";
+                    }
+                    break;
+
+                case PlatformID.Win32NT:
+                    switch (Environment.OSVersion.Version.Major) {
+                        case 3:
+                            return "NT 3.51";
+                        case 4:
+                            return "NT 4.0";
+                        case 5:
+                            switch (Environment.OSVersion.Version.Minor) {
+                                case 0:
+                                    return "Win2000";
+                                case 1:
+                                    return "WinXP";
+                                case 2:
+                                    return "Win2003";
+                            }
+                            break;
+
+                        case 6:
+                            switch (Environment.OSVersion.Version.Minor) {
+                                case 0:
+                                    return "Vista/Win2008Server";
+                                case 1:
+                                    return "Win7/Win2008Server R2";
+                                case 2:
+                                    return "Win8/Win2012Server";
+                                case 3:
+                                    return "Win8.1/Win2012Server R2";
+                            }
+                            break;
+                        case 10:
+                            switch (Environment.OSVersion.Version.Minor) {
+                                case 0:
+                                    return "Win10/Win2016Server";
+                            }
+                            break;
+                    }
+                    break;
+
+                case PlatformID.WinCE:
+                    return "Win CE";
+            }
+
+            return "Unknown";
+        }
+
 
         static FormStatic(){
             var factory = MetaFactory.factory;
@@ -240,10 +305,10 @@ namespace mdl_winform {
                     a = LoadedFormAssembly[dllName] as Assembly;
                 }
                 else {
-                    var handle = mdl_utils.metaprofiler.StartTimer("load Form * "+myAssemblyName);
+                    var handle = mdl_utils.MetaProfiler.StartTimer("load Form * "+myAssemblyName);
                     a = loadAssembly(myAssemblyName);
                     LoadedFormAssembly[dllName] = a;
-                    mdl_utils.metaprofiler.StopTimer(handle);
+                    mdl_utils.MetaProfiler.StopTimer(handle);
                     new Task(() => {
 	                    loadReferencedAssembly(a);
                     }).Start();
@@ -273,7 +338,7 @@ namespace mdl_winform {
                     //    shower.ShowException(errMsg, e);
                     //    continue;
                     //}
-                    ErrorLogger.Logger.warnEvent($"OpenForm:{dllName} ver:{a.GetName().Version}");
+                    ErrorLogger.Logger.WarnEvent($"OpenForm:{dllName} ver:{a.GetName().Version}");
                     return f;
                 }
 

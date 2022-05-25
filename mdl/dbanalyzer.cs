@@ -2,6 +2,7 @@ using System;
 using System.Data;
 using System.Collections;
 using q = mdl.MetaExpression;
+using System.Threading.Tasks;
 
 namespace mdl
 {
@@ -17,9 +18,9 @@ namespace mdl
 		/// <param name="conn"></param>
 		/// <param name="kind">xtype parameter, use U for tables, V for views</param>
 		/// <returns>list of specified db object names</returns>
-            public static ArrayList ObjectListFromDB(DataAccess conn,string kind){
+            public static async Task<ArrayList> ObjectListFromDB(DataAccess conn,string kind){
 			
-			var list = conn.RUN_SELECT("sysobjects","name",null,"(xtype='"+kind+"')",null,null,false);
+			var list = await conn.Select("sysobjects",columnlist:"name",filter:"(xtype='"+kind+"')");
 			var outlist= new ArrayList(list.Rows.Count);
 			foreach(DataRow r in list.Rows){
                 if (!outlist.Contains(r["name"].ToString()))
@@ -33,8 +34,8 @@ namespace mdl
 		/// </summary>
 		/// <param name="conn"></param>
 		/// <returns></returns>
-		public static ArrayList TableListFromDB(DataAccess conn){
-			return ObjectListFromDB(conn, "U");
+		public static async Task<ArrayList> TableListFromDB(DataAccess conn){
+			return await ObjectListFromDB(conn, "U");
 		}
 
 		/// <summary>
@@ -42,8 +43,8 @@ namespace mdl
 		/// </summary>
 		/// <param name="conn"></param>
 		/// <returns></returns>
-		public static ArrayList ViewListFromDB(DataAccess conn){
-			return ObjectListFromDB(conn, "V");
+		public static async Task<ArrayList> ViewListFromDB(DataAccess conn){
+			return await ObjectListFromDB(conn, "V");
 		}
 
 
@@ -54,11 +55,11 @@ namespace mdl
 		/// <param name="tableName"></param>
 		/// <param name="conn"></param>
 		/// <returns>null on errors</returns>
-		public static ArrayList  GetPrimaryKey(string tableName,DataAccess conn) {
+		public static async Task<ArrayList> GetPrimaryKey(string tableName,DataAccess conn) {
 			var myKey = new ArrayList();
 			//"sp_pkeys @table_name = 'tabella', @table_owner = 'dbo',@table_qualifier = 'database'";
 			var cmdText = $"sp_pkeys @table_name = '{tableName}',@table_qualifier = '{conn.Security.GetSys("database")}'";
-			var keyNames = conn.SQLRunner(cmdText);
+			var keyNames = await conn.ExecuteQuery(cmdText);
 			if (keyNames==null)  return null;
 
 			foreach(DataRow keyName in keyNames.Rows) {
@@ -78,14 +79,14 @@ namespace mdl
 		/// <param name="tableName"></param>
 		/// <param name="conn"></param>
 		/// <returns>true when successfull</returns>
-		public static bool ReadColumnTypes(DataTable colTypes, string tableName, DataAccess conn){
+		public static async Task< bool> ReadColumnTypes(DataTable colTypes, string tableName, DataAccess conn){
 
 			//Reads table structure through MShelpcolumns Database call
 			var cmdText2 = "exec sp_MShelpcolumns N'" + tableName + "'";
-			DataTable dtColumns = conn.SQLRunner(cmdText2);			
+			DataTable dtColumns = await conn.ExecuteQuery(cmdText2);			
 			if (dtColumns==null) return false;				
 		
-			var tableKeys = GetPrimaryKey(tableName,conn);
+			var tableKeys = await GetPrimaryKey(tableName,conn);
 			if (tableKeys==null) return false;
 
 			//columns returned are:
@@ -99,7 +100,7 @@ namespace mdl
 			foreach(DataRow myDr in dtColumns.Rows) {
 				var colname = myDr["col_name"].ToString();
 				//var mySelect = $"(tablename = '{tableName}') AND (field = '{colname}')";
-				DataRow[] myDrSelect = colTypes._Filter(q.mCmp(new {tablename=tableName,field=colname}));					
+				DataRow[] myDrSelect = colTypes.filter(q.mCmp(new {tablename=tableName,field=colname}));					
 				DataRow currCol = null;
 				var toadd=false;
 				if(myDrSelect.Length == 0) {
@@ -154,7 +155,7 @@ namespace mdl
 
 			foreach (var existingCol in colTypes.Select()){
 				//var rSelect = "(col_name='"+existingCol["field"]+"')";
-				DataRow []exists = dtColumns._Filter(q.eq("col_name",existingCol["field"]));
+				DataRow []exists = dtColumns.filter(q.eq("col_name",existingCol["field"]));
 				if (exists.Length>0) continue;
 				existingCol.Delete();
 			}
@@ -171,15 +172,15 @@ namespace mdl
 		/// <param name="conn"></param>
 		/// <param name="filter"></param>
 		/// <returns>true if OK</returns>
-		public static bool ExportTableToXML(string filename, string tablename,
+		public static async Task<bool> ExportTableToXML(string filename, string tablename,
 				DataAccess conn, string filter) {
 			DataSet ds = new DataSet();
-			DataTable T = conn.CreateTableByName(tablename,null);
-			DataAccess.addExtendedProperty(conn,T);
+			DataTable T = await conn.CreateTable(tablename,null);
+			await DataAccess.addExtendedProperty(conn,T);
 			ds.Tables.Add(T);
 
             //reads table
-            conn.RUN_SELECT_INTO_TABLE(T,null,filter,null,true);
+            await conn.SelectIntoTable(T,filter:filter);
 
 			try {
 				ds.WriteXml(filename, XmlWriteMode.WriteSchema);
@@ -242,34 +243,18 @@ namespace mdl
 		}
 	
 
-		/// <summary>
-		/// Clear a DataBase Table with an unconditioned DELETE from tablename
-		/// </summary>
-		/// <param name="tablename"></param>
-		/// <param name="Conn"></param>
-		/// <returns>true when successfull</returns>
-		public static bool ClearTable (string tablename, DataAccess Conn){
-			//Cancella tutte le righe della tabella del DB 
-			try {
-				Conn.DO_DELETE(tablename,null);
-			}
-			catch {
-				return false;
-			}
-			return true;
-		}
-
+		
 		/// <summary>
 		/// Returns a representation of all real tables of the DB.  Foreach DB
 		///  table, a corresponding table is created in DS (without extended properties)
 		/// </summary>
 		/// <param name="Conn"></param>
 		/// <returns></returns>
-		public static DataSet GetOverallDataSet(DataAccess Conn){
-			ArrayList TableList = TableListFromDB(Conn);
+		public static async Task<DataSet> GetOverallDataSet(DataAccess Conn){
+			ArrayList TableList = await TableListFromDB(Conn);
 			DataSet DS= new DataSet("OverAll");
 			foreach (string TableName in TableList){
-				DataTable T = Conn.CreateTableByName(TableName,null);
+				DataTable T = await Conn.CreateTable(TableName);
 				DS.Tables.Add(T);
 			}
 			return DS;
@@ -308,19 +293,15 @@ namespace mdl
 		///  those are skipped</param>
 		/// <param name="filter">condition to apply on data in DataTable</param>
 		/// <returns>true if OK</returns>
-		public static bool WriteDataTableToDB(DataTable T, DataAccess Conn, 
-			bool Clear, bool Replace, string filter){
+		public static async Task<bool> WriteDataTableToDB(DataTable T, DataAccess Conn, 
+			bool Replace, string filter){
 			DataSet Existent = new DataSet();
 			DataTable ExistentTable = T.Clone();
 			Existent.Tables.Add(ExistentTable);
 //			GetData get2= new GetData();
 //			get2.InitClass(Existent, Conn, ExistentTable.TableName);
 
-			if (!CheckDbTableStructure(T.TableName, T, Conn))return false;
-
-            if (Clear) {
-                ClearTable(T.TableName, Conn);
-            }
+			if (!await CheckDbTableStructure(T.TableName, T, Conn))return false;
 			
 			//ArrayList MyArraySkipRows = new ArrayList();
 			
@@ -331,23 +312,23 @@ namespace mdl
 			foreach(DataRow DR in Filtered) {
 
 
-                if (!Clear) {
+                
                     //Controlla se è gia presente nella tabella del DB una riga con chiave uguale
-                    string WhereKey = QueryCreator.WHERE_KEY_CLAUSE(DR, DataRowVersion.Default, true);
-                    int count = Conn.RUN_SELECT_COUNT(T.TableName, WhereKey, true);
+                    var WhereKey = q.keyCmp(DR);
+                    int count = await Conn.Count(T.TableName, filter:WhereKey);
 
 
                     //if a row exists, update it
                     if (count > 0) {
                         if (!Replace) continue;
-                        Conn.RUN_SELECT_INTO_TABLE(ExistentTable, null, WhereKey, null, true);
-                        DataRow Curr = ExistentTable.Select(WhereKey)[0];
+                        await Conn.SelectIntoTable(ExistentTable, filter: WhereKey);
+                        DataRow Curr = ExistentTable.filter(WhereKey)[0];
                         foreach (DataColumn C in ExistentTable.Columns) {
                             Curr[C.ColumnName] = DR[C.ColumnName];
                         }
                         continue;
                     }
-                }
+                
 			
 				//insert new row
 				DataRow newR= ExistentTable.NewRow();
@@ -357,8 +338,8 @@ namespace mdl
 				ExistentTable.Rows.Add(newR);
 			}
 			PostData post = new PostData();
-			post.initClass(Existent, Conn);
-			return post.DO_POST();
+			await post.InitClass(Existent, Conn);
+			return post.InteractiveSaveData();
 
 		}
 
@@ -370,10 +351,10 @@ namespace mdl
 		/// <param name="DS"></param>
 		/// <param name="Conn"></param>
 		/// <returns></returns>
-		public static bool ApplyStructureToDB(DataSet DS, DataAccess Conn){
+		public static async Task<bool> ApplyStructureToDB(DataSet DS, DataAccess Conn){
 			if(DS == null)return false;
 			foreach (DataTable T in DS.Tables){
-				if (!CheckDbTableStructure(T.TableName, T, Conn))return false;
+				if (! await CheckDbTableStructure(T.TableName, T, Conn))return false;
 			}
 			return true;
 		}
@@ -389,12 +370,12 @@ namespace mdl
 		/// <param name="Replace"></param>
 		/// <param name="filter"></param>
 		/// <returns></returns>
-		public static bool WriteDataSetToDB(DataSet DS, DataAccess Conn, 
-			bool clear, bool Replace, string filter){
+		public static async Task<bool> WriteDataSetToDB(DataSet DS, DataAccess Conn, 
+			 bool Replace, string filter){
 
 			if(DS == null)return false;
 			foreach (DataTable T in DS.Tables){
-				bool res = WriteDataTableToDB(T, Conn, clear, Replace, filter);
+				bool res = await WriteDataTableToDB(T, Conn,  Replace, filter);
 				if (!res) return false;
 			}
 			return true;
@@ -410,8 +391,8 @@ namespace mdl
 		/// <param name="T">Table (extended with schema info)  to check</param>
 		/// <param name="Conn"></param>
 		/// <returns>true when successfull</returns>
-		public static bool CheckDbTableStructure(string tablename, DataTable T, DataAccess Conn){
-			if (!TableExists(tablename, Conn))	return CreateTableLike(tablename, T, Conn);
+		public static async Task<bool> CheckDbTableStructure(string tablename, DataTable T, DataAccess Conn){
+			if (!await TableExists(tablename, Conn))	return await CreateTableLike(tablename, T, Conn);
 
 			//Reads table structure through MShelpcolumns Database call
 //			string CmdText2 = "exec sp_MShelpcolumns N'[dbo].[" + tablename + "]'";
@@ -426,7 +407,7 @@ namespace mdl
 
 			ArrayList ToAdd= new ArrayList();
 			foreach(DataColumn C in T.Columns){
-				if (ColumnExists(tablename, C.ColumnName, Conn)) {
+				if (await ColumnExists(tablename, C.ColumnName, Conn)) {
 					//CheckColumnType(tablename, C.ColumnName,Conn, ExistingColumns);
 					continue;
 				}
@@ -443,7 +424,7 @@ namespace mdl
 				else
 					cols[i,2]= "NOT NULL";				
 			}
-			return AddColumns(tablename, cols, Conn);
+			return await AddColumns(tablename, cols, Conn);
 		}
 
 		//void CheckColumnType(string tablename, 
@@ -460,7 +441,7 @@ namespace mdl
 		/// <param name="T">DataTable with DataColumn-extended info about DB schema</param>
 		/// <param name="Conn"></param>
 		/// <returns>true when successfull</returns>
-		public static bool CreateTableLike(string tablename, DataTable T, DataAccess Conn){
+		public static async Task<bool> CreateTableLike(string tablename, DataTable T, DataAccess Conn){
 			int colcount = T.Columns.Count;
 			string [,]cols = new string[colcount, 3];
 			for (int i=0; i< colcount; i++){
@@ -473,7 +454,7 @@ namespace mdl
 			}
 			string [] key= new string[T.PrimaryKey.Length];
 			for (int i=0; i< key.Length; i++) key[i] = T.PrimaryKey[i].ColumnName;
-			return CreateTable(tablename, cols,key, Conn);
+			return await CreateTable(tablename, cols,key, Conn);
 		}
 
 		/// <summary>
@@ -482,9 +463,9 @@ namespace mdl
 		/// <param name="TableName">Name of the Table</param>
 		/// <param name="Conn"></param>
 		/// <returns>True when Table exists </returns>
-		public static bool TableExists(string TableName, DataAccess Conn) {
+		public static async Task<bool> TableExists(string TableName, DataAccess Conn) {
 			string Sql= $"select count(*) from [dbo].[sysobjects] where id = object_id(N'[{TableName}]') and OBJECTPROPERTY(id, N'IsUserTable') = 1";
-			int N = Convert.ToInt32(Conn.DO_SYS_CMD(Sql));
+			int N = Convert.ToInt32(await Conn.ExecuteScalar(Sql));
 			if(N  == 0) {
 				return false;
 			}
@@ -500,10 +481,10 @@ namespace mdl
 		/// <param name="ColumnName"></param>
 		/// <param name="Conn"></param>
 		/// <returns></returns>
-		public static bool  ColumnExists(string TableName, string ColumnName, DataAccess Conn) {
+		public static async Task<bool> ColumnExists(string TableName, string ColumnName, DataAccess Conn) {
 			string MyCmd=
                 $"select count(*) from [dbo].[sysobjects] as T join [dbo].[syscolumns] as C on C.ID = T.ID where T.name='{TableName}' and C.name='{ColumnName}'";
-			int N =  Convert.ToInt32(Conn.DO_SYS_CMD(MyCmd));
+			int N =  Convert.ToInt32(await Conn.ExecuteScalar(MyCmd));
 			if(N  == 0) {
 				return false;
 			}
@@ -523,7 +504,7 @@ namespace mdl
 		/// <param name="PKey">Array containg the Primary Key of the Table</param>
 		/// <param name="Conn"></param>
 		/// <returns></returns>
-		public static bool CreateTable(string TableName, string[,] Column, string[] PKey, DataAccess Conn) {
+		public static async Task<bool> CreateTable(string TableName, string[,] Column, string[] PKey, DataAccess Conn) {
 			int i;
 			string command;
 			command = "CREATE TABLE " + TableName + " (\r";
@@ -546,7 +527,7 @@ namespace mdl
 			//MetaFactory.factory.getSingleton<IMessageShower>().Show(command);
 
 			try {
-				Conn.DO_SYS_CMD(command);
+				await Conn.ExecuteNonQuery(command);
 				return true;
 			}
 			catch (Exception E) {
@@ -564,7 +545,7 @@ namespace mdl
 		/// <param name="Column">array of columns to add (fieldname, sqltype)</param>
 		/// <param name="Conn"></param>
 		/// <returns>true when successfull</returns>
-		public static bool AddColumns(string TableName, string[,] Column, DataAccess Conn) {
+		public static async Task<bool> AddColumns(string TableName, string[,] Column, DataAccess Conn) {
 			int i;
 			string command;
 			command = "ALTER TABLE " + TableName + " ADD \r";
@@ -575,7 +556,7 @@ namespace mdl
 		    MetaFactory.factory.getSingleton<IMessageShower>().Show(null,command,"Informazione");
 
 			try {
-				Conn.SQLRunner(command);
+				await Conn.ExecuteNonQuery(command);
 				return true;
 			}
 			catch (Exception E) {

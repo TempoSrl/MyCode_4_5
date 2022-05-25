@@ -9,36 +9,198 @@ using System.Reflection;
 #pragma warning disable IDE1006 // Naming Styles
 
 namespace mdl {
+
+    public enum DatePart  { hour, minute, second, millisecond, day, month, year} ;
     /// <summary>
     /// Implementation of QueryHelper for Sql Server database
     /// </summary>
-    public class SqlServerQueryHelper : QueryHelper {
+    public class SqlServerQueryHelper :QueryHelper {
+
+        public override string ReturnValueIfNoRowAffected(int value) {
+            return $"if (@@ROWCOUNT=0) BEGIN select {value}; RETURN; END;";
+        }
+
+        public override string Max(string expr) {
+            return $"max({expr})";
+        }
+
+        public override string Min(string expr) {
+            return $"min({expr})";
+        }
+        public override string Sustring(string expr, int start, int len) {
+            return $"substring({expr},{start},{len})"; //for oracle  substr
+        }
+        public override string ConvertToVarchar(string expr, int len) {
+            return $"convert($'varchar({len})',{expr})";
+        }
+        public override string ConvertToInt(string expr) {
+            return $"convert(int,{expr})";
+        }
 
         /// <summary>
-        /// Returns the string represantation of a constant object
+        /// 
+        /// </summary>
+        /// <param name="O"></param>
+        /// <param name="SQL">if true, SQL compatible representation are used</param>
+        /// <returns></returns>
+
+        /// <summary>
+        /// Gets the string (unquoted) representing an object (ex unquotedstrvalue).The only difference between
+        ///  quoted and unquoted is about how they operate on strings.
+        /// </summary>
+        /// <param name="O">Object to display in the output string</param>
+        /// <param name="T">Base Type of O</param>
+        /// <param name="SQL">if true, result can be used for building SQL commands</param>
+        /// <returns>String representation of O</returns>
+        public override string unquoted(Object O) {
+            if (O == null)
+                return "null";
+            if (O == DBNull.Value)
+                return "null";
+            var typename = O.GetType().Name;
+            switch (typename) {
+                case "String":
+                    return O.ToString();
+                case "Char":
+                    return O.ToString();
+                case "Double": {
+                    var group = System.Globalization.NumberFormatInfo.CurrentInfo.NumberGroupSeparator;
+                    var dec = System.Globalization.NumberFormatInfo.CurrentInfo.NumberDecimalSeparator;
+                    var s1 = ((Double)O).ToString("f10");
+                    if (group != dec)
+                        s1 = s1.Replace(group, "");
+
+                    var pos = s1.IndexOf(dec, 0);
+                    if (pos < 0)
+                        return s1;
+                    s1 = s1.Replace(dec, ".");
+                    var last = s1.Length - 1;
+                    while (s1[last] == '0')
+                        last--;
+                    if (last == pos)
+                        s1 = s1.Substring(0, pos); //toglie anche il punto
+                    else
+                        s1 = s1.Substring(0, last + 1); //toglie gli 0 finali
+                    return s1;
+                }
+                case "Single": {
+                    var group = System.Globalization.NumberFormatInfo.CurrentInfo.NumberGroupSeparator;
+                    var dec = System.Globalization.NumberFormatInfo.CurrentInfo.NumberDecimalSeparator;
+                    var s1 = ((Single)O).ToString("f10");
+                    if (group != dec)
+                        s1 = s1.Replace(group, "");
+                    var pos = s1.IndexOf(dec, 0);
+                    if (pos < 0)
+                        return s1;
+                    s1 = s1.Replace(dec, ".");
+                    var last = s1.Length - 1;
+                    while (s1[last] == '0')
+                        last--;
+                    if (last == pos)
+                        s1 = s1.Substring(0, pos); //toglie anche il punto
+                    else
+                        s1 = s1.Substring(0, last + 1); //toglie gli 0 finali
+                    return s1;
+                }
+
+                case "Decimal": {
+                    var group = System.Globalization.NumberFormatInfo.CurrentInfo.NumberGroupSeparator;
+                    var dec = System.Globalization.NumberFormatInfo.CurrentInfo.NumberDecimalSeparator;
+                    var s1 = ((Decimal)O).ToString("f10");
+                    if (group != dec)
+                        s1 = s1.Replace(group, "");
+                    var pos = s1.IndexOf(dec, 0);
+                    if (pos < 0)
+                        return s1;
+                    s1 = s1.Replace(dec, ".");
+                    var last = s1.Length - 1;
+                    while (s1[last] == '0')
+                        last--;
+                    if (last == pos)
+                        s1 = s1.Substring(0, pos); //toglie anche il punto
+                    else
+                        s1 = s1.Substring(0, last + 1); //toglie gli 0 finali
+                    return s1;
+                }
+                case "DateTime": {
+                    var TT = (DateTime)O; //Convert.ToDateTime(s);   
+                    if (TT.Date.Equals(TT)) {
+                        return "{d '" + TT.Year.ToString() + "-" +
+                               TT.Month.ToString().PadLeft(2, '0') + "-" +
+                               TT.Day.ToString().PadLeft(2, '0') +
+                               "'}";
+                    }
+                    return "{ts '" + TT.Year.ToString() + "-" +
+                        TT.Month.ToString().PadLeft(2, '0') + "-" +
+                        TT.Day.ToString().PadLeft(2, '0') + " " +
+                        TT.Hour.ToString().PadLeft(2, '0') + ":" +
+                        TT.Minute.ToString().PadLeft(2, '0') + ":" +
+                        TT.Second.ToString().PadLeft(2, '0') + "." +
+                        TT.Millisecond.ToString().PadLeft(3, '0') +
+                        "'}";
+
+                }
+                case "Int16":
+                    return O.ToString();
+                case "Int32":
+                    return O.ToString();
+                case "Int64":
+                    return O.ToString();
+                case "UInt16":
+                    return O.ToString();
+                case "UInt32":
+                    return O.ToString();
+                case "UInt64":
+                    return O.ToString();
+                case "Byte[]":
+                    //BinaryFormatter BF = new BinaryFormatter();
+                    var buf = (Byte[])O;
+                    return mdl_utils.Quoting.ByteArrayToString(buf);
+                case "Byte":
+                    return O.ToString();
+                case "Boolean":
+                    if ((bool)O == true)
+                        return "true";
+                    return "false";
+
+                default:
+                    ErrorLogger.Logger.MarkEvent("Could not find type " + typename);
+                    return O.ToString();
+            }
+        }
+
+        /// <summary>
+		/// Gets the quoted representation of an object
+		/// </summary>
+		/// <param name="O"></param>
+		/// <param name="SQL">if true, SQL compatible strings are used</param>
+		/// <returns></returns>
+		private static string stringQuote(string s) {
+            if (s == null)
+                return "null";
+            return "'" + s.Replace("'", "''") + "'";
+        }
+
+
+
+
+        /// <summary>
+        /// Returns the string representation of a constant object, quoting strings
+        /// This must be used to incorporate constants into sql expressions (ex. quote)
         /// </summary>
         /// <param name="O"></param>
         /// <returns></returns>
         public override string quote(object O) {
-            if (O == null) return mdl_utils.Quoting.quotedstrvalue(O, true);
-            if (O == DBNull.Value) return mdl_utils.Quoting.quotedstrvalue(O, true);
-            //if (O.GetType() != typeof(string)) return QueryCreator.quotedstrvalue(O, true);
-            if (O is Boolean) {
-                if (true.Equals(O)) return ("(1=1)");
-                return ("(1=0)");
-            }
-            if (O is Int16 || O is Int32 || O is Int64) {
-                return mdl_utils.Quoting.unquotedstrvalue(O, true);
-            }
-            if (O is UInt16 || O is UInt32 || O is UInt64) {
-                return mdl_utils.Quoting.unquotedstrvalue(O, true);
-            }
-            if (O is Single || O is Double || O is Decimal) {
-                return mdl_utils.Quoting.unquotedstrvalue(O, true);
-            }
+            if (O == null)
+                return "null";
+            if (O == DBNull.Value)
+                return "null";
 
+            if (O.GetType() != typeof(string))
+                return unquoted(O);
             string val = O.ToString();
-            if (!val.StartsWith("&£$")) return mdl_utils.Quoting.quotedstrvalue(O, true);
+            if (!val.StartsWith("&£$"))
+                return stringQuote(val);
             return val.Substring(3);
         }
         /// <summary>
@@ -57,7 +219,7 @@ namespace mdl {
         /// <param name="q2"></param>
         /// <returns></returns>
         public override string AppAnd(string q1, string q2) {
-            return GetData.MergeFilters(q1, q2);
+            return QueryHelper.AppendAND(q1, q2);
         }
 
         /// <summary>
@@ -89,11 +251,7 @@ namespace mdl {
                 return q[0];
                 //throw new Exception("AppAnd con un parametro solo");
             }
-            string res = "";
-            foreach (string qq in q) {
-                res = GetData.MergeFilters(res, qq);
-            }
-            return res;
+            return mergeWithOperator("AND", q);
         }
 
         /// <summary>
@@ -105,11 +263,7 @@ namespace mdl {
             if (q.Length == 1) {
                 throw new Exception("BitwiseAnd con un parametro solo");
             }
-            string res = "";
-            foreach (string qq in q) {
-              res = GetData.MergeWithOperator(res, qq,"&");
-            }
-            return res;
+            return mergeWithOperator("&", q);
         }
 
         /// <summary>
@@ -121,11 +275,8 @@ namespace mdl {
             if (q.Length == 1) {
                 throw new Exception("BitwiseOr con un parametro solo");
             }
-            string res = "";
-            foreach (string qq in q) {
-                res = GetData.MergeWithOperator(res, qq,"|");
-            }
-            return res;
+            return mergeWithOperator("|", q);
+            ;
         }
 
         /// <summary>
@@ -137,11 +288,7 @@ namespace mdl {
             if (q.Length == 1) {
                 throw new Exception("BitwiseXor con un parametro solo");
             }
-            string res = "";
-            foreach (string qq in q) {
-                res = GetData.MergeWithOperator(res, qq,"^");
-            }
-            return res;
+            return mergeWithOperator("^", q);
         }
 
         /// <summary>
@@ -152,11 +299,28 @@ namespace mdl {
         /// <returns></returns>
         public override string CmpMulti(DataRow R, params string[] field) {
             DataRowVersion V = DataRowVersion.Default;
-            if (R.RowState == DataRowState.Deleted) V = DataRowVersion.Original;
-            List <string> operandi= new List<string>();            
-            foreach (string f in field) operandi.Add( CmpEq(f, R[f, V]));
-            return GetData.MergeWithOperator(operandi.ToArray(),"AND");
-            
+            if (R.RowState == DataRowState.Deleted)
+                V = DataRowVersion.Original;
+            List<string> operandi = new List<string>();
+            foreach (string f in field)
+                operandi.Add(CmpEq(f, R[f, V]));
+            return QueryHelper.mergeWithOperator("AND", operandi.ToArray());
+
+        }
+
+        /// <summary>
+        /// Compares n fields of a row  (field[0]= R[field[0] &amp; field[0]= R[field[0] &amp;.. )
+        /// </summary>
+        /// <param name="R"></param>
+        /// <param name="field"></param>
+        /// <returns></returns>
+        public override string CmpMulti(DataRow R, DataColumn[] fields, DataRowVersion ver = DataRowVersion.Default) {
+            if (R.RowState == DataRowState.Deleted)
+                ver = DataRowVersion.Original;
+            var operandi = new List<string>();
+            foreach (DataColumn c in fields)
+                operandi.Add(CmpEq(c.ColumnName, R[c.ColumnName, ver]));
+            return mergeWithOperator("AND", operandi.ToArray());
         }
 
         /// <summary>
@@ -175,17 +339,20 @@ namespace mdl {
         /// <param name="sample"></param>
         /// <returns></returns>
         public override string MCmp(object sample) {
-            var operandi= new List<string>();
+            var operandi = new List<string>();
             string[] ff;
             if (sample is Dictionary<string, object> dict) {
                 ff = dict.Keys.ToArray();
             }
             else {
-                ff = sample.GetType().GetMembers().Where(f => f.MemberType == MemberTypes.Property)._Pick("Name").Cast<string>().ToArray();
+                ff = sample.GetType().GetMembers().Where(f => f.MemberType == MemberTypes.Property).Pick("Name").Cast<string>().ToArray();
             }
 
-            foreach (string f in ff) operandi.Add( CmpEq(f, MetaExpression.getField(f,sample)));
-            return GetData.MergeWithOperator(operandi.ToArray(),"AND");
+
+            return mergeWithOperator("AND", ff.Map(f => CmpEq(f, MetaExpression.getField(f, sample))));
+
+            //foreach (string f in ff) operandi.Add( CmpEq(f, MetaExpression.getField(f,sample)));
+            //return mergeWithOperator("AND",operandi.ToArray());
         }
 
 
@@ -199,7 +366,7 @@ namespace mdl {
                 return q[0];
                 //throw new Exception("AppOr con un parametro solo");
             }
-            return GetData.MergeWithOperator(q,"OR");
+            return mergeWithOperator("OR", q);
         }
 
         /// <summary>
@@ -209,7 +376,7 @@ namespace mdl {
         /// <param name="q2"></param>
         /// <returns></returns>
         public override string AppOr(string q1, string q2) {
-            return GetData.AppendOR(q1, q2);
+            return QueryHelper.AppendOR(q1, q2);
         }
 
         /// <summary>
@@ -513,12 +680,14 @@ namespace mdl {
             var HH = new Hashtable();
             foreach (object O in OO) {
                 string quoted = quote(O);
-                if (HH[quoted] != null) continue;
+                if (HH[quoted] != null)
+                    continue;
                 HH[quoted] = 1;
                 SS.Append("," + quoted);
             }
             var outstring = SS.ToString();
-            if (outstring != "") outstring = outstring.Substring(1);
+            if (outstring != "")
+                outstring = outstring.Substring(1);
             return outstring;
 
 
@@ -532,12 +701,14 @@ namespace mdl {
             var SS = new StringBuilder();
             var HH = new Hashtable();
             foreach (string O in OO) {
-                if (HH[O] != null) continue;
+                if (HH[O] != null)
+                    continue;
                 HH[O] = 1;
                 SS.Append("," + O);
             }
             var outstring = SS.ToString();
-            if (outstring != "") outstring = outstring.Substring(1);
+            if (outstring != "")
+                outstring = outstring.Substring(1);
             return outstring;
 
 
@@ -556,7 +727,8 @@ namespace mdl {
             if (ROWS.Length <= 100) {
                 foreach (DataRow R in ROWS) {
                     string quoted = quote(R[column]);
-                    if (outstring.IndexOf(quoted) > 0) continue;
+                    if (outstring.IndexOf(quoted) > 0)
+                        continue;
                     outstring += "," + quoted;
                 }
             }
@@ -565,13 +737,15 @@ namespace mdl {
                 Hashtable HH = new Hashtable();
                 foreach (DataRow R in ROWS) {
                     string quoted = quote(R[column]);
-                    if (HH[quoted] != null) continue;
+                    if (HH[quoted] != null)
+                        continue;
                     HH[quoted] = 1;
                     SS.Append("," + quoted);
                 }
                 outstring = SS.ToString();
             }
-            if (outstring != "") outstring = outstring.Substring(1);
+            if (outstring != "")
+                outstring = outstring.Substring(1);
             return outstring;
         }
 
@@ -594,10 +768,11 @@ namespace mdl {
         /// <returns></returns>
         public override string FieldIn(string field, object[] O) {
             if (O.Length == 1) {
-                return  CmpEq(field, O[0]) ;
+                return CmpEq(field, O[0]);
             }
             string list = DistinctVal(O);
-            if (list == "") return "(" + field + " IS NULL AND " + field + " IS NOT NULL)";
+            if (list == "")
+                return "(" + field + " IS NULL AND " + field + " IS NOT NULL)";
             return "(" + field + " IN (" + list + "))";
         }
 
@@ -613,7 +788,8 @@ namespace mdl {
                 return UnquotedCmpEq(field, O[0]);
             }
             string list = UnquotedDistinctVal(O);
-            if (list == "") return "(" + field + " IS NULL AND " + field + " IS NOT NULL)";
+            if (list == "")
+                return "(" + field + " IS NULL AND " + field + " IS NOT NULL)";
             return "(" + field + " IN (" + list + "))";
         }
 
@@ -625,7 +801,8 @@ namespace mdl {
         /// <param name="list"></param>
         /// <returns></returns>
         public override string FieldInList(string field, string list) {
-            if (list == "") return "(" + field + " IS NULL AND " + field + " IS NOT NULL)";
+            if (list == "")
+                return "(" + field + " IS NULL AND " + field + " IS NOT NULL)";
             return "(" + field + " IN (" + list + "))";
         }
 
@@ -638,7 +815,7 @@ namespace mdl {
         /// <returns></returns>
         public override string FieldIn(string field, DataRow[] ROWS, string column) {
             if (ROWS.Length == 1) {
-                return CmpEq(field, ROWS[0][column]) ;
+                return CmpEq(field, ROWS[0][column]);
             }
             string list = DistinctVal(ROWS, column);
             return FieldInList(field, list);
@@ -652,10 +829,11 @@ namespace mdl {
         /// <returns></returns>
         public override string FieldNotIn(string field, object[] O) {
             if (O.Length == 1) {
-                return CmpNe(field, O[0]) ;
+                return CmpNe(field, O[0]);
             }
             string list = DistinctVal(O);
-            if (list == "") return "";
+            if (list == "")
+                return "";
             return "(" + field + " NOT IN (" + list + "))";
         }
 
@@ -667,10 +845,11 @@ namespace mdl {
         /// <returns></returns>
         public override string UnquotedFieldNotIn(string field, string[] O) {
             if (O.Length == 1) {
-                return UnquotedCmpNe(field, O[0]) ;
+                return UnquotedCmpNe(field, O[0]);
             }
             string list = UnquotedDistinctVal(O);
-            if (list == "") return "";
+            if (list == "")
+                return "";
             return "(" + field + " NOT IN (" + list + "))";
         }
 
@@ -691,7 +870,8 @@ namespace mdl {
         /// <param name="list"></param>
         /// <returns></returns>
         public override string FieldNotInList(string field, string list) {
-            if (list == "") return "";
+            if (list == "")
+                return "";
             return "(" + field + " NOT IN (" + list + "))";
         }
 
@@ -719,7 +899,7 @@ namespace mdl {
             return DoPar("NOT " + DoPar(expression));
         }
 
-    
+
 
         /// <summary>
         /// creates a string: not ( expression )
@@ -746,9 +926,12 @@ namespace mdl {
         /// <returns></returns>
         public override string CmpKey(DataRow R) {
             string res = "";
-            if (R == null) return res;
-            if (R.Table.PrimaryKey == null) return res;
-            if (R.RowState == DataRowState.Deleted) return CmpPrevKey(R);
+            if (R == null)
+                return res;
+            if (R.Table.PrimaryKey == null)
+                return res;
+            if (R.RowState == DataRowState.Deleted)
+                return CmpPrevKey(R);
             foreach (DataColumn C in R.Table.PrimaryKey) {
                 res = AppAnd(res, CmpEq(C.ColumnName, R[C.ColumnName]));
             }
@@ -762,11 +945,15 @@ namespace mdl {
         /// <returns></returns>
         public override string CmpPrevKey(DataRow R) {
             string res = "";
-            if (R == null) return res;
-            if (R.Table.PrimaryKey == null) return res;
-            if (R.RowState == DataRowState.Added) return CmpKey(R);
+            if (R == null)
+                return res;
+            if (R.Table.PrimaryKey == null)
+                return res;
+            if (R.RowState == DataRowState.Added)
+                return CmpKey(R);
             var DV = DataRowVersion.Original;
-            if (R.RowState == DataRowState.Added) DV = DataRowVersion.Original;
+            if (R.RowState == DataRowState.Added)
+                DV = DataRowVersion.Original;
             foreach (var C in R.Table.PrimaryKey) {
                 res = AppAnd(res, CmpEq(C.ColumnName, R[C.ColumnName, DV]));
             }
@@ -839,18 +1026,179 @@ namespace mdl {
         public override string List(params object[] O) {
             string res = "";
             foreach (object OO in O) {
-                if (res != "") res += ",";
+                if (res != "")
+                    res += ",";
                 res += quote(OO);
             }
             return res;
         }
+
+        static Dictionary<DatePart, string> sqlPart = new Dictionary<DatePart, string>() {
+            { DatePart.millisecond , "ms" },
+            { DatePart.second, "s" },
+            { DatePart.minute , "n" },
+            { DatePart.hour , "hh" },
+            { DatePart.day , "d" },
+            { DatePart.month , "m" },
+            { DatePart.year , "yy" },
+            };
+
+        //   string filter = $"(DATEPART(hh,{searchcol})={dt.Hour})AND(DATEPART(n,{searchcol})={dt.Minute})AND(DATEPART(s,{searchcol})={dt.Second})";
+        public override string GetDatePart(string field, DatePart part) {
+            return $"DATEPART({sqlPart[part]},{field})";
+        }
+
 
     }
 
     /// <summary>
     /// Helper class to create DataTable queries
     /// </summary>
-    public class CQueryHelper : QueryHelper {
+    public class CQueryHelper :QueryHelper {
+
+        public override string Max(string expr) {
+            return $"max({expr})";
+        }
+
+        public override string Min(string expr) {
+            return $"min({expr})";
+        }
+        public override string Sustring(string expr, int start, int len) {
+            return $"substring({expr},{start},{len})"; //for oracle  substr
+        }
+        public override string ConvertToVarchar(string expr, int len) {
+            return $"convert({expr},'System.String')";
+        }
+        public override string ConvertToInt(string expr) {
+            return $"convert({expr},'System.Int32')";
+        }
+
+
+        public override string GetDatePart(string field, DatePart part) {
+            throw new NotImplementedException("GetDatePart");
+		}
+
+        /// <summary>
+        /// Gets the string (unquoted) representing an object (ex unquotedstrvalue)
+        /// </summary>
+        /// <param name="O">Object to display in the output string</param>
+        /// <param name="T">Base Type of O</param>
+        /// <param name="SQL">if true, result can be used for building SQL commands</param>
+        /// <returns>String representation of O</returns>
+        public override string unquoted(Object O) {
+            if (O == null)
+                return "null";
+            if (O == DBNull.Value)
+                return "null";
+            var typename = O.GetType().Name;
+            switch (typename) {
+                case "String":
+                    return O.ToString();
+                case "Char":
+                    return O.ToString();
+                case "Double": {
+                    var group = System.Globalization.NumberFormatInfo.CurrentInfo.NumberGroupSeparator;
+                    var dec = System.Globalization.NumberFormatInfo.CurrentInfo.NumberDecimalSeparator;
+                    var s1 = ((Double)O).ToString("f10");
+                    if (group != dec)
+                        s1 = s1.Replace(group, "");
+
+                    var pos = s1.IndexOf(dec, 0);
+                    if (pos < 0)
+                        return s1;
+                    s1 = s1.Replace(dec, ".");
+                    var last = s1.Length - 1;
+                    while (s1[last] == '0')
+                        last--;
+                    if (last == pos)
+                        s1 = s1.Substring(0, pos); //toglie anche il punto
+                    else
+                        s1 = s1.Substring(0, last + 1); //toglie gli 0 finali
+                    return s1;
+                }
+                case "Single": {
+                    var group = System.Globalization.NumberFormatInfo.CurrentInfo.NumberGroupSeparator;
+                    var dec = System.Globalization.NumberFormatInfo.CurrentInfo.NumberDecimalSeparator;
+                    var s1 = ((Single)O).ToString("f10");
+                    if (group != dec)
+                        s1 = s1.Replace(group, "");
+                    var pos = s1.IndexOf(dec, 0);
+                    if (pos < 0)
+                        return s1;
+                    s1 = s1.Replace(dec, ".");
+                    var last = s1.Length - 1;
+                    while (s1[last] == '0')
+                        last--;
+                    if (last == pos)
+                        s1 = s1.Substring(0, pos); //toglie anche il punto
+                    else
+                        s1 = s1.Substring(0, last + 1); //toglie gli 0 finali
+                    return s1;
+                }
+
+                case "Decimal": {
+                    var group = System.Globalization.NumberFormatInfo.CurrentInfo.NumberGroupSeparator;
+                    var dec = System.Globalization.NumberFormatInfo.CurrentInfo.NumberDecimalSeparator;
+                    var s1 = ((Decimal)O).ToString("f10");
+                    if (group != dec)
+                        s1 = s1.Replace(group, "");
+                    var pos = s1.IndexOf(dec, 0);
+                    if (pos < 0)
+                        return s1;
+                    s1 = s1.Replace(dec, ".");
+                    var last = s1.Length - 1;
+                    while (s1[last] == '0')
+                        last--;
+                    if (last == pos)
+                        s1 = s1.Substring(0, pos); //toglie anche il punto
+                    else
+                        s1 = s1.Substring(0, last + 1); //toglie gli 0 finali
+                    return s1;
+                }
+                case "DateTime": {
+                    return "#" + ((DateTime)O).ToString("yyyy-MM-ddTHH:mm:ss.fffffff"
+                           , System.Globalization.DateTimeFormatInfo.InvariantInfo) + "#";
+
+                }
+                case "Int16":
+                    return O.ToString();
+                case "Int32":
+                    return O.ToString();
+                case "Int64":
+                    return O.ToString();
+                case "UInt16":
+                    return O.ToString();
+                case "UInt32":
+                    return O.ToString();
+                case "UInt64":
+                    return O.ToString();
+                case "Byte[]":
+                    //BinaryFormatter BF = new BinaryFormatter();
+                    var buf = (Byte[])O;
+                    return mdl_utils.Quoting.ByteArrayToString(buf);
+                case "Byte":
+                    return O.ToString();
+                case "Boolean":
+                    if ((bool)O == true)
+                        return "true";
+                    return "false";
+
+                default:
+                    ErrorLogger.Logger.MarkEvent("Could not find type " + typename);
+                    return O.ToString();
+            }
+        }
+        /// <summary>
+        /// Gets the quoted representation of an object
+        /// </summary>
+        /// <param name="O"></param>
+        /// <param name="SQL">if true, SQL compatible strings are used</param>
+        /// <returns></returns>
+        private static string stringQuote(string s) {
+            if (s == null)
+                return "null";
+            return "'" + s.Replace("'", "''") + "'";
+        }
 
         /// <summary>
         /// Quotes an object in order to use it in a query expression string
@@ -858,25 +1206,21 @@ namespace mdl {
         /// <param name="O"></param>
         /// <returns></returns>
         public override string quote(object O) {
-            if (O == null) return mdl_utils.Quoting.quotedstrvalue(O, false);
-            if (O == DBNull.Value) return mdl_utils.Quoting.quotedstrvalue(O, false);
+            if (O == null)
+                return "null";
+            if (O == DBNull.Value)
+                return "null";
             if (O is Boolean) {
-                if (true.Equals(O)) return ("(1=1)");
+                if (true.Equals(O))
+                    return ("(1=1)");
                 return ("(1=0)");
             }
-            if (O is Int16 || O is Int32 || O is Int64) {
-                return mdl_utils.Quoting.unquotedstrvalue(O, false);
-            }
-            if (O is UInt16 || O is UInt32 || O is UInt64) {
-                return mdl_utils.Quoting.unquotedstrvalue(O, false);
-            }
-            if (O is Single || O is Double || O is Decimal) {
-                return mdl_utils.Quoting.unquotedstrvalue(O, false);
-            }
 
-            if (O.GetType() != typeof(string)) return mdl_utils.Quoting.quotedstrvalue(O, false);
+            if (O.GetType() != typeof(string))
+                return unquoted(O);
             string val = O.ToString();
-            if (!val.StartsWith("&£$")) return mdl_utils.Quoting.quotedstrvalue(O, false);
+            if (!val.StartsWith("&£$"))
+                return stringQuote(val);
             return val.Substring(3);
         }
 
@@ -897,14 +1241,14 @@ namespace mdl {
         public override DateTime SafeMinDate() {
             return new DateTime(1, 1, 1);
         }
-       
+
         /// <summary>
         ///return expression bwtween parenthesis
         /// </summary>
         /// <param name="expression"></param>
         /// <returns></returns>
         public override string DoPar(string expression) {
-           return QueryCreator.putInPar(expression);
+            return QueryCreator.putInPar(expression);
         }
 
         /// <summary>
@@ -914,7 +1258,7 @@ namespace mdl {
         /// <param name="q2"></param>
         /// <returns></returns>
         public override string AppAnd(string q1, string q2) {
-            return GetData.MergeFilters(q1, q2);
+            return QueryHelper.AppendAND(q1, q2);
         }
 
         /// <summary>
@@ -928,7 +1272,7 @@ namespace mdl {
                 //throw new Exception("AppAnd con un parametro solo");
             }
 
-            return GetData.MergeWithOperator(q, "AND");
+            return mergeWithOperator("AND", q);
             //string res = "";
             //foreach (string qq in q) {
             //    res = GetData.MergeFilters(res, qq);
@@ -947,7 +1291,7 @@ namespace mdl {
             }
             string res = "";
             foreach (string qq in q) {
-                res = GetData.MergeWithOperator(res, qq, "&");
+                res = mergeWithOperator("&", res, qq);
             }
             return res;
         }
@@ -963,12 +1307,12 @@ namespace mdl {
             }
             string res = "";
             foreach (string qq in q) {
-                res = GetData.MergeWithOperator(res, qq, "|");
+                res = mergeWithOperator("|", res, qq);
             }
             return res;
         }
 
-         /// <summary>
+        /// <summary>
         /// returns logical and of an expression list
         /// </summary>
         /// <param name="q"></param>
@@ -979,7 +1323,7 @@ namespace mdl {
             }
             string res = "";
             foreach (string qq in q) {
-                res = GetData.MergeWithOperator(res, qq, "^");
+                res = mergeWithOperator("^", res, qq);
             }
             return res;
         }
@@ -1004,24 +1348,26 @@ namespace mdl {
             return CmpMulti(R, field);
         }
 
-       
+
         /// <summary>
         /// Alias for CmpMulti
         /// </summary>
         /// <param name="sample"></param>
         /// <returns></returns>
         public override string MCmp(object sample) {
-            var operandi= new List<string>();
+            var operandi = new List<string>();
             string[] ff;
             if (sample is Dictionary<string, object> dict) {
                 ff = dict.Keys.ToArray();
             }
             else {
-                ff = sample.GetType().GetMembers().Where(f => f.MemberType == MemberTypes.Property)._Pick("Name").Cast<string>().ToArray();
+                ff = sample.GetType().GetMembers().Where(f => f.MemberType == MemberTypes.Property).Pick("Name").Cast<string>().ToArray();
             }
 
-            foreach (string f in ff) operandi.Add( CmpEq(f, MetaExpression.getField(f,sample)));
-            return GetData.MergeWithOperator(operandi.ToArray(),"AND");
+            return mergeWithOperator("AND", ff.Map(f => CmpEq(f, MetaExpression.getField(f, sample))));
+
+            //foreach (string f in ff) operandi.Add( CmpEq(f, MetaExpression.getField(f,sample)));
+            //return mergeWithOperator("AND",operandi.ToArray());
         }
 
         /// <summary>
@@ -1030,14 +1376,31 @@ namespace mdl {
         /// <param name="R"></param>
         /// <param name="field"></param>
         /// <returns></returns>
-        public override string CmpMulti(DataRow R, params string[] field) {
+        public override string CmpMulti(DataRow R, params string[] fields) {
             var V = DataRowVersion.Default;
-            if (R.RowState == DataRowState.Deleted) V = DataRowVersion.Original;
-            var operandi= new List<string>();            
-            foreach (string f in field) operandi.Add( CmpEq(f, R[f, V]));
-            return GetData.MergeWithOperator(operandi.ToArray(),"AND");
+            if (R.RowState == DataRowState.Deleted)
+                V = DataRowVersion.Original;
+            var operandi = new List<string>();
+            foreach (string f in fields)
+                operandi.Add(CmpEq(f, R[f, V]));
+            return mergeWithOperator("AND", operandi.ToArray());
         }
 
+
+        /// <summary>
+        /// Compares n fields of a row  (field[0]= R[field[0] &amp; field[0]= R[field[0] &amp;.. )
+        /// </summary>
+        /// <param name="R"></param>
+        /// <param name="field"></param>
+        /// <returns></returns>
+        public override string CmpMulti(DataRow R, DataColumn[] fields, DataRowVersion ver = DataRowVersion.Default) {
+            if (R.RowState == DataRowState.Deleted)
+                ver = DataRowVersion.Original;
+            var operandi = new List<string>();
+            foreach (DataColumn c in fields)
+                operandi.Add(CmpEq(c.ColumnName, R[c.ColumnName, ver]));
+            return mergeWithOperator("AND", operandi.ToArray());
+        }
 
         /// <summary>
         /// returns logical OR of two expressions
@@ -1046,7 +1409,7 @@ namespace mdl {
         /// <param name="q2"></param>
         /// <returns></returns>
         public override string AppOr(string q1, string q2) {
-            return GetData.AppendOR(q1, q2);
+            return QueryHelper.AppendOR(q1, q2);
         }
 
         /// <summary>
@@ -1059,7 +1422,7 @@ namespace mdl {
                 return q[0];
                 //throw new Exception("AppOr con un parametro solo");
             }
-           return GetData.MergeWithOperator(q,"OR");
+            return mergeWithOperator("OR", q);
         }
 
         /// <summary>
@@ -1069,7 +1432,8 @@ namespace mdl {
         /// <param name="O"></param>
         /// <returns></returns>
         public override string UnquotedCmpEq(string field, string O) {
-            if (O.ToUpper() == "NULL") return $"({field} IS NULL)";
+            if (O.ToUpper() == "NULL")
+                return $"({field} IS NULL)";
             return $"({field}={O})";
         }
 
@@ -1093,7 +1457,8 @@ namespace mdl {
         /// <param name="O"></param>
         /// <returns></returns>
         public override string UnquotedCmpNe(string field, string O) {
-            if (O.ToUpper() == "NULL") return $"({field} IS NOT NULL)";
+            if (O.ToUpper() == "NULL")
+                return $"({field} IS NOT NULL)";
             return $"({field}<>{O})";
         }
         /// <summary>
@@ -1372,10 +1737,13 @@ namespace mdl {
         public override string DistinctVal(DataRow[] ROWS, string column) {
             string outstring = "";
             foreach (DataRow R in ROWS) {
-                if (R[column] == DBNull.Value) continue;
+                if (R[column] == DBNull.Value)
+                    continue;
                 string quoted = quote(R[column]);
-                if (outstring.IndexOf(quoted) > 0) continue;
-                if (outstring != "") outstring += ",";
+                if (outstring.IndexOf(quoted) > 0)
+                    continue;
+                if (outstring != "")
+                    outstring += ",";
                 outstring += quoted;
             }
             return outstring;
@@ -1389,15 +1757,18 @@ namespace mdl {
         public override string DistinctVal(object[] OO) {
             string outstring = "";
             foreach (object O in OO) {
-                if (O == DBNull.Value) continue;
+                if (O == DBNull.Value)
+                    continue;
                 string quoted = quote(O);
-                if (outstring.IndexOf(quoted) > 0) continue;
-                if (outstring != "") outstring += ",";
+                if (outstring.IndexOf(quoted) > 0)
+                    continue;
+                if (outstring != "")
+                    outstring += ",";
                 outstring += quoted;
             }
             return outstring;
         }
-          /// <summary>
+        /// <summary>
         /// returns a list of distinct quoted values of input array, comma separated
         /// </summary>
         /// <param name="OO"></param>
@@ -1405,9 +1776,12 @@ namespace mdl {
         public override string UnquotedDistinctVal(string[] OO) {
             string outstring = "";
             foreach (string O in OO) {
-                if (O == null || O=="") continue;
-                if (outstring.IndexOf(O) > 0) continue;
-                if (outstring != "") outstring += ",";
+                if (O == null || O == "")
+                    continue;
+                if (outstring.IndexOf(O) > 0)
+                    continue;
+                if (outstring != "")
+                    outstring += ",";
                 outstring += O;
             }
             return outstring;
@@ -1421,14 +1795,15 @@ namespace mdl {
         /// <returns></returns>
         public override string FieldIn(string field, object[] O) {
             if (O.Length == 1) {
-                return  CmpEq(field, O[0]) ;
+                return CmpEq(field, O[0]);
             }
             string list = DistinctVal(O);
-            if (list == "") return "(" + field + " IS NULL AND " + field + " IS NOT NULL)";
+            if (list == "")
+                return "(" + field + " IS NULL AND " + field + " IS NOT NULL)";
             return "(" + field + " IN (" + list + "))";
         }
 
-         /// <summary>
+        /// <summary>
         /// returns (field in (distinct values of O)) if O is not empty  else (false) 
         /// </summary>
         /// <param name="field"></param>
@@ -1439,7 +1814,8 @@ namespace mdl {
                 return UnquotedCmpEq(field, O[0]);
             }
             string list = UnquotedDistinctVal(O);
-            if (list == "") return "(" + field + " IS NULL AND " + field + " IS NOT NULL)";
+            if (list == "")
+                return "(" + field + " IS NULL AND " + field + " IS NOT NULL)";
             return "(" + field + " IN (" + list + "))";
         }
 
@@ -1460,7 +1836,8 @@ namespace mdl {
         /// <param name="list"></param>
         /// <returns></returns>
         public override string FieldInList(string field, string list) {
-            if (list == "") return "(" + field + " IS NULL AND " + field + " IS NOT NULL)";
+            if (list == "")
+                return "(" + field + " IS NULL AND " + field + " IS NOT NULL)";
             return "(" + field + " IN (" + list + "))";
         }
 
@@ -1472,7 +1849,8 @@ namespace mdl {
         /// <param name="column"></param>
         /// <returns></returns>
         public override string FieldIn(string field, DataRow[] ROWS, string column) {
-            if (ROWS.Length==1)return CmpEq(field,ROWS[0][column]);
+            if (ROWS.Length == 1)
+                return CmpEq(field, ROWS[0][column]);
             string list = DistinctVal(ROWS, column);
             return FieldInList(field, list);
         }
@@ -1485,26 +1863,28 @@ namespace mdl {
         /// <param name="O"></param>
         /// <returns></returns>
         public override string FieldNotIn(string field, object[] O) {
-             if (O.Length == 1) {
-                return CmpNe(field, O[0]) ;
+            if (O.Length == 1) {
+                return CmpNe(field, O[0]);
             }
             string list = DistinctVal(O);
-            if (list == "") return "(NULL IS NULL)";
+            if (list == "")
+                return "(NULL IS NULL)";
             return "(" + field + " NOT IN (" + list + "))";
         }
 
-         /// <summary>
+        /// <summary>
         /// returns (field NOT in (distinct values of O)) if O is not empty  else empty string 
         /// </summary>
         /// <param name="field"></param>
         /// <param name="O"></param>
         /// <returns></returns>
         public override string UnquotedFieldNotIn(string field, string[] O) {
-             if (O.Length == 1) {
+            if (O.Length == 1) {
                 return UnquotedCmpNe(field, O[0]);
             }
             string list = UnquotedDistinctVal(O);
-            if (list == "") return "(NULL IS NULL)";
+            if (list == "")
+                return "(NULL IS NULL)";
             return "(" + field + " NOT IN (" + list + "))";
         }
 
@@ -1525,7 +1905,8 @@ namespace mdl {
         /// <param name="list"></param>
         /// <returns></returns>
         public override string FieldNotInList(string field, string list) {
-            if (list == "") return "";
+            if (list == "")
+                return "";
             return "(" + field + " NOT IN (" + list + "))";
         }
 
@@ -1537,7 +1918,8 @@ namespace mdl {
         /// <param name="column"></param>
         /// <returns></returns>
         public override string FieldNotIn(string field, DataRow[] ROWS, string column) {
-            if (ROWS.Length==1)return CmpNe(field,ROWS[0][column]);
+            if (ROWS.Length == 1)
+                return CmpNe(field, ROWS[0][column]);
             string list = DistinctVal(ROWS, column);
             return FieldNotInList(field, list);
         }
@@ -1561,9 +1943,12 @@ namespace mdl {
         /// <returns></returns>
         public override string CmpKey(DataRow R) {
             string res = "";
-            if (R == null) return res;
-            if (R.Table.PrimaryKey == null) return res;
-            if (R.RowState == DataRowState.Deleted) return CmpPrevKey(R);
+            if (R == null)
+                return res;
+            if (R.Table.PrimaryKey == null)
+                return res;
+            if (R.RowState == DataRowState.Deleted)
+                return CmpPrevKey(R);
             foreach (DataColumn C in R.Table.PrimaryKey) {
                 res = AppAnd(res, CmpEq(C.ColumnName, R[C.ColumnName]));
             }
@@ -1577,11 +1962,15 @@ namespace mdl {
         /// <returns></returns>
         public override string CmpPrevKey(DataRow R) {
             string res = "";
-            if (R == null) return res;
-            if (R.Table.PrimaryKey == null) return res;
-            if (R.RowState == DataRowState.Added) return CmpKey(R);
+            if (R == null)
+                return res;
+            if (R.Table.PrimaryKey == null)
+                return res;
+            if (R.RowState == DataRowState.Added)
+                return CmpKey(R);
             DataRowVersion DV = DataRowVersion.Original;
-            if (R.RowState == DataRowState.Added) DV = DataRowVersion.Original;
+            if (R.RowState == DataRowState.Added)
+                DV = DataRowVersion.Original;
             foreach (DataColumn C in R.Table.PrimaryKey) {
                 res = AppAnd(res, CmpEq(C.ColumnName, R[C.ColumnName, DV]));
             }
@@ -1670,12 +2059,14 @@ namespace mdl {
         public override string List(params object[] O) {
             string res = "";
             foreach (object OO in O) {
-                if (res != "") res += ",";
+                if (res != "")
+                    res += ",";
                 res += quote(OO);
             }
             return res;
         }
 
+        public override string ReturnValueIfNoRowAffected(int value) => throw new NotImplementedException();
     }
 
     /// <summary>
@@ -1688,6 +2079,13 @@ namespace mdl {
         /// <param name="O"></param>
         /// <returns></returns>
         public abstract string quote(object O);
+
+        /// <summary>
+        /// Returns a string representation of an object, without quoting constants 
+        /// </summary>
+        /// <param name="O"></param>
+        /// <returns></returns>
+        public abstract string unquoted(object O);
 
         /// <summary>
         /// return expression bwtween parenthesis
@@ -1714,21 +2112,21 @@ namespace mdl {
         /// <summary>
         ///  returns q1 &#124; q2
         /// </summary>
-         /// <param name="q"></param>
+        /// <param name="q"></param>
         /// <returns></returns>
         public abstract string BitwiseOr(params string[] q);
 
-          /// <summary>
+        /// <summary>
         ///  returns q1 &#94; q2
         /// </summary>
-         /// <param name="q"></param>
+        /// <param name="q"></param>
         /// <returns></returns>
         public abstract string BitwiseXor(params string[] q);
 
         /// <summary>
         ///  returns (bit) not q
         /// </summary>
-         /// <param name="q"></param>
+        /// <param name="q"></param>
         /// <returns></returns>
         public abstract string BitwiseNot(string q);
 
@@ -2004,7 +2402,7 @@ namespace mdl {
         /// </summary>
         /// <param name="OO"></param>
         /// <returns></returns>
-         public abstract string UnquotedDistinctVal(string[] OO);
+        public abstract string UnquotedDistinctVal(string[] OO);
 
         /// <summary>
         ///  returns (field in (list))
@@ -2023,7 +2421,7 @@ namespace mdl {
         /// <returns></returns>
         public abstract string FieldIn(string field, object[] O);
 
-         /// <summary>
+        /// <summary>
         /// returns (field in (distinct values of O)) if O is not empty  else (false) 
         /// </summary>
         /// <param name="field"></param>
@@ -2065,7 +2463,7 @@ namespace mdl {
         /// <returns></returns>
         public abstract string FieldNotIn(string field, object[] O);
 
-         /// <summary>
+        /// <summary>
         /// returns (field NOT in (distinct values of O)) if O is not empty  else empty string 
         /// </summary>
         /// <param name="field"></param>
@@ -2127,7 +2525,9 @@ namespace mdl {
         /// <param name="R"></param>
         /// <param name="field"></param>
         /// <returns></returns>
-        public abstract string CmpMulti(DataRow R, params string[] field);
+        public abstract string CmpMulti(DataRow R, params string[] fields);
+
+        public abstract string CmpMulti(DataRow R, DataColumn[] fields, DataRowVersion ver);
 
         /// <summary>
         /// Compares n fields of a row  (field[0]= R[field[0] &amp; field[0]= R[field[0] &amp;.. )
@@ -2135,7 +2535,7 @@ namespace mdl {
         /// <param name="R"></param>
         /// <param name="field"></param>
         /// <returns></returns>
-        public abstract string MCmp(DataRow R, params string[] field);
+        public abstract string MCmp(DataRow R, params string[] fields);
 
         /// <summary>
         /// Compares all fields of sample
@@ -2198,5 +2598,73 @@ namespace mdl {
         /// </summary>
         /// <returns></returns>
         public abstract DateTime SafeMinDate();
+
+        public abstract string Max(string expr);
+        public abstract string Min(string expr);
+        public abstract string Sustring(string expr, int start, int stop);
+        public abstract string ConvertToVarchar(string expr, int len);
+        public abstract string ConvertToInt(string expr);
+
+        public abstract string ReturnValueIfNoRowAffected(int value);
+
+        public abstract string GetDatePart(string field, DatePart part);
+
+
+        /// <summary>
+		/// Merges two filters (AND) without throwing exception if some or 
+		///		both are null
+		/// </summary>
+		/// <param name="Filter1"></param>
+		/// <param name="Filter2"></param>
+		/// <returns></returns>
+		public static string AppendAND(string Filter1, string Filter2) {
+            if ((Filter1 == "") || (Filter1 == null))
+                return Filter2;
+            if ((Filter2 == "") || (Filter2 == null))
+                return Filter1;
+            return QueryCreator.putInPar(Filter1) + "AND" + QueryCreator.putInPar(Filter2);
+
+        }
+        /// <summary>
+        /// Merge two condition A and B as  (A) OR (B)
+        /// </summary>
+        /// <param name="Filter1"></param>
+        /// <param name="Filter2"></param>
+        /// <returns></returns>
+        public static string AppendOR(string Filter1, string Filter2) {
+            if ((Filter1 == "") || (Filter1 == null))
+                return Filter2;
+            if ((Filter2 == "") || (Filter2 == null))
+                return Filter1;
+            return QueryCreator.putInPar(Filter1) + "OR" + QueryCreator.putInPar(Filter2);
+        }
+
+
+        /// <summary>
+        /// Merges two filters (AND) without throwing exception if some or 
+        ///		both are null
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <param name="op"></param>
+        /// <returns></returns>
+        public static string mergeWithOperator(string op, params string[] filter) {
+            if (filter == null || filter.Length == 0)
+                return "";
+            if (filter.Length == 1)
+                return filter[0];
+            string res = "";
+            foreach (string operando in filter) {
+                if ((operando == null) || (operando == ""))
+                    continue;
+                if ((operando.Trim() == ""))
+                    continue;
+                if (res != "")
+                    res += op;
+                res += QueryCreator.putInPar(operando);
+            }
+            return "(" + res + ")";
+
+        }
+
     }
 }

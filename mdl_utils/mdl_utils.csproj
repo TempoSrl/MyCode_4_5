@@ -48,9 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CryptDecrypt.cs" />
-    <Compile Include="DataSetUtils.cs" />
-    <Compile Include="HelpUi.cs" />
-    <Compile Include="metaprofiler.cs" />
+    <Compile Include="MetaProfiler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Quoting.cs" />
     <Compile Include="tagUtils.cs" />

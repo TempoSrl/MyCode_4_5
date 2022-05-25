@@ -12,14 +12,16 @@ namespace mdl_utils {
 		/// <param name="O"></param>
 		/// <param name="SQL">if true, SQL compatible strings are used</param>
 		/// <returns></returns>
-		public static string quotedstrvalue(Object O, bool SQL) {
-            if (O == null) return "null";
+		public static string quote(Object O, bool SQL = false) {
+            if (O == null)
+                return "null";
             if (O is Boolean) {
-                if (true.Equals(O)) return ("(1=1)");
+                if (true.Equals(O))
+                    return ("(1=1)");
                 return ("(1=0)");
             }
 
-            return mdl_utils.Quoting.quotedstrvalue(O, O.GetType(), SQL);
+            return quote(O, O.GetType(), SQL);
         }
 
 
@@ -30,10 +32,12 @@ namespace mdl_utils {
         /// <param name="O"></param>
         /// <param name="SQL">if true, SQL compatible representation are used</param>
         /// <returns></returns>
-        public static string unquotedstrvalue(Object O, bool SQL) {
-            if (O == null) return "null";
-            if (O == DBNull.Value) return "null";
-            return mdl_utils.Quoting.unquotedstrvalue(O, O.GetType(), SQL);
+        public static string unquote(Object O, bool SQL = false) {
+            if (O == null)
+                return "null";
+            if (O == DBNull.Value)
+                return "null";
+            return unquoted(O, O.GetType(), SQL);
         }
 
 
@@ -42,8 +46,9 @@ namespace mdl_utils {
         /// </summary>
         /// <param name="S"></param>
         /// <returns></returns>
-        public static string Quote(string S) {
-            if (S == null) return "null";
+        static string quoteString(string S) {
+            if (S == null)
+                return "null";
             return "'" + S.Replace("'", "''") + "'";
         }
         /// <summary>
@@ -53,16 +58,18 @@ namespace mdl_utils {
         /// <param name="T"></param>
         /// <param name="SQL"></param>
         /// <returns></returns>
-        public static string quotedstrvalue(Object O, System.Type T, bool SQL) {
-            if (O == null) return "null";
-            if (O == DBNull.Value) return "null";
+        public static string quote(Object O, System.Type T, bool SQL) {
+            if (O == null)
+                return "null";
+            if (O == DBNull.Value)
+                return "null";
             if (T.Name == "DateTime") {
-                return unquotedstrvalue(O, T, SQL);
+                return unquoted(O, T, SQL);
             }
             if ((T.Name == "Byte[]") && SQL) {
-                return unquotedstrvalue(O, T, SQL);
+                return unquoted(O, T, SQL);
             }
-            return Quote(unquotedstrvalue(O, T, SQL));
+            return quoteString(unquoted(O, T, SQL));
         }
 
 
@@ -73,13 +80,17 @@ namespace mdl_utils {
         /// <param name="T">Base Type of O</param>
         /// <param name="SQL">if true, result can be used for building SQL commands</param>
         /// <returns>String representation of O</returns>
-        public static string unquotedstrvalue(Object O, System.Type T, bool SQL) {
-            if (O == null) return "null";
-            if (O == DBNull.Value) return "null";
-            var typename= T.Name;
+        public static string unquoted(Object O, System.Type T, bool SQL) {
+            if (O == null)
+                return "null";
+            if (O == DBNull.Value)
+                return "null";
+            var typename = T.Name;
             switch (typename) {
-                case "String": return O.ToString();
-                case "Char": return O.ToString();
+                case "String":
+                    return O.ToString();
+                case "Char":
+                    return O.ToString();
                 case "Double": {
 
                     //if(!SQL) {
@@ -90,15 +101,18 @@ namespace mdl_utils {
                     //                    string s1 = ((Double)O).ToString("r").Replace(group,"");
                     //                    return s1.Replace(dec,".");
                     var group = System.Globalization.NumberFormatInfo.CurrentInfo.NumberGroupSeparator;
-                    var dec   = System.Globalization.NumberFormatInfo.CurrentInfo.NumberDecimalSeparator;
+                    var dec = System.Globalization.NumberFormatInfo.CurrentInfo.NumberDecimalSeparator;
                     var s1 = ((Double)O).ToString("f10");
-                    if (group != dec) s1 = s1.Replace(group, "");
+                    if (group != dec)
+                        s1 = s1.Replace(group, "");
 
-                    var pos = s1.IndexOf(dec,0);
-                    if (pos < 0) return s1;
+                    var pos = s1.IndexOf(dec, 0);
+                    if (pos < 0)
+                        return s1;
                     s1 = s1.Replace(dec, ".");
-                    var last = s1.Length-1;
-                    while (s1[last] == '0') last--;
+                    var last = s1.Length - 1;
+                    while (s1[last] == '0')
+                        last--;
                     if (last == pos)
                         s1 = s1.Substring(0, pos); //toglie anche il punto
                     else
@@ -110,14 +124,17 @@ namespace mdl_utils {
                     //    return ((Single)O).ToString("r");
                     //}
                     var group = System.Globalization.NumberFormatInfo.CurrentInfo.NumberGroupSeparator;
-                    var dec   = System.Globalization.NumberFormatInfo.CurrentInfo.NumberDecimalSeparator;
+                    var dec = System.Globalization.NumberFormatInfo.CurrentInfo.NumberDecimalSeparator;
                     var s1 = ((Single)O).ToString("f10");
-                    if (group != dec) s1 = s1.Replace(group, "");
+                    if (group != dec)
+                        s1 = s1.Replace(group, "");
                     var pos = s1.IndexOf(dec, 0);
-                    if (pos < 0) return s1;
+                    if (pos < 0)
+                        return s1;
                     s1 = s1.Replace(dec, ".");
-                    var last = s1.Length-1;
-                    while (s1[last] == '0') last--;
+                    var last = s1.Length - 1;
+                    while (s1[last] == '0')
+                        last--;
                     if (last == pos)
                         s1 = s1.Substring(0, pos); //toglie anche il punto
                     else
@@ -130,14 +147,17 @@ namespace mdl_utils {
                     //    return ((Decimal)O).ToString("n");
                     //}
                     var group = System.Globalization.NumberFormatInfo.CurrentInfo.NumberGroupSeparator;
-                    var dec   = System.Globalization.NumberFormatInfo.CurrentInfo.NumberDecimalSeparator;
+                    var dec = System.Globalization.NumberFormatInfo.CurrentInfo.NumberDecimalSeparator;
                     var s1 = ((Decimal)O).ToString("f10");
-                    if (group != dec) s1 = s1.Replace(group, "");
+                    if (group != dec)
+                        s1 = s1.Replace(group, "");
                     var pos = s1.IndexOf(dec, 0);
-                    if (pos < 0) return s1;
+                    if (pos < 0)
+                        return s1;
                     s1 = s1.Replace(dec, ".");
-                    var last = s1.Length-1;
-                    while (s1[last] == '0') last--;
+                    var last = s1.Length - 1;
+                    while (s1[last] == '0')
+                        last--;
                     if (last == pos)
                         s1 = s1.Substring(0, pos); //toglie anche il punto
                     else
@@ -149,7 +169,7 @@ namespace mdl_utils {
                         return "#" + ((DateTime)O).ToString("yyyy-MM-ddTHH:mm:ss.fffffff"
                             , System.Globalization.DateTimeFormatInfo.InvariantInfo) + "#";
                     }
-                    var TT = (DateTime) O; //Convert.ToDateTime(s);   
+                    var TT = (DateTime)O; //Convert.ToDateTime(s);   
                     if (TT.Date.Equals(TT)) {
                         return "{d '" + TT.Year.ToString() + "-" +
                                TT.Month.ToString().PadLeft(2, '0') + "-" +
@@ -179,12 +199,18 @@ namespace mdl_utils {
                     //                        TT.Minute.ToString()+":"+TT.Second.ToString()+"."+
                     //                        TT.Millisecond.ToString().PadLeft(3,'0');
                 }
-                case "Int16": return O.ToString();
-                case "Int32": return O.ToString();
-                case "Int64": return O.ToString();
-                case "UInt16": return O.ToString();
-                case "UInt32": return O.ToString();
-                case "UInt64": return O.ToString();
+                case "Int16":
+                    return O.ToString();
+                case "Int32":
+                    return O.ToString();
+                case "Int64":
+                    return O.ToString();
+                case "UInt16":
+                    return O.ToString();
+                case "UInt32":
+                    return O.ToString();
+                case "UInt64":
+                    return O.ToString();
                 case "Byte[]":
                     //BinaryFormatter BF = new BinaryFormatter();
                     var buf = (Byte[])O;
@@ -192,7 +218,8 @@ namespace mdl_utils {
                 case "Byte":
                     return O.ToString();
                 case "Boolean":
-                    if ((Boolean)O == true) return "true";
+                    if ((Boolean)O == true)
+                        return "true";
                     return "false";
 
                 default:
@@ -207,9 +234,9 @@ namespace mdl_utils {
         /// <param name="buf"></param>
         /// <returns></returns>
         public static string ByteArrayToString(Byte[] buf) {
-            var ff= new StringBuilder();
+            var ff = new StringBuilder();
             ff.Append("0x");
-            var temp=new StringBuilder();
+            var temp = new StringBuilder();
             for (var i = 0; i < buf.Length; i++) {
                 temp.Append(ByteTohex(buf[i]));
                 if (temp.Length > 1024) {
@@ -228,13 +255,14 @@ namespace mdl_utils {
         /// <param name="S"></param>
         /// <returns></returns>
 		public static Byte[] StringToByteArray(string S) {
-            var i=2;
-            var len=S.Length;
-            if (i >= len) return new byte[0];
-            var buf = new byte[(len-i)/2];
-            var index=0;
+            var i = 2;
+            var len = S.Length;
+            if (i >= len)
+                return new byte[0];
+            var buf = new byte[(len - i) / 2];
+            var index = 0;
             while (i <= len - 2) {
-                var xx= S.Substring(i,2);
+                var xx = S.Substring(i, 2);
                 buf[index++] = HexToByte(xx);
                 i += 2;
             }
@@ -252,22 +280,38 @@ namespace mdl_utils {
 
         static string IntToHexDigit(int x) {
             switch (x) {
-                case 0: return "0";
-                case 1: return "1";
-                case 2: return "2";
-                case 3: return "3";
-                case 4: return "4";
-                case 5: return "5";
-                case 6: return "6";
-                case 7: return "7";
-                case 8: return "8";
-                case 9: return "9";
-                case 10: return "A";
-                case 11: return "B";
-                case 12: return "C";
-                case 13: return "D";
-                case 14: return "E";
-                case 15: return "F";
+                case 0:
+                    return "0";
+                case 1:
+                    return "1";
+                case 2:
+                    return "2";
+                case 3:
+                    return "3";
+                case 4:
+                    return "4";
+                case 5:
+                    return "5";
+                case 6:
+                    return "6";
+                case 7:
+                    return "7";
+                case 8:
+                    return "8";
+                case 9:
+                    return "9";
+                case 10:
+                    return "A";
+                case 11:
+                    return "B";
+                case 12:
+                    return "C";
+                case 13:
+                    return "D";
+                case 14:
+                    return "E";
+                case 15:
+                    return "F";
             }
             return "x";
         }
@@ -275,22 +319,38 @@ namespace mdl_utils {
         static Byte CharToByte(char C) {
             C = Char.ToUpper(C);
             switch (C) {
-                case '0': return 0;
-                case '1': return 1;
-                case '2': return 2;
-                case '3': return 3;
-                case '4': return 4;
-                case '5': return 5;
-                case '6': return 6;
-                case '7': return 7;
-                case '8': return 8;
-                case '9': return 9;
-                case 'A': return 10;
-                case 'B': return 11;
-                case 'C': return 12;
-                case 'D': return 13;
-                case 'E': return 14;
-                case 'F': return 15;
+                case '0':
+                    return 0;
+                case '1':
+                    return 1;
+                case '2':
+                    return 2;
+                case '3':
+                    return 3;
+                case '4':
+                    return 4;
+                case '5':
+                    return 5;
+                case '6':
+                    return 6;
+                case '7':
+                    return 7;
+                case '8':
+                    return 8;
+                case '9':
+                    return 9;
+                case 'A':
+                    return 10;
+                case 'B':
+                    return 11;
+                case 'C':
+                    return 12;
+                case 'D':
+                    return 13;
+                case 'E':
+                    return 14;
+                case 'F':
+                    return 15;
             }
             return 0;
         }

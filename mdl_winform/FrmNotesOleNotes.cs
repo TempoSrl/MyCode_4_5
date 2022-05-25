@@ -85,7 +85,7 @@ namespace mdl_winform {
                     if (data[0] == 141 && data[1] == 132 && data[2] == 53 && data[3] == 13) {
                         byte[] newarr = new byte[data.Length - 4];
                         Array.Copy(data, 4, newarr, 0, data.Length - 4);
-                        OleNotes = mdl_utils.DataSetUtils.unzip(newarr);
+                        OleNotes = DataSetUtils.Unzip(newarr);
                     }
                 }
                 if (OleNotes.Length > 0) {
@@ -94,7 +94,7 @@ namespace mdl_winform {
                         txtOleNotes.LoadFile(MS, RichTextBoxStreamType.RichText);
                     }
                     catch (Exception E) {
-                        ErrorLogger.Logger.markEvent(E.ToString());
+                        ErrorLogger.Logger.MarkEvent(E.ToString());
                     }
                 }
 
@@ -336,7 +336,7 @@ namespace mdl_winform {
                     if (data.Length > 100) {
                         List<byte> res = new List<byte>();
                         res.AddRange(new byte[] { 141, 132, 53, 13 });
-                        res.AddRange(mdl_utils.DataSetUtils.zip(data));
+                        res.AddRange(DataSetUtils.Zip(data));
                         data = res.ToArray();
                     }
 
@@ -361,68 +361,6 @@ namespace mdl_winform {
 
 
 
-
-        //		private void txtOleNotes_DragEnter(object sender, DragEventArgs e) {
-        ////			e.Effect= DragDropEffects.Copy;
-        //
-        //			//base.OnDragEnter(e);
-        //
-        //			e.Effect = DragDropEffects.All; 
-        //
-        ////			if( e.Data.GetDataPresent(typeof(string))||
-        ////				e.Data.GetDataPresent(DataFormats.FileDrop) ||
-        ////				e.Data.GetDataPresent(typeof(Metafile))||
-        ////				e.Data.GetDataPresent(typeof(Bitmap))){
-        ////				if ((e.AllowedEffect & DragDropEffects.Move)!=0)
-        ////					e.Effect=DragDropEffects.Move;
-        ////				if (((e.AllowedEffect & DragDropEffects.Copy) !=0) &&
-        ////					((e.KeyState & 0x08) !=0)) e.Effect= DragDropEffects.Copy;
-        ////			}
-        //		}
-        //
-        //		private void txtOleNotes_DragDrop(object sender, DragEventArgs e) {
-        ////			if (e.Data.GetDataPresent(typeof(string))){
-        ////				strPastedText= (string) e.Data.GetData(typeof(string));
-        ////				Invalidate();
-        ////				return;
-        ////			}
-        ////			if (e.Data.GetDataPresent(DataFormats.Rtf)){
-        ////				strPastedText= (string) e.Data.GetData(DataFormats.Rtf);
-        ////				Invalidate();
-        ////				return;
-        ////			}
-        ////			if (e.Data.GetDataPresent(typeof(string))){
-        ////				strPastedText= (string) e.Data.GetData(DataFormats.Html);
-        ////				Invalidate();
-        ////				return;
-        ////			}
-        ////			if (e.Data.GetDataPresent(DataFormats.CommaSeparatedValue)){
-        ////				MemoryStream memstr = (MemoryStream) e.Data.GetData("Csv");
-        ////				StreamReader strmrd = new StreamReader(memstr);
-        ////				strPastedText= strmrd.ReadToEnd();
-        ////				strmrd.Close();
-        ////				Invalidate();
-        ////				return;
-        ////			}
-        //
-        //		}
-
-        //		private void NotesOleNotes_Paint(object sender, System.Windows.Forms.PaintEventArgs e) {
-        //			Graphics grfx = e.Graphics;
-        //			grfx.DrawString(strPastedText, Font, new SolidBrush(ForeColor), ClientRectangle);
-        //			strPastedText="";
-        //		}
-
-
-        //private void btnCarattere_Click(object sender, System.EventArgs e) {
-        //    FontDialog FD = new FontDialog();
-        //    FD.ShowColor = true;
-        //    FD.Font = txtOleNotes.SelectionFont;
-        //    FD.Color = txtOleNotes.SelectionColor;
-        //    if (FD.ShowDialog() != DialogResult.OK) return;
-        //    txtOleNotes.SelectionFont = FD.Font;
-        //    txtOleNotes.SelectionColor = FD.Color;
-        //}
 
         private void btnPaste_Click(object sender, System.EventArgs e) {
             try {

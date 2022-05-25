@@ -68,10 +68,10 @@ namespace mdl_winform {
                     a = LoadedFormAssembly[dllName] as Assembly;
                 }
                 else {
-                    var handle = metaprofiler.StartTimer("load Form * "+myAssemblyName);
+                    var handle = MetaProfiler.StartTimer("load Form * "+myAssemblyName);
                     a = loadAssembly(myAssemblyName);
                     LoadedFormAssembly[dllName] = a;
-                    metaprofiler.StopTimer(handle);
+                    MetaProfiler.StopTimer(handle);
                     new Task(() => {
 	                    loadReferencedAssembly(a);
                     }).Start();
@@ -101,7 +101,7 @@ namespace mdl_winform {
                         ErrorLogger.Logger.logException(errMsg,e);
                         continue;
                     }
-                    ErrorLogger.Logger.warnEvent($"OpenForm:{dllName} ver:{a.GetName().Version}");
+                    ErrorLogger.Logger.WarnEvent($"OpenForm:{dllName} ver:{a.GetName().Version}");
                     return f;
                 }
 
@@ -127,10 +127,10 @@ namespace mdl_winform {
         public virtual WinFormMetaData GetWinFormMeta(string metaDataName) {
            
 
-            var handle = metaprofiler.StartTimer("Get metaDataName * "+metaDataName);       
+            var handle = MetaProfiler.StartTimer("Get metaDataName * "+metaDataName);       
 
             if (NoLoad.Contains(metaDataName)) {
-                metaprofiler.StopTimer(handle);
+                MetaProfiler.StopTimer(handle);
                 return defaultMetaData( metaDataName) as WinFormMetaData;
             }
             var doLog = true;
@@ -159,7 +159,7 @@ namespace mdl_winform {
                         doLog = false;
                         return defaultMetaData( metaDataName) as WinFormMetaData;
                     }
-                    var handle2 = metaprofiler.StartTimer("REAL Get * "+metaDataName);
+                    var handle2 = MetaProfiler.StartTimer("REAL Get * "+metaDataName);
                     try {
                         lock (MyLockMeta) {
                             a = loadAssembly( myAssemblyName);
@@ -167,33 +167,33 @@ namespace mdl_winform {
                         LoadedAssembly[metaDataName] = a;
                     }
                     catch (FileNotFoundException f) {
-                        LoadError[metaDataName] = QueryCreator.GetErrorString(f);
+                        LoadError[metaDataName] = ErrorLogger.GetErrorString(f);
                         NoLoad[metaDataName] = 1;
                         doLog = false;
                     }
                     catch (Exception el) {
                         logException($"Errore caricando la DLL {myAssemblyName} che è quindi aggiunta a NOLOAD.", el);
-                        LoadError[metaDataName] = QueryCreator.GetErrorString(el);
+                        LoadError[metaDataName] = ErrorLogger.GetErrorString(el);
                         NoLoad[metaDataName] = 1;
                         unrecoverableError = true;
                     }
-                    metaprofiler.StopTimer(handle2);
+                    MetaProfiler.StopTimer(handle2);
                 }
 
                 if (a == null) {
                     //Conn.LogError(ErrMsg,null);
-                    metaprofiler.StopTimer(handle);
+                    MetaProfiler.StopTimer(handle);
                     var m =  defaultMetaData(metaDataName) as WinFormMetaData;
-                    if (doLog) ErrorLogger.Logger.markEvent($"last Error during load:{LoadError[metaDataName]}");
+                    if (doLog) ErrorLogger.Logger.MarkEvent($"last Error during load:{LoadError[metaDataName]}");
                     return m;
                 }
                 var errMsg = $"Class {myClassName} not found in file {myAssemblyName}";
                 Type metaObjType = a.GetType(myClassName);
                 if (metaObjType == null) {
-                    ErrorLogger.Logger.markEvent(errMsg);
+                    ErrorLogger.Logger.MarkEvent(errMsg);
                     NoLoad[metaDataName]=1;
                     unrecoverableError = true;
-                    metaprofiler.StopTimer(handle);
+                    MetaProfiler.StopTimer(handle);
                     return defaultMetaData(metaDataName) as WinFormMetaData;
                 }
                 var metaObjBuilder = (metaObjType
@@ -220,11 +220,11 @@ namespace mdl_winform {
 
                 errMsg = $"public {myClassName}(DataAccess Conn, EntityDispatcher dispatcher) of Class {myClassName} not found in file {myAssemblyName}";
                 if (metaObjBuilder == null) {
-                    ErrorLogger.Logger.markEvent(errMsg);
+                    ErrorLogger.Logger.MarkEvent(errMsg);
                     logException(errMsg, null);
                     NoLoad[metaDataName]= 1;
                     unrecoverableError = true;
-                    metaprofiler.StopTimer(handle);
+                    MetaProfiler.StopTimer(handle);
                     return defaultMetaData(metaDataName) as WinFormMetaData;
                 }
                 errMsg = $"Error calling constructor of Class {myClassName} in file {myAssemblyName}";
@@ -234,19 +234,19 @@ namespace mdl_winform {
                     md = (WinFormMetaData) metaObjBuilder.Invoke(parametri);
                 }
                 catch (Exception e) {
-                    ErrorLogger.Logger.markEvent($"{errMsg}(Detail:{e.ToString()})");
+                    ErrorLogger.Logger.MarkEvent($"{errMsg}(Detail:{e.ToString()})");
                     logException(errMsg, e);
                     NoLoad[metaDataName]= 1;
-                    metaprofiler.StopTimer(handle);
+                    MetaProfiler.StopTimer(handle);
                     unrecoverableError = true;
                     return defaultMetaData( metaDataName) as WinFormMetaData;
                 }
-                metaprofiler.StopTimer(handle);
+                MetaProfiler.StopTimer(handle);
                 return md;
             }
             catch (Exception e) {
                 logException($"Errore in caricamento {metaDataName}", e);
-                metaprofiler.StopTimer(handle);
+                MetaProfiler.StopTimer(handle);
                 NoLoad[metaDataName]= 1;
                 unrecoverableError = true;
                 return defaultMetaData( metaDataName) as WinFormMetaData;

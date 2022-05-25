@@ -140,7 +140,7 @@ namespace mdl_winform
 				var MySizeF = (SizeF)myGridColumn.GetPrefSize(g, header );
                 int MaxColumnSize = Convert.ToInt32(MySizeF.Width);
 				if (CurrCol.DataType==typeof(decimal)){
-					string S= mdl_utils.HelpUi.StringValue(12345678.12,"x.y");
+					string S= mdl.HelpUi.StringValue(12345678.12,"x.y");
 					MySizeF = (SizeF)myGridColumn.GetPrefSize(g,S);
 					int Result2 = Convert.ToInt32(MySizeF.Width);	//larghezza della cella corrente
 					if(Result2 > MaxColumnSize) MaxColumnSize = Result2;
@@ -154,14 +154,14 @@ namespace mdl_winform
 					//Object O = rows[Ro][colname];
 					if (O==null) continue;
 					if (O.ToString()=="") continue;
-					string S= mdl_utils.HelpUi.StringValue(O,tagtable,CurrCol);
+					string S= mdl.HelpUi.StringValue(O,tagtable,CurrCol);
 					
                     MySizeF = (SizeF)myGridColumn.GetPrefSize(g,S);
                     var Result = Convert.ToInt32(MySizeF.Width);	//larghezza della cella corrente
                     if(Result > MaxColumnSize) MaxColumnSize = Result;
                 }
 				if (CurrCol.DataType==typeof(string)){
-					string S= mdl_utils.HelpUi.StringValue("123456789012345678901234567890","x.y");
+					string S= mdl.HelpUi.StringValue("123456789012345678901234567890","x.y");
 					MySizeF = (SizeF)myGridColumn.GetPrefSize(g,S);
 					int Result2 = Convert.ToInt32(MySizeF.Width);	//larghezza della cella corrente
 					if(MaxColumnSize > Result2) MaxColumnSize = Result2;

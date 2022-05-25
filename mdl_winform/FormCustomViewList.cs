@@ -27,7 +27,7 @@ namespace mdl_winform {
     /// </summary>
     class FormCustomViewList : System.Windows.Forms.Form {
 
-        private CQueryHelper QHC = new CQueryHelper();
+        private CQueryHelper QHC = MetaFactory.factory.getSingleton<CQueryHelper>();
 
         #region Dichiarazione variabili e controlli
         //contiene i dati del listytpe corrente, utilizzato nei tab Colonne, Selezione, Ordinamento
@@ -65,7 +65,7 @@ namespace mdl_winform {
         ///true se il listtype è di sistema 
         /// </summary>
         private bool m_listtypeissystem; //
-		private string m_basefilter;	//filtro passato al costruttore
+		private q m_basefilter;	//filtro passato al costruttore
 		private string m_basesorting;   //sorting passato al costruttore
 		//private string m_filter;		//eventuale filtro personalizzato
 		private string m_sorting;		//eventuale sorting personalizzato
@@ -551,8 +551,9 @@ namespace mdl_winform {
         IMetaDataDispatcher dispatcher;
         IDataAccess conn;
 
+        
         void inizializza(IWinFormMetaData linked, string columnlist,
-            string filter,
+            q filter,
             string tablename,
             string listtype,
             DataTable ToMerge,
@@ -616,7 +617,7 @@ namespace mdl_winform {
                 shower.ShowError(controller.linkedForm,LM.errorLoadingMeta(tablename), LM.ErrorTitle);
             }
             if (columnlist.Trim() == "*") {
-                DataTable DT2 = conn.CreateTableByName(tablename, columnlist);
+                DataTable DT2 = conn.CreateTable(tablename, columns: columnlist).GetAwaiter().GetResult();
                 m_linkedview.DescribeColumns(DT2, listtype);
                 columnlist = QueryCreator.SortedColumnNameList(DT2);
 
@@ -675,9 +676,9 @@ namespace mdl_winform {
                 }
             }
 
-            txtBaseFilter.Text = m_basefilter;
+            txtBaseFilter.Text = m_basefilter?.toADO() ?? "";
             txtBaseSorting.Text = m_basesorting;
-            chkBaseFilter.Checked = !string.IsNullOrEmpty(m_basefilter);
+            chkBaseFilter.Checked = !(m_basefilter is null) & !m_basefilter.isTrue();
 
             if (filterlocked) chkBaseFilter.Enabled = false;
             //	metaprofiler.StopTimer(startinit);
@@ -696,7 +697,7 @@ namespace mdl_winform {
         /// <param name="filterlocked">When true, user is not allowed to change list filter</param>
         /// <param name="top"></param>
         public FormCustomViewList(IWinFormMetaData linked, string columnlist,
-            string filter,
+            q filter,
             string tablename,
             string listtype,
             DataTable ToMerge,
@@ -2607,7 +2608,7 @@ namespace mdl_winform {
 			}
 			string[] colonne = m_columnList.Split(',');
 			int i = 0;
-			model.invokeActions(DS.customviewcolumn,TableAction.beginLoad);
+			model.InvokeActions(DS.customviewcolumn,TableAction.beginLoad);
 			foreach (string columnname in colonne) {
 				System.Data.DataRow row = DS.customviewcolumn.NewRow();
 				row["objectname"] = tablename.Trim();
@@ -2623,7 +2624,7 @@ namespace mdl_winform {
 				row["strikeout"] = 0;
 				DS.customviewcolumn.Rows.Add(row);
 			}
-			model.invokeActions(DS.customviewcolumn,TableAction.endLoad);
+			model.InvokeActions(DS.customviewcolumn,TableAction.endLoad);
 		}
 
 	
@@ -2719,8 +2720,7 @@ namespace mdl_winform {
 		}
 
 		private DataTable getDataTable(string tablename, string columnList, string filter) {
-			return conn.RUN_SELECT(tablename, columnList, null, filter, 
-				null, null, false);
+			return conn.Select(tablename, columnlist:columnList, filter: filter).GetAwaiter().GetResult();
 		}
 
 		private void gridElenchiCell_Click(object sender, EventArgs e ) {
@@ -2740,11 +2740,11 @@ namespace mdl_winform {
 
         System.Data.DataRow getMainRow(System.Data.DataRow viewRow) {
             if (viewRow == null) return null;
-            string filtertoApply = filtroSuVistaApplicato;
+            q filtertoApply = filtroSuVistaApplicato;
             string vista = viewRow.Table.TableName;
 
 
-            DataTable mainTable = conn.CreateTableByName(vista, "*"); //m_linked.TableName
+            DataTable mainTable = conn.CreateTable(vista).GetAwaiter().GetResult(); //m_linked.TableName
             //DataTable viewTable = m_linked.Conn.CreateTableByName(vista, "*");                      
             DataColumn[] primarykey = mainTable.PrimaryKey;
 
@@ -2766,9 +2766,9 @@ namespace mdl_winform {
 
             if (primarykey.Length > 0) {
                 QueryHelper QHS = conn.GetQueryHelper();
-                string filterKey = QHS.MCmp(viewRow, (from s in primarykey select s.ColumnName).ToArray<string>());
+                q filterKey = q.mCmp(viewRow, (from s in primarykey select s.ColumnName).ToArray<string>());
                 filtertoApply = filterKey;
-                DataTable tt = conn.RUN_SELECT(vista, "*", null, filtertoApply, null, false);
+                DataTable tt = conn.Select(vista, filter:filtertoApply).GetAwaiter().GetResult();
                 if (tt.Rows.Count == 1) return tt.Rows[0];
                 if (tt.Rows.Count > 1) {
                     errorLogger.logException(
@@ -2778,14 +2778,12 @@ namespace mdl_winform {
             else {
                 errorLogger.logException($"getMainRow Warn:Manca la definizione della chiave per la tabella:{mainTable.TableName}/{m_tablename} vista {vista} metaview {m_linkedview.Name}. ");
             }
-            QueryHelper QHS2 = conn.GetQueryHelper();
+            
             string[] all = new string[viewRow.Table.Columns.Count];
             for (int i = 0; i < viewRow.Table.Columns.Count; i++) all[i] = viewRow.Table.Columns[i].ColumnName;
-            filtertoApply = QHS2.MCmp(viewRow, all);
-         
+            filtertoApply = q.mCmp(viewRow, all);
 
-
-            var t = conn.RUN_SELECT(vista, "*", null, filtertoApply, null, false);
+            var t = conn.Select(vista, filter: filtertoApply).GetAwaiter().GetResult();
             if (t.Rows.Count == 1) return t.Rows[0];
             if (t.Rows.Count == 0) return null;
 
@@ -2832,8 +2830,8 @@ namespace mdl_winform {
 				update_enabled=true;
                 return;
 			}
-			int rowselect = metaprofiler.StartTimer("RowListSelect");
-            crono MyC = new crono("LoadTime");
+			int rowselect = MetaProfiler.StartTimer("RowListSelect");
+            Crono MyC = new Crono("LoadTime");
 			try {
 				var DR = getSelectedRow(gridX, DSDati, DT.TableName);
 			    DR = getMainRow(DR);
@@ -2842,7 +2840,7 @@ namespace mdl_winform {
 			            update_enabled = true;
 			            long ms = MyC.GetDuration();
 			            setLastRowSelectTime(ms);
-			            metaprofiler.StopTimer(rowselect);
+			            MetaProfiler.StopTimer(rowselect);
 			            return;
 			        }
 			        if (filterlocked || (m_linked == null)) {
@@ -2871,7 +2869,7 @@ namespace mdl_winform {
             long msec = MyC.GetDuration();
             setLastRowSelectTime(msec);
 
-			metaprofiler.StopTimer(rowselect);
+			MetaProfiler.StopTimer(rowselect);
         }
 
         private void setLastRowSelectTime(long ms) {
@@ -3566,7 +3564,7 @@ namespace mdl_winform {
 					row["value"] = txtValore.Text;
 				}
 				else {
-					var B = conn.CreateTableByName(mainTableName, "*");
+					var B = conn.CreateTable(mainTableName, "*").GetAwaiter().GetResult();
 					if (B.Columns.Contains(row["columnname"].ToString())) {
 						object val = HelpUi.GetObjectFromString(B.Columns[row["columnname"].ToString()].DataType,
 							txtValore.Text,
@@ -3602,12 +3600,10 @@ namespace mdl_winform {
 		private bool addToCustomViewWhere() {
 			try {
 				var row = DS.customviewwhere.NewRow();
-				if (RowChange.MakeChild(DS.customview.Rows[0], DS.customview,
-					row, "customviewcustomviewwhere")) {
-					RowChange.MarkAsAutoincrement(DS.customviewwhere.Columns["periodnumber"],
-						null, null, 6);
-					RowChange.SetSelector(DS.customviewwhere, "objectname");
-					RowChange.SetSelector(DS.customviewwhere, "viewname");
+				if (row.MakeChildByRelation(DS.customview.Rows[0], DS.customview,"customviewcustomviewwhere")) {
+					DS.customviewwhere.Columns["periodnumber"].SetAutoincrement();
+					DS.customviewwhere.SetSelector("objectname");
+					DS.customviewwhere.SetSelector("viewname");
 					RowChange.CalcTemporaryID(row);
 					if (!setDataWhereCond(row)) return false;
 					DS.customviewwhere.Rows.Add(row);
@@ -3671,7 +3667,7 @@ namespace mdl_winform {
 			int i=0;
 			while (i< lbsumfield.Items.Count){
 				string currfield = lbsumfield.Items[i].ToString();
-				string filter = "(heading="+mdl_utils.Quoting.quotedstrvalue(currfield,false)+")";
+				string filter = "(heading="+mdl_utils.Quoting.quote(currfield,false)+")";
 				if (DS.customviewcolumn.Select(filter).Length>0) {
 					i++;
 				}
@@ -3879,12 +3875,10 @@ namespace mdl_winform {
         private void addToCustomViewOrderBy() {
             try {
                 System.Data.DataRow row = DS.customvieworderby.NewRow();
-                if(RowChange.MakeChild(DS.customview.Rows[0], DS.customview,
-                    row, "customviewcustomvieworderby")) {
-                    RowChange.MarkAsAutoincrement(DS.customvieworderby.Columns["periodnumber"],
-                        null, null, 6);
-					RowChange.SetSelector(DS.customviewwhere, "objectname");
-					RowChange.SetSelector(DS.customviewwhere, "viewname");
+                if(row.MakeChildByRelation(DS.customview.Rows[0], DS.customview, "customviewcustomvieworderby")) {
+                    DS.customvieworderby.Columns["periodnumber"].SetAutoincrement();
+					DS.customviewwhere.SetSelector( "objectname");
+					DS.customviewwhere.SetSelector("viewname");
 					RowChange.CalcTemporaryID(row);
 					setDataOrderBy(row);
 					DS.customvieworderby.Rows.Add(row);
@@ -4068,12 +4062,10 @@ namespace mdl_winform {
 	        string val = f.txtValore.Text;
 
 	        var row = DS.customviewwhere.NewRow();
-	        if (RowChange.MakeChild(DS.customview.Rows[0], DS.customview,
-	            row, "customviewcustomviewwhere")) {
-	            RowChange.MarkAsAutoincrement(DS.customviewwhere.Columns["periodnumber"],
-	                null, null, 6);
-	            RowChange.SetSelector(DS.customviewwhere, "objectname");
-	            RowChange.SetSelector(DS.customviewwhere, "viewname");
+	        if (row.MakeChildByRelation(DS.customview.Rows[0], DS.customview, "customviewcustomviewwhere")) {
+	            DS.customviewwhere.Columns["periodnumber"].SetAutoincrement();
+	            DS.customviewwhere.SetSelector( "objectname");
+	            DS.customviewwhere.SetSelector( "viewname");
 	            RowChange.CalcTemporaryID(row);
 	            
 	            
@@ -4145,8 +4137,8 @@ namespace mdl_winform {
             PostData.MarkAsTemporaryTable(ds.fieldtosum, false);
 
             var mPostdata = MyMeta.Get_PostData();
-            mPostdata.initClass(ds, conn);
-            return mPostdata.DO_POST();
+            mPostdata.InitClass(ds, conn).GetAwaiter().GetResult();
+            return mPostdata.InteractiveSaveData();
         }
 
 
@@ -4572,13 +4564,13 @@ namespace mdl_winform {
 
         private string mainTableName;
 
-        private string filtroSuVistaApplicato = null;
+        private q filtroSuVistaApplicato = null;
         private IMetaModel model = MetaFactory.factory.getSingleton<IMetaModel>();
         private string lastColTable = "??";
 		void leggiTabellaElenco(IWinFormMetaData linked,
 				string columnlist,
 				string tablename,
-				string filter,
+				q filter,
                 string orderby,
 				DataTable ToMerge
 			){
@@ -4587,14 +4579,14 @@ namespace mdl_winform {
 
             var QHS = conn.GetQueryHelper();
 			if ((ToMerge==null)||(ToMerge.Rows.Count==0)){
-                string filtersec = filter;
+                q filtersec = filter;
 
 
 				if (DSDati==null || lastColTable!=columnlist) {
 				    lastColTable = columnlist;
                     DSDati = new DataSet();
 				    ClearDataSet.RemoveConstraints(DSDati);
-                    filtersec = QHS.AppAnd(filtersec, controller.security.SelectCondition(tablename, true));
+                    filtersec = q.and(filtersec, controller.security.SelectCondition(tablename));
 
 				    filtroSuVistaApplicato = filtersec;
 
@@ -4603,24 +4595,22 @@ namespace mdl_winform {
                     //        filter, GetTop(), null, true);
                     //}
                     //else {
-                        DT = conn.RUN_SELECT( tablename, columnlist, orderby,	
-							filtersec, getTop() , null,(filter==filtersec));
+                        DT = conn.Select( tablename,columnlist: columnlist, order_by: orderby,	filter:filtersec, top:getTop() ).GetAwaiter().GetResult();
                     //}
 					DSDati.Tables.Add(DT);
 				}
 				else {
-                    if (!model.isSkipSecurity(DT)) filtersec = QHS.AppAnd(filtersec,
-                                controller.security.SelectCondition(tablename, true));
+                    if (!model.IsSkipSecurity(DT)) filtersec = q.and(filtersec, controller.security.SelectCondition(tablename));
 
 					update_enabled=false;
-					model.clear(DT);
+					model.Clear(DT);
 					update_enabled=true;
                     filtroSuVistaApplicato = filtersec;
-                    conn.RUN_SELECT_INTO_TABLE( DT, orderby, filtersec, getTop(), (filter == filtersec));
+                    conn.SelectIntoTable( DT, orderBy:orderby, filter:filtersec, top: getTop());
 				}
 
 				//Elimina le righe non selezionabili
-				int testcanselect2 = metaprofiler.StartTimer("Removing not selectable");
+				int testcanselect2 = MetaProfiler.StartTimer("Removing not selectable");
 				//linked.Conn.DeleteAllUnselectable(DT);
 //				foreach (System.Data.DataRow RR  in DT.Select()){
 //					if (!linked.Conn.CanSelect(RR)){
@@ -4628,12 +4618,12 @@ namespace mdl_winform {
 //						RR.AcceptChanges();
 //					}
 //				}
-				metaprofiler.StopTimer(testcanselect2);
+				MetaProfiler.StopTimer(testcanselect2);
 				return;
 			}
 			DSDati = new DataSet("elenco");
 		    ClearDataSet.RemoveConstraints(DSDati);
-			DT = conn.CreateTableByName(tablename,columnlist);
+			DT = conn.CreateTable(tablename,columnlist).GetAwaiter().GetResult();
 			if (DT.Columns.Count==0){
 				shower.Show(this,"Non sono disponibile le informazioni relative alle colonne di "+
 					tablename + ". Questo può accadere a causa di una erronea installazione. "+
@@ -4645,13 +4635,13 @@ namespace mdl_winform {
 				// done from a table to a view-table or viceversa.
 			}
 
-            string filtersec2 = filter;
-            if (!model.isSkipSecurity(DT)) {
-                    filtersec2 = QHS.AppAnd(filtersec2,
-                                controller.security.SelectCondition(DataAccess.GetTableForReading(DT),true));
+            q filtersec2 = filter;
+            if (!model.IsSkipSecurity(DT)) {
+                    filtersec2 = q.and(filtersec2,
+                                controller.security.SelectCondition(DT.tableForReading()));
             }
             filtroSuVistaApplicato = filtersec2;
-            conn.RUN_SELECT_INTO_TABLE(DT, orderby, filtersec2, getTop(), (filtersec2 == filter));
+            conn.SelectIntoTable(DT, orderBy:orderby, filter:filtersec2, top:getTop());
 			DSDati.Tables.Add(DT);
 
 
@@ -4671,9 +4661,8 @@ namespace mdl_winform {
 			//Delete from list those who have not the filter property in the ToMerge Table
 			System.Data.DataRow [] ToExclude = ToMerge.Select("NOT("+nochildfilter+")");
 			foreach (var R in ToExclude){
-				string cond = QueryCreator.WHERE_REL_CLAUSE(R, ToMerge.PrimaryKey,
-					ToMerge.PrimaryKey, DataRowVersion.Default,false);                    
-				System.Data.DataRow[] ToDelete = DT.Select(cond);
+				q cond = q.mCmp(R, ToMerge.PrimaryKey);                    
+				System.Data.DataRow[] ToDelete = DT.filter(cond);
 				if (ToDelete.Length>0) {
 					ToDelete[0].Delete();
 					ToDelete[0].AcceptChanges();
@@ -4686,7 +4675,7 @@ namespace mdl_winform {
 			System.Data.DataRow [] ToAdd = ToMerge.Select(nochildfilter);  //was nochildfilter ( 13/1/2005)
 			foreach (var R in ToAdd){
 				//string cond = QueryCreator.WHERE_REL_CLAUSE(R, ToMerge.PrimaryKey,ToMerge.PrimaryKey, DataRowVersion.Default,false);                    
-				System.Data.DataRow[] ToInsert = DT._Filter(q.mCmp(R,ToMerge.PrimaryKey));
+				System.Data.DataRow[] ToInsert = DT.filter(q.mCmp(R,ToMerge.PrimaryKey));
 
 				//Removes eventually present row from DT
 				foreach (var RR in ToInsert){
@@ -4718,28 +4707,27 @@ namespace mdl_winform {
 		/// <param name="ToMerge"></param>
 		void leggiElenco(
 				IWinFormMetaData linked,
-				string filter, 
+				q filter, 
 				string tablename, 
 				string columnlist,
 				string orderby,
 				DataTable ToMerge){
-	
-			if (filter=="") filter=null;
+				
 			if (orderby=="") orderby=null;
 			gridX.BeginInit();
             string new_top = getTop();
 
 			//gridX.SuspendLayout();
-			if ((last_filter_applied != filter) || (new_top!=last_top) || (last_sort_applied!=orderby) || (last_columnlist!=columnlist)){
+			if ((last_filter_applied != filter?.toADO()) || (new_top!=last_top) || (last_sort_applied!=orderby) || (last_columnlist!=columnlist)){
                 last_sort_applied = orderby;
-                last_filter_applied = filter;
+                last_filter_applied = filter?.toADO();
 			    last_columnlist = columnlist;
                 last_top = new_top;
-                int leggitabella = metaprofiler.StartTimer("LeggiTabellaElenco");
+                int leggitabella = MetaProfiler.StartTimer("LeggiTabellaElenco");
 			    leggiTabellaElenco(linked, columnlist, tablename, filter,orderby, ToMerge); //era filterlocked ? "*":columnlist
-                metaprofiler.StopTimer(leggitabella);
+                MetaProfiler.StopTimer(leggitabella);
 
-				int setdatabind = metaprofiler.StartTimer("Set DataBinding");
+				int setdatabind = MetaProfiler.StartTimer("Set DataBinding");
 				//il binding dei dati alla grid è effettuato (solo) qui
 				try {
 					gridX.SetDataBinding(DSDati, DT.TableName);
@@ -4751,7 +4739,7 @@ namespace mdl_winform {
 					//cell.Click += new EventHandler(this.GridElenchiCell_Click);
 					cell.DoubleClick += gridElenchiCell_DoubleClick;
 				}
-				metaprofiler.StopTimer(setdatabind);
+				MetaProfiler.StopTimer(setdatabind);
 				
 				 //necessaria ad ogni databinding
 //				int setdataeve = metaprofiler.StartTimer("Set XceedGrid Events");
@@ -4764,7 +4752,7 @@ namespace mdl_winform {
 
 			}
 
-			int setsort= metaprofiler.StartTimer("Sorting Xceed grid...");
+			int setsort= MetaProfiler.StartTimer("Sorting Xceed grid...");
 			if (gridX.SortedColumns.Count>0) gridX.SortedColumns.Clear();
 			if (orderby!=null){
 				string []orderclauses = orderby.Split(new char[] {','});
@@ -4802,7 +4790,7 @@ namespace mdl_winform {
 					
 				}
 			}
-			metaprofiler.StopTimer(setsort);
+			MetaProfiler.StopTimer(setsort);
             GOTOPilotato = true;
 
 			gridX.EndInit();
@@ -4821,9 +4809,9 @@ namespace mdl_winform {
 
 			gridCol.BeginInit();
 			ClearDataSet.RemoveConstraints(DS);
-			int leggiImpostaDSClear = metaprofiler.StartTimer("leggiImpostaDSClear");
+			int leggiImpostaDSClear = MetaProfiler.StartTimer("leggiImpostaDSClear");
 			DS.Clear();
-			metaprofiler.StopTimer(leggiImpostaDSClear);
+			MetaProfiler.StopTimer(leggiImpostaDSClear);
 
 
 			GetData MyGetData = new GetData();
@@ -4833,13 +4821,13 @@ namespace mdl_winform {
 			DR["objectname"] = m_tablename;
 			DR["viewname"] = list_type;
 			
-			MyGetData.SEARCH_BY_KEY(DR);
+			MyGetData.SearchByKey(DR).GetAwaiter().GetResult();
 
 			GetData.CacheTable(DS.customoperator);
 			GetData.CacheTable(DS.connector);
 
-			MyGetData.DO_GET(false,null);
-			MyGetData.ReadCached();
+			MyGetData.Get(false,null).GetAwaiter().GetResult();
+            MyGetData.ReadCached().GetAwaiter().GetResult();
             MyGetData.Destroy();
 
 			loadCustomDirection();
@@ -5011,13 +4999,13 @@ namespace mdl_winform {
 	    /// <param name="T"></param>
 	    /// <param name="canAskAtRunTime"></param>
 	    /// <returns>compiled where clause</returns>
-	    static string compileOneClause(ISecurity security, System.Data.DataRow clause, DataTable T, bool canAskAtRunTime){			
+	    q compileOneClause(ISecurity security, System.Data.DataRow clause, DataTable T, bool canAskAtRunTime){			
 			string [] result;
 			int oper = Convert.ToInt32(clause["operator"]);
 			int nparams = CountOperands(oper);
 
 			if (clause["runtime"].ToString().ToLower()!="1"){
-				string values = security.Compile(clause["value"].ToString(),true);				
+				string values = security.Compile(clause["value"].ToString(), QHC);				
 				bool done = GetParams(out result, values,  nparams);
 				if (!done) return null;
 			}
@@ -5051,8 +5039,7 @@ namespace mdl_winform {
             //    }
             //}
 
-            string expr = GetSqlClause(clause["columnname"].ToString(),oper, ORes);
-			return "("+expr+")";
+            return  GetSqlClause(clause["columnname"].ToString(),oper, ORes);
 
 		}
         	/// <summary>
@@ -5062,61 +5049,35 @@ namespace mdl_winform {
 		/// <param name="_operator">operator code</param>
 		/// <param name="operands">array of quoted operands</param>
 		/// <returns></returns>
-		public static string GetSqlClause(string fieldname,int _operator, object [] operands){
-			string mask="";
-			switch(_operator){
-				case op_eq:mask= "%fieldname=%s1";break;
-				case op_lt:mask= "%fieldname<%s1"; break;
-				case op_le:mask= "%fieldname<=%s1"; break;
-				case op_lk:mask= "%fieldname LIKE %s1"; break;
-				case op_in:mask= null;break;
-				case op_btw:mask= "%fieldname BETWEEN %s1 AND %s2726541312"; break;
-				case op_nul:mask= "%fieldname IS NULL "; break;
-				case op_ne:mask= "%fieldname <> %s1"; break;
-				case op_gt:mask= "%fieldname > %s1"; break;
-				case op_ge:mask= "%fieldname>= %s1"; break;
-				case op_nlk:mask= "%fieldname NOT LIKE %s1"; break;
-				case op_notin:mask= null;break;
-				case op_notbtw:mask= "%fieldname NOT BETWEEN %s1 AND %s2726541312"; break;
-				case op_notnul:mask= "%fieldname IS NOT NULL"; break;
-                case op_nulloreq: mask = "%fieldname is null or  %fieldname = %s1"; break;
-                case op_nullorgt: mask = "%fieldname is null or  %fieldname > %s1"; break;
-                case op_nullorge: mask = "%fieldname is null or  %fieldname >= %s1"; break;
-                case op_nullorlt: mask = "%fieldname is null or  %fieldname < %s1"; break;
-                case op_nullorle: mask = "%fieldname is null or  %fieldname <= %s1"; break;
-                case op_nullorne: mask = "%fieldname is null or  %fieldname <> %s1"; break;
-                case op_nullorlike: mask = "%fieldname is null or  %fieldname like %s1"; break;
-            }
-			if (mask!=null){
-				int n_op = CountOperands(_operator);
-
-                mask = mask.Replace("%fieldname", fieldname);
-
-                switch (n_op){
-					case 0: return mask;
-					case 1: return mask.Replace("%s1", mdl_utils.Quoting.quotedstrvalue(operands[0],true));
-					case 2: mask = mask.Replace("%s1", mdl_utils.Quoting.quotedstrvalue(operands[0],true));
-						mask = mask.Replace("%s2726541312", mdl_utils.Quoting.quotedstrvalue(operands[1],true));
-						return mask;
-				}
-				//code never reached
-				return null;
+		public static q GetSqlClause(string fieldname,int _operator, object [] operands){
+				switch(_operator){
+				case op_eq:return q.eq(fieldname, operands[0]); //"%fieldname=%s1"
+				case op_lt:return q.lt(fieldname,operands[0]);//mask= "%fieldname<%s1"; break;
+				case op_le:return q.le(fieldname,operands[0]);//mask= "%fieldname<=%s1"; break;
+				case op_lk:return q.like(fieldname, operands[0]);//mask= "%fieldname LIKE %s1"; break;
+				case op_in:return q.fieldIn(fieldname, operands[0].ToString().Split(','));//mask= null;break;
+				case op_btw:return q.between(fieldname,operands[0],operands[1]);
+						//mask= "%fieldname BETWEEN %s1 AND %s2726541312"; break;
+				case op_nul:return q.isNull(fieldname); // mask= "%fieldname IS NULL "; break;
+				case op_ne:return q.ne(fieldname,operands[0]);//"%fieldname <> %s1"; break;
+				case op_gt:return q.gt(fieldname,operands[0]);//mask= "%fieldname > %s1"; break;
+				case op_ge:return q.ge(fieldname, operands[0]);// "%fieldname>= %s1"; break;
+				case op_nlk:return q.not(q.like(fieldname,operands[0]));//mask= "%fieldname NOT LIKE %s1"; break;
+				case op_notin:return q.not(q.fieldIn(fieldname, operands[0].ToString().Split(',')));
+					//mask= null;break;
+				case op_notbtw:return q.not(q.between(fieldname,operands[0],operands[1]));
+					//mask= "%fieldname NOT BETWEEN %s1 AND %s2726541312"; break;
+				case op_notnul:return q.isNotNull(fieldname);//mask= "%fieldname IS NOT NULL"; break;
+                case op_nulloreq:return q.nullOrEq(fieldname, operands[0]);//"%fieldname is null or  %fieldname = %s1"; break;
+				case op_nullorgt:return q.nullOrGt(fieldname, operands[0]);//"%fieldname is null or  %fieldname > %s1"; break;
+				case op_nullorge:return q.nullOrGe(fieldname, operands[0]);//"%fieldname is null or  %fieldname >= %s1"; break;
+                case op_nullorlt:return q.nullOrLt(fieldname, operands[0]);//"%fieldname is null or  %fieldname < %s1"; break;
+                case op_nullorle:return q.nullOrLe(fieldname, operands[0]);//"%fieldname is null or  %fieldname <= %s1"; break;
+                case op_nullorne:return q.nullOrNe(fieldname, operands[0]);// "%fieldname is null or  %fieldname <> %s1"; break;
+                case op_nullorlike:
+					return q.or(q.isNull(fieldname),q.like(fieldname, operands[0]));//"%fieldname is null or  %fieldname like %s1"; break;
 			}
-
-			switch (_operator){
-				case op_in:    mask= fieldname+" IN ("; break;
-				case op_notin: mask= fieldname + " NOT IN(";break;
-			}
-			bool first=true;
-			foreach (object s in operands){
-				if (first)
-					first=false;
-				else
-					mask += ",";
-				mask += mdl_utils.Quoting.quotedstrvalue(s,true);
-			}
-			mask += ")";
-			return mask;
+			return null;
 		}
 
 
@@ -5153,33 +5114,28 @@ namespace mdl_winform {
         /// <param name="whereClauses"></param>
         /// <param name="canAskAtRunTime"></param>
         /// <returns></returns>
-	    public static string GetFilterFromCustomViewWhere(ISecurity security, DataTable T,
-	        string basefilter,
+	    public q GetFilterFromCustomViewWhere(ISecurity security, DataTable T,
+	        q basefilter,
 	        System.Data.DataRow[] whereClauses,
 	        bool canAskAtRunTime
 	    ) {
-	        string where = "";
+	        q where = null;
 	        bool first = true;
 	        foreach (var Clause in whereClauses) {
 	            int connector = Convert.ToInt32(Clause["connector"]);
-	            string connstring = "";
 	            if (first && (connector == PREV_CONNECTOR)) {
 	                where = basefilter;
 	                connector = 0;
 	            }
-	            if (!first) {
-	                switch (connector) {
-	                    case AND_CONNECTOR:
-	                        connstring = "AND";
-	                        break;
-	                    case OR_CONNECTOR:
-	                        connstring = "OR";
-	                        break;
-	                }
-	            }
-	            string compiledclause = compileOneClause(security, Clause, T, canAskAtRunTime);
+	            
+	            q compiledclause = compileOneClause(security, Clause, T, canAskAtRunTime);
 	            if (compiledclause != null) {
-	                where = where + connstring + compiledclause;
+                    if (connector == AND_CONNECTOR) {
+                        where &= compiledclause;
+					}
+                    else {
+                        where |= compiledclause;
+                    }
 	                first = false;
 	            }
 
@@ -5192,16 +5148,16 @@ namespace mdl_winform {
 		/// Input: Filtro iniziale, DS, checkbox "usa"
 		/// </summary>
         /// param name="T" usato per le caption dei parametri a run time
-		private string ottieniFiltro(DataTable T) {
-            string mybasefilter;
+		private q ottieniFiltro(DataTable T) {
+            q mybasefilter;
             try {
 				var Base = DS.customview.Rows[0];
-				mybasefilter = Base["staticfilter"].ToString().Trim();
+				mybasefilter = Base["staticfilter"] as q;
 			}
 			catch {}
 
 
-            string m_filter;
+            q m_filter;
             try {
                 System.Data.DataRow[] rows = DS.customviewwhere.Select();
                 m_filter = GetFilterFromCustomViewWhere(controller.security, T,null, rows, true);
@@ -5209,29 +5165,25 @@ namespace mdl_winform {
             catch(Exception e) {
                 showMsg($"Errore nella costruzione del filtro\r\rDettaglio: {e.Message}",
                     C_MSG_TITLE_ERRORE, mdl.MessageBoxButtons.OK, mdl.MessageBoxIcon.Error);
-                m_filter = "";
+                m_filter = null;
             }
 
-            if (m_filter!="") m_filter="("+m_filter+")";
-			string filtrocomplessivo= m_filter;
+
+			q filtrocomplessivo= m_filter;
 
 			mybasefilter = m_basefilter;
 
 			if (m_IAmAdmin && (!filterlocked))
-				mybasefilter = txtBaseFilter.Text.Trim();
+				mybasefilter = q.fromString( txtBaseFilter.Text.Trim());
 
-			if ((mybasefilter!="")&&(mybasefilter!=null)) {
-				mybasefilter="("+mybasefilter+")";
+			if (mybasefilter!=null) {				
 				if (chkBaseFilter.Checked) {
-					filtrocomplessivo= GetData.MergeFilters(m_filter,mybasefilter);
+					filtrocomplessivo= q.and(m_filter,mybasefilter);
 				}
 			}
-
-			if (filtrocomplessivo == "")
-				filtrocomplessivo = null;
-
-            string statfilter = m_linkedview.GetStaticFilter(m_listtype);
-            filtrocomplessivo = GetData.MergeFilters(statfilter, filtrocomplessivo);
+			
+            q statfilter = m_linkedview.GetStaticFilter(m_listtype);
+            filtrocomplessivo = q.and(statfilter, filtrocomplessivo);
 
 			return filtrocomplessivo;
 		}
@@ -5242,7 +5194,7 @@ namespace mdl_winform {
         /// <remarks>Il binding dei dati deve essere già stato fatto.
         /// </remarks>
         private void applicaImpostazioniListType() {
-			int appImp = metaprofiler.StartTimer("ApplicaImpostazioniListType");
+			int appImp = MetaProfiler.StartTimer("ApplicaImpostazioniListType");
 			int autoindex=0;
 			gridX.SuspendLayout();
 			foreach (var row in DS.customviewcolumn.Select(null,"listcolpos asc")) {
@@ -5280,11 +5232,11 @@ namespace mdl_winform {
 				}
 			}
             foreach (Column CC in gridX.Columns) {
-                if (DS.customviewcolumn.Select("colname="+ mdl_utils.Quoting.quotedstrvalue(CC.FieldName,false)).Length==0)
+                if (DS.customviewcolumn.Select("colname="+ mdl_utils.Quoting.quote(CC.FieldName,false)).Length==0)
                     CC.Visible=false;
             }
 			gridX.ResumeLayout();
-			metaprofiler.StopTimer(appImp);
+			MetaProfiler.StopTimer(appImp);
 		}
 
         /// <summary>
@@ -5296,7 +5248,7 @@ namespace mdl_winform {
             //Se il listtype non è di sistema non eseguo la DescribeColumns
             if (!issystem) return;
             
-            var DT = conn.CreateTableByName(m_tablename,"*");
+            var DT = conn.CreateTable(m_tablename).GetAwaiter().GetResult();
             var d = new DataSet();
             d.Tables.Add(DT);
             //il metadato ha impatto solo sulla caption e/o visibilità
@@ -5306,7 +5258,7 @@ namespace mdl_winform {
 
             foreach (DataColumn col in DT.Columns) {               
                 //string filter = "colname = '" + col.ColumnName + "'";
-                System.Data.DataRow[] rows = DS.customviewcolumn._Filter(q.eq("colname",col.ColumnName));
+                System.Data.DataRow[] rows = DS.customviewcolumn.filter(q.eq("colname",col.ColumnName));
                 if (rows.Length == 0) {
                     continue;
                 }
@@ -5362,7 +5314,7 @@ namespace mdl_winform {
 				}
 
                 //Vede se ci sono impostazioni nel ds sulla colonna
-				System.Data.DataRow[] rows = DS.customviewcolumn._Filter(q.eq("colname",col.ColumnName));
+				System.Data.DataRow[] rows = DS.customviewcolumn.filter(q.eq("colname",col.ColumnName));
 				if (rows.Length == 0) {
 					//il dataset non contiene la riga per quel columnname (es. campi desc. foreign key) , la colonna è nascosta
 					gridX.Columns[col.ColumnName].Title = getCaptionNoDot(col.Caption);
@@ -5392,7 +5344,7 @@ namespace mdl_winform {
 		/// </summary>
 		/// <param name="listtype"></param>
 		void updateSysListType(string listtype){
-			System.Data.DataRow []CurrList = DS.customview._Filter(q.eq("viewname",listtype));
+			System.Data.DataRow []CurrList = DS.customview.filter(q.eq("viewname",listtype));
 			m_listtypeissystem = ((CurrList.Length>0)&& (CurrList[0]["issystem"].ToString()!="N"));
 			enableDisableButtons(m_listtypeissystem);
 			updateContextMenu(m_listtypeissystem);
@@ -5410,7 +5362,7 @@ namespace mdl_winform {
 		/// </summary>
 		/// <param name="listtype"></param>
 		void leggiListingType(string listtype){
-			int leggilis = metaprofiler.StartTimer("LeggiListingType");
+			int leggilis = MetaProfiler.StartTimer("LeggiListingType");
 			Cursor = Cursors.WaitCursor;
             chkBaseSorting.Checked = false;
 			leggiImpostazioniListType(listtype);
@@ -5426,7 +5378,7 @@ namespace mdl_winform {
             if (m_listtypeissystem) chkBaseSorting.Checked=true;
 			DescribeColumnsApplied=false;
 			Cursor  = Cursors.Default;
-			metaprofiler.StopTimer(leggilis);
+			MetaProfiler.StopTimer(leggilis);
 		}
 
 
@@ -5492,7 +5444,7 @@ namespace mdl_winform {
 		}
 
         string getColumnlist() {
-            var Temp = conn.CreateTableByName(m_tablename, "*");
+            var Temp = conn.CreateTable(m_tablename).GetAwaiter().GetResult();
             DataColumn[] primarykey = Temp.PrimaryKey;
 
             if (primarykey.Length == 0 && m_linked.TableName != m_tablename) {
@@ -5511,7 +5463,7 @@ namespace mdl_winform {
 
 
             if (primarykey.Length == 0 && m_linked.TableName != m_tablename) {
-                var mainTable = conn.CreateTableByName(m_linked.TableName, "*");
+                var mainTable = conn.CreateTable(m_linked.TableName).GetAwaiter().GetResult();
                 primarykey = mainTable.PrimaryKey;
             }
             if (primarykey.Length == 0) {
@@ -5541,9 +5493,9 @@ namespace mdl_winform {
             MTemp.Destroy();
 
             if (!DescribeColumnsApplied) {
-                int appcode = metaprofiler.StartTimer("ApplicaImpostazioniDaCodice_pre");//210
+                int appcode = MetaProfiler.StartTimer("ApplicaImpostazioniDaCodice_pre");//210
                 applicaImpostazioniDaCodice_pre(m_listtype, m_listtypeissystem);
-                metaprofiler.StopTimer(appcode);
+                MetaProfiler.StopTimer(appcode);
             }
 
             string[] allfields = m_columnList.Split(',');
@@ -5603,16 +5555,16 @@ namespace mdl_winform {
 		/// Assume m_listtype e m_listtypeissystem già calcolati
 		/// </summary>
 		void applicaListType(){
-			int applist = metaprofiler.StartTimer("Applica ListType");//18066  //9414
+			int applist = MetaProfiler.StartTimer("Applica ListType");//18066  //9414
 			Cursor= Cursors.WaitCursor;
 
             var d = new DataSet();
-            var Temp2 = conn.CreateTableByName(m_tablename, "*");
+            var Temp2 = conn.CreateTable(m_tablename).GetAwaiter().GetResult();
             d.Tables.Add(Temp2);
 
-            string filter = ottieniFiltro(Temp2);
+            q filter = ottieniFiltro(Temp2);
             string orderby = buildOrderByCondition();
-            int leggiel = metaprofiler.StartTimer("Leggi Elenco"); //5628   //8612
+            int leggiel = MetaProfiler.StartTimer("Leggi Elenco"); //5628   //8612
 
 		    string newCollist = getColumnlist();
 
@@ -5623,17 +5575,17 @@ namespace mdl_winform {
 
 
             leggiElenco(m_linked, filter, m_tablename, newCollist, orderby, ToMerge); // m_columnList
-            metaprofiler.StopTimer(leggiel);
+            MetaProfiler.StopTimer(leggiel);
 
-            int ApplicaImpo = metaprofiler.StartTimer("ApplicaImpostazioniListType");//282
+            int ApplicaImpo = MetaProfiler.StartTimer("ApplicaImpostazioniListType");//282
             applicaImpostazioniListType();
-            metaprofiler.StopTimer(ApplicaImpo);
+            MetaProfiler.StopTimer(ApplicaImpo);
 
 
             if (!DescribeColumnsApplied){
-				int appcode = metaprofiler.StartTimer("ApplicaImpostazioniDaCodice_post");//210
+				int appcode = MetaProfiler.StartTimer("ApplicaImpostazioniDaCodice_post");//210
 				applicaImpostazioniDaCodice_post(m_listtype, m_listtypeissystem);
-				metaprofiler.StopTimer(appcode);
+				MetaProfiler.StopTimer(appcode);
 				DescribeColumnsApplied=true;
                 
 			}
@@ -5641,11 +5593,11 @@ namespace mdl_winform {
             
 		    last_columnlist = getColumnlist();
 
-            int refit = metaprofiler.StartTimer("RefitColumns");//12087  //111
+            int refit = MetaProfiler.StartTimer("RefitColumns");//12087  //111
 			refitColumns();
-			metaprofiler.StopTimer(refit);
+			MetaProfiler.StopTimer(refit);
 			Cursor = Cursors.Default;
-			metaprofiler.StopTimer(applist);
+			MetaProfiler.StopTimer(applist);
 		}
 
 
@@ -6128,7 +6080,7 @@ namespace mdl_winform {
     public class SimpleCustomViewListForm :ICustomViewListForm {
 	    private FrmSimpleList f;
 	    public void  init (IWinFormMetaData linked, string columnlist,
-		    string mergedfilter, string searchtable, string listingType, DataTable toMerge, string sorting, int top,bool filterLocked,string Text) {
+		    q mergedfilter, string searchtable, string listingType, DataTable toMerge, string sorting, int top,bool filterLocked,string Text) {
 		    //FormCustomViewList o FrmSimpleList
 		    f = new FrmSimpleList(linked,
 			    columnlist,
@@ -6231,7 +6183,7 @@ namespace mdl_winform {
     public class DefaultCustomViewListForm :ICustomViewListForm {
 	    private FormCustomViewList f;
 	    public void  init (IWinFormMetaData linked, string columnlist,
-		    string mergedfilter, string searchtable, string listingType, DataTable toMerge, string sorting, int top,bool filterLocked,string Text) {
+		    q mergedfilter, string searchtable, string listingType, DataTable toMerge, string sorting, int top,bool filterLocked,string Text) {
 		    //FormCustomViewList o FrmSimpleList
 		    f = new FormCustomViewList(linked,
 			    columnlist,
@@ -6330,39 +6282,9 @@ namespace mdl_winform {
             f.Show();
 	    }
 
-        /// <summary>
-        /// Evaluates a filetr string given a basefilter set of WhereClauses
-        /// </summary>
-        /// <param name="conn"></param>
-        /// <param name="T"></param>
-        /// <param name="basefilter">Filter to merge with WhereClauses</param>
-        /// <param name="whereClauses">DataRow of customviewwhwere type</param>
-        /// <param name="canAskAtRunTime">if true, it's allowed to ask parameter 
-        ///		at run time when the whereclause needs it</param>
-        /// <returns>evaluated filter</returns>
-        [Obsolete]
-        public static string GetFilterFromCustomViewWhere(DataAccess conn, DataTable T,
-            string basefilter,
-            System.Data.DataRow[] whereClauses,
-            bool canAskAtRunTime
-            ) {
-            return FormCustomViewList.GetFilterFromCustomViewWhere(conn.Security, T, basefilter, whereClauses, canAskAtRunTime);
-        }
+        
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="security"></param>
-        /// <param name="T"></param>
-        /// <param name="basefilter">Filter to merge with WhereClauses</param>
-        /// <param name="whereClauses">DataRow of customviewwhwere type</param>
-        /// <returns></returns>
-        public static string getFilterFromCustomViewWhere(ISecurity security, DataTable T,
-            string basefilter,
-            System.Data.DataRow[] whereClauses
-        ) {
-            return FormCustomViewList.GetFilterFromCustomViewWhere(security, T, basefilter, whereClauses, false);
-        }
+       
     }
 }
 

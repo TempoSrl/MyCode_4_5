@@ -7,7 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-
+using mdl_utils;
+using q = mdl.MetaExpression;
 
 namespace mdl_winform {
     public interface IListViewManager {
@@ -44,15 +45,13 @@ namespace mdl_winform {
                 DataRow P2Row = (DataRow)LVI.Tag;
 
                 //Get Common child row if present
-                string par1filter = QueryCreator.WHERE_REL_CLAUSE(
-                    P1Row, PRel1.ParentColumns, PRel1.ChildColumns,
-                    DataRowVersion.Current, false);
-                string par2filter = QueryCreator.WHERE_REL_CLAUSE(
-                    P2Row, PRel2.ParentColumns, PRel2.ChildColumns,
-                    DataRowVersion.Current, false);
-                string par12filter = GetData.MergeFilters(par1filter, par2filter);
-                DataRow[] CurrChilds = Middle.Select(par12filter, null, DataViewRowState.CurrentRows);
-                DataRow[] DelChilds = Middle.Select(par12filter, null, DataViewRowState.Deleted);
+                q par1filter = q.mGetParents(P1Row, PRel1);
+                        //QueryCreator.WHERE_REL_CLAUSE(P1Row, PRel1.ParentColumns, PRel1.ChildColumns,DataRowVersion.Current, false);
+                q par2filter = q.mGetParents(P2Row, PRel2);
+                //QueryCreator.WHERE_REL_CLAUSE(P2Row, PRel2.ParentColumns, PRel2.ChildColumns,DataRowVersion.Current, false);
+                q par12filter = q.and(par1filter, par2filter);
+                DataRow[] CurrChilds = Middle.filter(par12filter);
+                DataRow[] DelChilds = Middle.filter(par12filter);
                 if ((LVI.Checked) && (CurrChilds.Length == 0)) {
                     DataRow newMid;
                     //Middle Row must be added
@@ -65,8 +64,8 @@ namespace mdl_winform {
                     else {
                         newMid = Middle.NewRow();
                     }
-                    RowChange.MakeChild(P1Row, primaryTable, newMid, null);
-                    RowChange.MakeChild(P2Row, otherParentTable, newMid, null);
+                    newMid.MakeChildOf(P1Row);
+                    newMid.MakeChildOf(P2Row);
                     if (DelChilds.Length == 0) Middle.Rows.Add(newMid);
                 }
                 if ((!LVI.Checked) && (CurrChilds.Length > 0)) {
@@ -92,14 +91,12 @@ namespace mdl_winform {
                 DataRow P2Row = (DataRow)LVI.Tag;
 
                 //Get Common child row if present
-                string par1filter = QueryCreator.WHERE_REL_CLAUSE(
-                    P1Row, PRel1.ParentColumns, PRel1.ChildColumns,
-                    DataRowVersion.Current, false);
-                string par2filter = QueryCreator.WHERE_REL_CLAUSE(
-                    P2Row, PRel2.ParentColumns, PRel2.ChildColumns,
-                    DataRowVersion.Current, false);
-                string par12filter = GetData.MergeFilters(par1filter, par2filter);
-                DataRow[] CurrChilds = Middle.Select(par12filter, null, DataViewRowState.CurrentRows);
+                q par1filter = q.mGetParents(P1Row, PRel1);
+                    //QueryCreator.WHERE_REL_CLAUSE(P1Row, PRel1.ParentColumns, PRel1.ChildColumns,DataRowVersion.Current, false);
+                q par2filter = q.mGetParents(P2Row, PRel2);
+                //QueryCreator.WHERE_REL_CLAUSE(P2Row, PRel2.ParentColumns, PRel2.ChildColumns,DataRowVersion.Current, false);
+                q par12filter = q.and(par1filter, par2filter);
+                DataRow[] CurrChilds = Middle.filter(par12filter);
                 if (CurrChilds.Length == 0) {
                     //Must Uncheck
                     LVI.Checked = false;
@@ -145,7 +142,7 @@ namespace mdl_winform {
             foreach (DataRow R in parent2.Rows) {
                 for (int i = 0; i < ncols; i++) {
                     string colname = colnames[i];
-                    items[i] = mdl_utils.HelpUi.StringValue(R[colname],
+                    items[i] = HelpUi.StringValue(R[colname],
                         "",
                         parent2.Columns[colname]);
                     int ss = Convert.ToInt32(GG.MeasureString(items[i], L.Font).Width) + 5;
@@ -159,7 +156,7 @@ namespace mdl_winform {
             int ii = 0;
             foreach (DataColumn C in parent2.Columns) {
                 if (C.Caption == "") continue;
-                L.Columns.Add(C.Caption, sizes[ii], (System.Windows.Forms.HorizontalAlignment ) mdl_utils.HelpUi.GetAlignForColumn(C));
+                L.Columns.Add(C.Caption, sizes[ii], (System.Windows.Forms.HorizontalAlignment ) HelpUi.GetAlignForColumn(C));
                 ii++;
             }
 
@@ -187,7 +184,7 @@ namespace mdl_winform {
             FC.T2 = otherParentTable;
 
 
-            SelectBuilder sel = getd.DO_GET_TABLE(otherParentTable, null, null, true, null, selList);
+            SelectBuilder sel = getd.GetTable(otherParentTable, selList: selList).GetAwaiter().GetResult();
 
 
             if (sel == null) {

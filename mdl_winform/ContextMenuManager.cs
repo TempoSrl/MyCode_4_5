@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection;
 using LM = mdl_language.LanguageManager;
 using mdl;
+using q = mdl.MetaExpression;
 
 namespace mdl_winform {
     
@@ -153,8 +154,8 @@ namespace mdl_winform {
                 return;
             var getd = new GetData();
             getd.InitClass(_cdr, _conn,  "customobject");
-            getd.GET_PRIMARY_TABLE($"(objectname={mdl_utils.Quoting.quotedstrvalue(_primary, true)})");
-            getd.DO_GET(false, null);
+            getd.GetPrimaryTable(q.eq("objectname", _primary)).GetAwaiter().GetResult();
+            getd.Get().GetAwaiter().GetResult();
             _dataSetRead = true;
         }
 
@@ -180,7 +181,7 @@ namespace mdl_winform {
             if (filter == null) return true;
             if (filter == "") return true;
             if (r == null) return false;
-            filter = _security.Compile(filter, false);
+            filter = _security.Compile(filter, QHC);
             var T = r.Table;
             DataRow[] found;
             try {
@@ -210,7 +211,7 @@ namespace mdl_winform {
                     ) {
             DataSet Out;
             try {
-                Out = _conn.CallSP("sp_getcustomrelationfilter", new object[] { fromTable, toTable, editType, operation },true);
+                Out = _conn.CallSP("sp_getcustomrelationfilter", new object[] { fromTable, toTable, editType, operation }).GetAwaiter().GetResult();
             }
             catch {
                 return true;
@@ -221,7 +222,7 @@ namespace mdl_winform {
             var filter = Out.Tables[0].Rows[0][0].ToString().Trim();
             return checkFilter(fromRow, filter);
         }
-
+        CQueryHelper QHC = MetaFactory.factory.getSingleton<CQueryHelper>();
         /// <summary>
         /// Sets custom default on dataTable T given by sp_getcustomrelationdefault
         /// </summary>
@@ -235,17 +236,18 @@ namespace mdl_winform {
                     DataTable T) {
             DataSet Out;
             try {
-                Out = _conn.CallSP("sp_getcustomrelationdefault", new object[] { fromTable, toTable, editType },true);
+                Out = _conn.CallSP("sp_getcustomrelationdefault", new object[] { fromTable, toTable, editType }).GetAwaiter().GetResult();
             }
             catch {
                 return;
             }
             if (Out == null) return;
             if (Out.Tables.Count == 0) return;
+            
             foreach (DataRow defaultRow in Out.Tables[0].Rows) {
                 var fieldname = defaultRow["fieldname"].ToString().ToLower().Trim();
                 if (!T.Columns.Contains(fieldname)) continue;
-                var defaultValue = _security.Compile(defaultRow["defaultvalue"].ToString(), false);
+                var defaultValue = _security.Compile(defaultRow["defaultvalue"].ToString(), QHC);
                 if (string.IsNullOrEmpty(defaultValue)) {
                     if (T.Columns[fieldname].AllowDBNull) {
                         T.Columns[fieldname].DefaultValue = DBNull.Value;
@@ -254,7 +256,7 @@ namespace mdl_winform {
                 }
 
                 try {
-                    var oDef = mdl_utils.HelpUi.GetObjectFromString(T.Columns[fieldname].DataType, defaultValue, "x.y");
+                    var oDef = HelpUi.GetObjectFromString(T.Columns[fieldname].DataType, defaultValue, "x.y");
                     T.Columns[fieldname].DefaultValue = oDef;
                 }
                 catch {
@@ -297,7 +299,7 @@ namespace mdl_winform {
             DataSet Out;
             try {
                 Out = _conn.CallSP("sp_getcustomrelationindirectdefault",
-                    new object[] { fromTable, toTable, editType },true);
+                    new object[] { fromTable, toTable, editType }).GetAwaiter().GetResult();
             }
             catch {
                 return;
@@ -310,7 +312,7 @@ namespace mdl_winform {
                 var destTable = outDs.Tables[tablename];
                 if (destTable == null) continue;
                 if (!destTable.Columns.Contains(fieldname)) continue;
-                var defaultValue = _security.Compile(defaultRow["defaultvalue"].ToString(), false);
+                var defaultValue = _security.Compile(defaultRow["defaultvalue"].ToString(), QHC);
                 if (string.IsNullOrEmpty(defaultValue)) {
                     if (destTable.Columns[fieldname].AllowDBNull) {
                         destTable.Columns[fieldname].DefaultValue = DBNull.Value;
@@ -319,7 +321,7 @@ namespace mdl_winform {
                 }
 
                 try {
-                    var oDef = mdl_utils.HelpUi.GetObjectFromString(destTable.Columns[fieldname].DataType, defaultValue, "x.y");
+                    var oDef = HelpUi.GetObjectFromString(destTable.Columns[fieldname].DataType, defaultValue, "x.y");
                     destTable.Columns[fieldname].DefaultValue = oDef;
                 }
                 catch {
@@ -350,7 +352,7 @@ namespace mdl_winform {
                 if (dirRel["edittype"].ToString() == "") continue;
                 //Check if DirRel is a good parent relation
                 //Checks that all child fields are not empty
-                var dirParentRelCols = dirRel.iGetChildRows("customdirectrelcustomdirectrelcol");
+                var dirParentRelCols = dirRel.getChildRows("customdirectrelcustomdirectrelcol");
                 var relgood = true;
                 foreach (var dirParentRelCol in dirParentRelCols) {
                     if (!curr.Table.Columns.Contains(dirParentRelCol["fromfield"].ToString())) {
@@ -386,7 +388,7 @@ namespace mdl_winform {
                 if (indirRel["edittype"].ToString() == "") continue;
                 //Check if DirRel is a good parent relation
                 //Checks that all child fields are not empty
-                var dirParentRelCols = indirRel.iGetChildRows("customindirectrelcustomindirectrelcol");
+                var dirParentRelCols = indirRel.getChildRows("customindirectrelcustomindirectrelcol");
                 var relgood = true;
                 foreach (var dirParentRelCol in dirParentRelCols) {
                     if (dirParentRelCol["parentnumber"].ToString() != "1") continue;
@@ -442,7 +444,7 @@ namespace mdl_winform {
                 if (dirRel["edittype"].ToString() == "") continue;
                 //Check if DirRel is a good parent relation
                 //Checks that all child fields are not empty
-                var dirParentRelCols = dirRel.iGetChildRows("customdirectrelcustomdirectrelcol");
+                var dirParentRelCols = dirRel.getChildRows("customdirectrelcustomdirectrelcol");
                 var relgood = true;
                 foreach (var dirParentRelCol in dirParentRelCols) {
                     if (!curr.Table.Columns.Contains(dirParentRelCol["fromfield"].ToString())) {
@@ -477,7 +479,7 @@ namespace mdl_winform {
                 if (indirRel["edittype"].ToString() == "") continue;
                 //Check if DirRel is a good parent relation
                 //Checks that all child fields are not empty
-                var indirParentRelCols = indirRel.iGetChildRows("customindirectrelcustomindirectrelcol");
+                var indirParentRelCols = indirRel.getChildRows("customindirectrelcustomindirectrelcol");
                 var relgood = true;
                 foreach (var indirParentRelCol in indirParentRelCols) {
                     if (indirParentRelCol["parentnumber"].ToString() != "1") continue;
@@ -611,15 +613,15 @@ namespace mdl_winform {
             if (curr == null) return;
             if (relation==null)return;
 
-            var relCols = relation.iGetChildRows("customdirectrelcustomdirectrelcol");
+            var relCols = relation.getChildRows("customdirectrelcustomdirectrelcol");
             if (relCols==null)return;
             var toTable = relation["totable"].ToString();
             var edittype = relation["edittype"].ToString();
-            var toFilter = _security.Compile(relation["filter"].ToString(), true);
-            var checkfilter = toFilter;
+            var toFilter = _security.Compile(relation["filter"].ToString(), QHC);
+            q checkfilter = q.fromString( toFilter);
             // ReSharper disable once LoopCanBeConvertedToQuery : it's more readable with a foreach
             foreach (var relCol in relCols) {
-                checkfilter = _qhs.AppAnd(checkfilter,
+                checkfilter = q.and(checkfilter,
                     _qhs.CmpEq(relCol["tofield"].ToString(), curr[relCol["fromfield"].ToString()])
                 );
             }
@@ -629,9 +631,9 @@ namespace mdl_winform {
                 searchTable = relation["totableview"].ToString();
             }
 
-            var rowsfound = _conn.RUN_SELECT_COUNT(searchTable, checkfilter, true);
+            var rowsfound = _conn.Count(searchTable, checkfilter).GetAwaiter().GetResult();
             if (rowsfound == 0) {
-                shower.ShowNoRowFound(_linkedForm,LM.noRowFound,LM.tableFilterApplied(searchTable, checkfilter));
+                shower.ShowNoRowFound(_linkedForm,LM.noRowFound,LM.tableFilterApplied(searchTable, checkfilter.toADO()));
                 return;
             }
 
@@ -673,7 +675,7 @@ namespace mdl_winform {
             if (_security==null)return;            
             var curr = HelpForm.GetLastSelected(_meta.primaryTable);
             if (curr == null) return;
-            var relCols = relation.iGetChildRows("customindirectrelcustomindirectrelcol");
+            var relCols = relation.getChildRows("customindirectrelcustomindirectrelcol");
             if (relCols==null)return;
             var toTable = relation["parenttable2"].ToString();
             var middle = relation["middletable"].ToString();
@@ -681,14 +683,14 @@ namespace mdl_winform {
 
             var actAsInsert = (_formController?.ds?.Tables[middle] != null);
             //Prende la riga dalla tabella middle
-            var middleFilter = _security.Compile(relation["filtermiddle"].ToString(), !actAsInsert);
+            var middleFilter = q.fromString(_security.Compile(relation["filtermiddle"].ToString(),QHC, !actAsInsert));
             var clearMiddleFilter = middleFilter;
             foreach (var relCol in relCols) {
                 if (relCol["parentnumber"].ToString() != "1") continue;
-                var clause = _qhs.CmpEq(relCol["middlefield"].ToString(), curr[relCol["parentfield"].ToString()]);
-                middleFilter = GetData.MergeFilters(middleFilter, clause);
-                clause = _qhs.CmpEq(relCol["middlefield"].ToString(), curr[relCol["parentfield"].ToString()]);
-                clearMiddleFilter = GetData.MergeFilters(clearMiddleFilter, clause);
+                var clause = q.eq(relCol["middlefield"].ToString(), curr[relCol["parentfield"].ToString()]);
+                middleFilter = q.and(middleFilter, clause);
+                clause = q.eq(relCol["middlefield"].ToString(), curr[relCol["parentfield"].ToString()]);
+                clearMiddleFilter = q.and(clearMiddleFilter, clause);
             }
 
             DataTable metaTable;
@@ -710,9 +712,9 @@ namespace mdl_winform {
                 if (metaTable.Rows.Count == 1) oneMiddleRow = metaTable.Rows[0];
             }
             else {
-                metaTable = _conn.RUN_SELECT(middle, "*", null, clearMiddleFilter, null, null, true);
+                metaTable = _conn.Select(middle, filter:clearMiddleFilter).GetAwaiter().GetResult();
                 if ((metaTable == null) || (metaTable.Rows.Count == 0)) {
-                    shower.ShowNoRowFound(_linkedForm,LM.noRowFound,LM.tableFilterApplied(middle, clearMiddleFilter));   
+                    shower.ShowNoRowFound(_linkedForm,LM.noRowFound,LM.tableFilterApplied(middle, clearMiddleFilter.toADO()));   
                     return;
                 }
                 if (metaTable.Rows.Count > 1) {
@@ -725,7 +727,7 @@ namespace mdl_winform {
 
             var joinfilter = " EXISTS (SELECT * from " + middle + " WHERE  ";
             //Cerca le righe parent di Middle in ParentTable2
-            var parent2Filter = _security.Compile(relation["filterparenttable2"].ToString(), true);
+            var parent2Filter = q.fromString( _security.Compile(relation["filterparenttable2"].ToString(), QHC));
 
             var searchTable = toTable;
             if (relation["parenttable2view"].ToString() != "") {
@@ -738,10 +740,10 @@ namespace mdl_winform {
                 foreach (var relCol in relCols) {
                     if (relCol["parentnumber"].ToString() != "2") continue;
                     var clause = _qhs.CmpEq($"{middle}.{relCol["middlefield"]}", _qhs.Field($"{searchTable}.{relCol["parentfield"]}"));
-                    joinmiddlefilter = _qhs.AppAnd(joinmiddlefilter, clause);
+                    joinmiddlefilter = q.and(joinmiddlefilter, clause);
                 }
                 joinfilter += joinmiddlefilter + ") ";
-                parent2Filter = _qhs.AppAnd(parent2Filter, joinfilter);
+                parent2Filter = q.and(parent2Filter, joinfilter);
             }
             else {
                 var joinmiddlefilter = "";
@@ -750,12 +752,12 @@ namespace mdl_winform {
                     var clause = _qhs.CmpEq(relCol["parentfield"].ToString(), oneMiddleRow[relCol["middlefield"].ToString()] );
                     joinmiddlefilter = _qhs.AppAnd(joinmiddlefilter, clause);
                 }
-                parent2Filter = _qhs.AppAnd(parent2Filter, joinmiddlefilter);
+                parent2Filter = q.and(parent2Filter, joinmiddlefilter);
             }
 
-            var rowsfound = _conn.RUN_SELECT_COUNT(searchTable, parent2Filter, true);
+            var rowsfound = _conn.Count(searchTable, parent2Filter).GetAwaiter().GetResult();
             if (rowsfound == 0) {
-                shower.ShowNoRowFound(_linkedForm,LM.noRowFound,LM.tableFilterApplied(searchTable,parent2Filter));   
+                shower.ShowNoRowFound(_linkedForm,LM.noRowFound,LM.tableFilterApplied(searchTable,parent2Filter.toADO()));   
                 return;
             }
 
@@ -799,7 +801,7 @@ namespace mdl_winform {
         private void insertDirect(DataRow relation) {
             var curr = HelpForm.GetLastSelected(_meta.primaryTable);
             if (curr == null) return;
-            var relCols = relation.iGetChildRows("customdirectrelcustomdirectrelcol");
+            var relCols = relation.getChildRows("customdirectrelcustomdirectrelcol");
             var toTable = relation["totable"].ToString();
             var edittype = relation["edittype"].ToString();
             var toMeta = _dispatcher.GetWinFormMeta(toTable);
@@ -837,7 +839,7 @@ namespace mdl_winform {
         private void insertIndirect(DataRow relation) {
             var curr = HelpForm.GetLastSelected(_meta.primaryTable);
             if (curr == null) return;
-            var relCols = relation.iGetChildRows("customindirectrelcustomindirectrelcol");
+            var relCols = relation.getChildRows("customindirectrelcustomindirectrelcol");
             var toTable = relation["parenttable2"].ToString();
             var middleTable = relation["middletable"].ToString();
             var edittype = relation["edittype"].ToString();
@@ -881,7 +883,7 @@ namespace mdl_winform {
             _doingCommand = true;
             var m2 = (CommandMenuItem)sender;
             if (m2.Command == "evalexpr") {
-                ErrorLogger.Logger.warnEvent("Opening EvaluateExpression");
+                ErrorLogger.Logger.WarnEvent("Opening EvaluateExpression");
                 var f = new FrmCheckExpression(_formController, _formController.ds);
                 MetaFactory.factory.getSingleton<IFormCreationListener>()?.create(f,null);
                 f.Show();

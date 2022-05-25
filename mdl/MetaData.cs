@@ -9,8 +9,6 @@ using System.Linq;
 using System.Diagnostics.CodeAnalysis;
 using LM = mdl_language.LanguageManager;
 using q = mdl.MetaExpression;
-using static mdl_utils.tagUtils;
-using static mdl_utils.HelpUi;
 #pragma warning disable CS0612 // Type or member is obsolete
 #pragma warning disable IDE1006 // naming
 
@@ -84,7 +82,7 @@ namespace mdl {
         /// <summary>
         /// Helper class for dataset Query
         /// </summary>
-        public CQueryHelper QHC= new CQueryHelper();
+        public static CQueryHelper QHC= MetaFactory.factory.getSingleton<CQueryHelper>();
 
 
 
@@ -102,7 +100,7 @@ namespace mdl {
         /// <summary>
         /// Additionally filter applied on maindosearch  
         /// </summary>
-        public string additional_search_condition = "";
+        public MetaExpression additional_search_condition = null;
 
 
         /// <summary>
@@ -367,7 +365,7 @@ namespace mdl {
         /// </summary>
         /// <param name="listingType"></param>
         /// <returns></returns>
-        public virtual string GetStaticFilter(string listingType) {
+        public virtual MetaExpression GetStaticFilter(string listingType) {
             return null;
         }
 
@@ -418,11 +416,11 @@ namespace mdl {
         /// <param name="type">System Type of COlumn to add. Ex. typeof(int)</param>
         /// <param name="expr">Expression to use for the column. Ex. bilancio.codicebilancio</param>
         /// <param name="Caption">Caption for use in Grid Headings</param>
-        protected void AddColumn(DataTable T, string colName, System.Type type, string expr, string Caption) {
+        protected void AddColumn(DataTable T, string colName, System.Type type, object expr, string Caption) {
             if (T.Columns[colName] != null) return;
             var dc = new DataColumn(colName, type) {Caption = Caption};
             T.Columns.Add(dc);
-            QueryCreator.SetExpression(dc, expr);
+            dc.SetExpression(expr);            
         }
 
         /// <summary>
@@ -459,10 +457,11 @@ namespace mdl {
         /// <param name="caption">Caption wanted for the Column, if empty or starts with ! is hidden</param>
         /// <param name="expression">Expression that will be used to calculate field</param>
         public static void DescribeAColumn(DataTable T, string colName, string caption,
-            string expression) {
+            object expression) {
             if (T.Columns[colName] == null) return;
             T.Columns[colName].Caption = caption;
-            QueryCreator.SetExpression(T.Columns[colName], expression);
+            T.Columns[colName].SetExpression(expression);
+            
         }
 
 
@@ -475,10 +474,10 @@ namespace mdl {
         /// <param name="expression">Expression assigned to the column</param>
         /// <param name="listcolpos">Position of the column in the list, -1 if it has to be hidden</param>
         public static void DescribeAColumn(DataTable T, string colName, string caption,
-            string expression, int listcolpos) {
+            object expression, int listcolpos) {
             if (T.Columns[colName] == null) return;
             T.Columns[colName].Caption = caption;
-            QueryCreator.SetExpression(T.Columns[colName], expression);
+            T.Columns[colName].SetExpression(expression);
             T.Columns[colName].ExtendedProperties["ListColPos"] = listcolpos;
         }
 
@@ -507,7 +506,7 @@ namespace mdl {
         /// <summary>
         /// When set, as the form is activated executes  maindosearch on this filter and then clear this filter
         /// </summary>
-        public string FirstSearchFilter { get;set;}
+        public MetaExpression FirstSearchFilter { get;set;}
 
 
 
@@ -548,7 +547,7 @@ namespace mdl {
         public virtual void DescribeColumns(DataTable T) {
             if (T == null) return;
             //int handle = metaprofiler.StartTimer("DescribeColumns");
-            var dbs = conn.GetStructure(T.TableName);
+            var dbs = conn.Descriptor.GetStructure(T.TableName,conn).GetAwaiter().GetResult();
             foreach (DataRow descCol in dbs.columntypes.Rows) {
                 var colname = descCol["field"].ToString();
                 if (colname == "") continue;
@@ -590,9 +589,10 @@ namespace mdl {
         /// <param name="listtype"></param>
         public static void describeListType(IDataAccess Conn, DataTable T, string listtype) {
             //int handle = metaprofiler.StartTimer("DescribeListType");
-            Conn.GetListType(out var dbs, DataAccess.GetTableForReading(T), listtype);
-            var filter = $"(viewname={mdl_utils.Quoting.quotedstrvalue(listtype, false)})";
-            var colsDesc = dbs.customviewcolumn.Select(filter, "colnumber");
+            dbstructure dbs;
+            (listtype,dbs) = Conn.GetListType( T.tableForReading(), listtype).GetAwaiter().GetResult();
+            var filter = q.eq("viewname", listtype);                
+            var colsDesc = dbs.customviewcolumn.filter(filter, sort:"colnumber");
             if (colsDesc.Length > 0) {
                 foreach (DataColumn c in T.Columns) {
                     c.Caption = "." + c.ColumnName;
@@ -618,11 +618,11 @@ namespace mdl {
 
                 //sets expression
                 var expression = desc["expression"].ToString();
-                if (expression != "") QueryCreator.SetExpression(c, expression);
+                if (expression != "") c.SetExpression(expression);
 
                 //sets temporary flag
                 if ((desc["isreal"].ToString().ToLower() == "n") &&
-                    (expression == "")) QueryCreator.SetExpression(c, "");
+                    (expression == "")) c.SetExpression("");
 
                 //sets format property
                 var format = desc["format"].ToString();
@@ -683,7 +683,7 @@ namespace mdl {
         /// <param name="listingType">kind of list used for calculation</param>
         public void ComputeRowsAs(DataTable primary, string listingType) {
             if (!ListingTypes.Contains(listingType)) return;
-            GetData.ComputeRowsAs(primary, listingType, CalculateFields);
+            metaModel.ComputeRowsAs(primary, listingType, CalculateFields);
         }
 
         /// <summary>
@@ -700,7 +700,7 @@ namespace mdl {
         /// </summary>
         /// <param name="T"></param>
         /// <returns></returns>
-        public virtual string GetFilterForInsert(DataTable T) {
+        public virtual MetaExpression GetFilterForInsert(DataTable T) {
             return null;
         }
 
@@ -709,7 +709,7 @@ namespace mdl {
         /// </summary>
         /// <param name="T"></param>
         /// <returns></returns>
-        public virtual string GetFilterForSearch(DataTable T) {
+        public virtual MetaExpression GetFilterForSearch(DataTable T) {
             return null;
         }
 
@@ -728,18 +728,18 @@ namespace mdl {
         /// <param name="primaryTable">Table for which default values have to be set</param>
         public virtual void SetDefaults(DataTable primaryTable, string editType=null) {
             if (ManagedByDB) {
-                var dbs = conn.GetStructure(primaryTable.TableName);
+                var dbs = conn.Descriptor.GetStructure(primaryTable.TableName,conn).GetAwaiter().GetResult();
                 foreach (DataRow colDesc in dbs.columntypes.Rows) {
                     if (colDesc["defaultvalue"] == DBNull.Value) continue;
                     var fieldname = colDesc["field"].ToString();
                     var defvalstring = colDesc["defaultvalue"].ToString();
                     if (defvalstring == "") continue;
-                    defvalstring = security.Compile(defvalstring, false);
+                    defvalstring = security.Compile(defvalstring,conn.GetQueryHelper(), false);
                     var systypename = colDesc["systemtype"].ToString();
                     var dummytag = "x.y." + colDesc["format"];
                     var systype = GetType_Util.GetSystemType_From_StringSystemType(systypename);
                     try {
-                        var defval = GetObjectFromString(systype, defvalstring, dummytag);
+                        var defval = HelpUi.GetObjectFromString(systype, defvalstring, dummytag);
                         if (defval != DBNull.Value) {
                             SetDefault(primaryTable, fieldname, defval);
                         }
@@ -747,7 +747,7 @@ namespace mdl {
                     catch {
                         var err =
                             $"Error setting default of {primaryTable.TableName}.{fieldname} to value {defvalstring}";
-                        ErrorLogger.markEvent(err);
+                        ErrorLogger.MarkEvent(err);
                         LogError(err);
                     }
                 }
@@ -771,7 +771,7 @@ namespace mdl {
                         SetDefault(primaryTable, c.ColumnName, 0);
                         break;
                     case "DateTime":
-                        SetDefault(primaryTable, c.ColumnName, EmptyDate());
+                        SetDefault(primaryTable, c.ColumnName, HelpUi.EmptyDate());
                         break;
                     case "Int16":
                         SetDefault(primaryTable, c.ColumnName, 0);
@@ -800,9 +800,9 @@ namespace mdl {
         /// <param name="parentRow">Parent Row of the new Row to create, or null if no parent is present</param>
         /// <param name="T">Table in which row has to be added</param>
         /// <returns>new row, child of ParentRow when that is given</returns>
-        public virtual DataRow Get_New_Row(DataRow parentRow, DataTable T, string editType=null) {
+        public virtual DataRow GetNewRow(DataRow parentRow, DataTable T, string editType=null) {
             if (conn != null && ManagedByDB) {
-                var dbs = conn.GetStructure(T.TableName);
+                var dbs = conn.Descriptor.GetStructure(T.TableName, conn).GetAwaiter().GetResult();
                 foreach (DataRow colDesc in dbs.customtablestructure.Rows) {
                     var fieldname = colDesc["colname"].ToString();
                     var col = T.Columns[fieldname];
@@ -812,27 +812,27 @@ namespace mdl {
                         if (colDesc["prefixfieldname"].ToString() != "") prefix = colDesc["prefixfieldname"].ToString();
                         string middleconst = null;
                         if (colDesc["middleconst"].ToString() != "")
-                            middleconst = security.Compile(colDesc["middleconst"].ToString(), true);
+                            middleconst = security.Compile(colDesc["middleconst"].ToString(), QHC);
                         var length = Convert.ToInt32(colDesc["length"].ToString());
                         var linear = colDesc["linear"].ToString().ToUpper() == "S";
-                        RowChange.MarkAsAutoincrement(col, prefix, middleconst, length, linear);
+                        RowChange.markAsAutoincrement(col, prefix, middleconst, length, linear);
                     }
 
                     if (colDesc["selector"].ToString().ToUpper() == "S") {
-                        RowChange.SetSelector(T, fieldname);
+                        RowChange.setSelector(T, fieldname);
                     }
                 }
             }
 
             var r = T.NewRow();
             try {
-                if (parentRow != null) RowChange.MakeChild(parentRow, parentRow.Table, r, null);
+                if (parentRow != null) r.MakeChildOf(parentRow);
                 RowChange.CalcTemporaryID(r);
                 T.Rows.Add(r);
             }
             catch (Exception e) {
                 ErrorLogger.markException(e,$"Get_New_Row({T.TableName}) on meta {TableName}");
-                LogError($"GetNewRow ({T.TableName}): Error {QueryCreator.GetErrorString(e)}");
+                LogError($"GetNewRow ({T.TableName}): Error {mdl.ErrorLogger.GetErrorString(e)}");
                 throw;
             }
 
@@ -879,7 +879,7 @@ namespace mdl {
             if (input.Table.TableName != TableName) return false;
             output.BeginEdit();
             foreach (DataColumn c in output.Table.Columns) {
-                if (QueryCreator.IsTemporary(c)) continue;
+                if (c.IsTemporary()) continue;
                 if (input.Table.Columns.Contains(c.ColumnName))
                     output[c.ColumnName] = input[c.ColumnName];
             }
@@ -906,7 +906,7 @@ namespace mdl {
             }
 
             primaryTable.Columns[field].DefaultValue =
-                GetObjectFromString(primaryTable.Columns[field].DataType, o.ToString(), "x.y");
+                HelpUi.GetObjectFromString(primaryTable.Columns[field].DataType, o.ToString(), "x.y");
         }
 
       
@@ -984,7 +984,7 @@ namespace mdl {
                 }
 
                 if ((r[c].GetType().Name == "DateTime") &&
-                    (r[c].Equals(EmptyDate()))) {
+                    (r[c].Equals(HelpUi.EmptyDate()))) {
                     errfield = c.ColumnName;
                     errmess = emptyKeyMsg + " (" + colname + ")";
                     return false;
@@ -1043,7 +1043,7 @@ namespace mdl {
                 }
 
                 if (r[C2].GetType().Name == "DateTime") {
-                    if (r[C2].Equals(EmptyDate())) {
+                    if (r[C2].Equals(HelpUi.EmptyDate())) {
                         errfield = C2.ColumnName;
                         errmess = emptyFieldMsg + "(" + colname + ")";
                         return false;
@@ -1143,11 +1143,11 @@ namespace mdl {
             }
 
             //var filter = QHC.CmpKey(sample);
-            var found = destTable._Filter(q.keyCmp(sample));//.Select(filter);
+            var found = destTable.filter(q.keyCmp(sample));//.Select(filter);
             if (found.Length == 0) return false;
             var r = found[0];
             foreach (DataColumn cc in destTable.Columns) {
-                if (QueryCreator.IsTemporary(cc)) continue;
+                if (cc.IsTemporary()) continue;
                 if (!sample.Table.Columns.Contains(cc.ColumnName)) continue;
                 if (r[cc.ColumnName].Equals(sample[cc.ColumnName])) continue;
                 return false;

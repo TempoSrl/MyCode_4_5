@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static mdl_utils.tagUtils;
 
-namespace mdl_utils {
+namespace mdl {
    
 
 
@@ -35,7 +35,20 @@ namespace mdl_utils {
 
 
 
-     
+
+        /// <summary>
+        /// Returns a printable version of a message fixing newlines to  CR LF
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <returns></returns>
+        public static string GetPrintable(string msg) {
+            if (msg == null)
+                return "";
+            var S = msg.Replace("\r\n", "\n");
+            S = S.Replace("\r", "\n");
+            S = S.Replace("\n", "\r\n");
+            return S;
+        }
 
 
         /// <summary>

@@ -41,9 +41,9 @@ namespace mdl_winform
             InitializeComponent();
             utils.SetColorOneTime(this, true);
 
-            if (MainMsg == null) MainMsg = QueryCreator.GetErrorString(E); 
+            if (MainMsg == null) MainMsg = ErrorLogger.GetErrorString(E); 
             MainMessage.Text = MainMsg;
-            txtMsg.Text = QueryCreator.GetErrorString(E);
+            txtMsg.Text = ErrorLogger.GetErrorString(E);
             if (D != null) {
                 D.logException(MainMsg, E);
             }
@@ -62,9 +62,9 @@ namespace mdl_winform
             InitializeComponent();
             utils.SetColorOneTime(this, true);
 
-            if (MainMsg == null) MainMsg = QueryCreator.GetPrintable(E.Message);
+            if (MainMsg == null) MainMsg = HelpUi.GetPrintable(E.Message);
             MainMessage.Text = MainMsg;
-            string err = QueryCreator.GetErrorString(E);
+            string err = ErrorLogger.GetErrorString(E);
             
             if (err.Contains("OutOfMemoryException")) {
                 err += "\r\nSi è verificato un problema di 'out of memory', è necessario CHIUDERE il programma.";
@@ -88,9 +88,9 @@ namespace mdl_winform
 			InitializeComponent();
             utils.SetColorOneTime(this, true);
 
-			if (MainMsg==null) MainMsg = QueryCreator.GetErrorString(E);
+			if (MainMsg==null) MainMsg = ErrorLogger.GetErrorString(E);
 			MainMessage.Text= MainMsg;
-			txtMsg.Text= QueryCreator.GetErrorString(E);
+			txtMsg.Text= ErrorLogger.GetErrorString(E);
 		}
 
         /// <summary>

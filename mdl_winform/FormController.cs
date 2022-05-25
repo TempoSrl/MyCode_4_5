@@ -12,7 +12,7 @@ using System.Reflection;
 using LM = mdl_language.LanguageManager;
 using System.Linq;
 using mdl;
-using Q = mdl.MetaExpression;
+using q = mdl.MetaExpression;
 using static mdl_utils.tagUtils;
 using System.Diagnostics.CodeAnalysis;
 using wDialogResult = System.Windows.Forms.DialogResult;
@@ -228,7 +228,7 @@ namespace mdl_winform {
 
         public IWinEntityDispatcher dispatcher { get; set; }
 
-        private QueryHelper q;
+        private QueryHelper qhs;
         CQueryHelper qhc = new CQueryHelper();
 
         /// <summary>
@@ -292,7 +292,7 @@ namespace mdl_winform {
             //collega al form le istanze di IFormController IFormEventsManager ISecurity            
             form.attachInstance(eventManager, typeof(IFormEventsManager));
 
-            if (conn?.openError != false) {
+            if (conn?.BrokenConnection != false) {
                 setDBUnrecoverableError();
                 return;
             }
@@ -329,7 +329,7 @@ namespace mdl_winform {
 
 			createIndexes();
 
-            q = conn.GetQueryHelper();
+            qhs = conn.GetQueryHelper();
 
             formState = mdl_winform.form_states.setsearch;
             DrawState = mdl_winform.form_drawstates.building;
@@ -365,7 +365,7 @@ namespace mdl_winform {
             else {
                 h = tag as Hashtable;
                 if (h == null) {
-                    errorLogger.markEvent($"Bad tag found on form {_linkedForm.Name}:{_linkedForm.Tag}");
+                    errorLogger.MarkEvent($"Bad tag found on form {_linkedForm.Name}:{_linkedForm.Tag}");
                     h = new Hashtable();
                     _linkedForm.Tag = h;
                 }
@@ -396,7 +396,7 @@ namespace mdl_winform {
             linkedForm.AutoScaleDimensions = new SizeF(96F, 96F);
             linkedForm.AutoScaleMode = AutoScaleMode.Inherit;
 
-            conn.PrefillStructures(ds, primaryTable.TableName);
+            conn.ReadStructures(ds).GetAwaiter().GetResult();
             //new Task(() => {
 	           // foreach (DataTable t in ds.Tables) dispatcher.Get(t.TableName);
             //}).Start();
@@ -452,10 +452,10 @@ namespace mdl_winform {
         /// <param name="baseFilter"></param>
         /// <param name="emptylist">When 0, an empty list is displayed</param>
         /// <returns></returns>
-        public bool searchRow(string listType, string baseFilter, bool emptylist) {
+        public bool searchRow(string listType, q baseFilter, bool emptylist) {
             if (primaryTable == null) return false;
-            var filter = helpForm.GetSearchCondition(linkedForm);
-            filter = GetData.MergeFilters(filter, baseFilter);
+            q filter = helpForm.GetSearchCondition(linkedForm);
+            filter = q.and(filter, baseFilter);
             var top = 1000;
             if (emptylist) top = 0;
             meta.listTop = top;
@@ -496,7 +496,7 @@ namespace mdl_winform {
 
             formPrefilled = true;
             checkConn();
-            if (conn == null || conn.openError) {
+            if (conn == null || conn.BrokenConnection) {
                 MetaFactory.factory.getSingleton<IMessageShower>().Show(null,
                     LM.dbConnectionInterrupted,                    
                     LM.ErrorTitle);
@@ -506,7 +506,7 @@ namespace mdl_winform {
                 return;
             }
 
-            var handle = mdl_utils.metaprofiler.StartTimer("frm_Activated");
+            var handle = mdl_utils.MetaProfiler.StartTimer("frm_Activated");
             Cursor.Current = Cursors.AppStarting;
 
 
@@ -531,7 +531,7 @@ namespace mdl_winform {
                 eventManager.dispatch(new StopClearMainRowEvent());
 
                 formInited = true;
-                mdl_utils.metaprofiler.StopTimer(handle);
+                mdl_utils.MetaProfiler.StopTimer(handle);
                 DrawState = form_drawstates.done;
                 FreshToolBar();
                 return;
@@ -565,7 +565,7 @@ namespace mdl_winform {
                 }
                 else {
                     eventManager.DisableAutoEvents();
-                    getData.GET_PRIMARY_TABLE(meta.StartFilter);
+                    getData.GetPrimaryTable(meta.StartFilter);
                     security.DeleteAllUnselectable(primaryTable);
                     eventManager.EnableAutoEvents();
                     //myGetData.DO_GET(false,null);
@@ -609,7 +609,7 @@ namespace mdl_winform {
                 firstFillForThisRow = false;
                 //LinkedForm.ResumeLayout();
                 Cursor.Current = Cursors.Default;
-                mdl_utils.metaprofiler.StopTimer(handle);
+                mdl_utils.MetaProfiler.StopTimer(handle);
                 //Application.DoEvents();
                 formInited = true;
                 DrawState = form_drawstates.done;
@@ -644,10 +644,11 @@ namespace mdl_winform {
                 }
 
                 DrawState = form_drawstates.prefilling;
-                RowChange.CopyAutoIncrementProperties(meta.SourceRow.Table, primaryTable);
-                metaModel.setExtraParams(primaryTable, metaModel.getExtraParams(meta.SourceRow.Table));
+                primaryTable.copyAutoIncrementPropertiesFrom(meta.SourceRow.Table);
+
+                metaModel.SetExtraParams(primaryTable, metaModel.GetExtraParams(meta.SourceRow.Table));
                 //meta.SetEntityDetail(meta.sourceRow);
-                getData.START_FROM(meta.SourceRow);
+                getData.StartFrom(meta.SourceRow).GetAwaiter().GetResult();
                 var start = HelpForm.GetLastSelected(primaryTable);
                 formState = meta.SourceRow.RowState == DataRowState.Added ? form_states.insert : form_states.edit;
                 eventManager.DisableAutoEvents();
@@ -666,7 +667,7 @@ namespace mdl_winform {
 
             //LinkedForm.ResumeLayout();
             Cursor.Current = Cursors.Default;
-            mdl_utils.metaprofiler.StopTimer(handle);
+            mdl_utils.MetaProfiler.StopTimer(handle);
             //Application.DoEvents();
             formInited = true;
             DrawState = form_drawstates.done;
@@ -905,7 +906,7 @@ namespace mdl_winform {
 
             if (!(g.DataSource is DataSet sourceDataSet)) {
                 MetaFactory.factory.getSingleton<IMessageShower>().Show(linkedForm,
-                    $"DataGrid {g.Name} in Form {g.FindForm()?.Name} has a wrong Tag ({mdl_utils.Quoting.quotedstrvalue(g.Tag, false)})");
+                    $"DataGrid {g.Name} in Form {g.FindForm()?.Name} has a wrong Tag ({mdl_utils.Quoting.quote(g.Tag, false)})");
                 return null;
             }
 
@@ -920,7 +921,7 @@ namespace mdl_winform {
             var editRes = EditDataRow(currDr, editType, out var newCurr);
             if (!editRes) return currDr;
             currDr = newCurr;
-            if (QueryCreator.IsSubEntity(sourceTable, primaryTable)) {
+            if (MetaModel.IsSubEntity(sourceTable, primaryTable)) {
                 entityChanged = true;
             }
 
@@ -987,7 +988,7 @@ namespace mdl_winform {
             if (sourceDataSet == null || g.Tag==null) {
                 shower.Show(linkedForm,
                     // ReSharper disable once PossibleNullReferenceException
-                    $"DataGrid {g.Name} in Form {g.FindForm().Name} has a wrong Tag ({mdl_utils.Quoting.quotedstrvalue(g?.Tag ?? "(empty)", false)})");
+                    $"DataGrid {g.Name} in Form {g.FindForm().Name} has a wrong Tag ({mdl_utils.Quoting.quote(g?.Tag ?? "(empty)", false)})");
                 return null;
             }
 
@@ -999,7 +1000,7 @@ namespace mdl_winform {
                 return null;
             }
 
-            var unaliased = DataAccess.GetTableForReading(sourceTable);
+            var unaliased = sourceTable.tableForReading();
 
             var m = dispatcher.GetWinFormMeta(unaliased);
             if (dispatcher.unrecoverableError) {
@@ -1010,11 +1011,11 @@ namespace mdl_winform {
                 return null;
             }
 
-            m.ExtraParameter = metaModel.getExtraParams(sourceTable); //SourceTable.ExtendedProperties[FormController.extraParams];
+            m.ExtraParameter = metaModel.GetExtraParams(sourceTable); //SourceTable.ExtendedProperties[FormController.extraParams];
 
             
             m.SetDefaults(sourceTable, _editType);
-            var r = m.Get_New_Row(parent, sourceTable,_editType);
+            var r = m.GetNewRow(parent, sourceTable,_editType);
             if (r == null) {
                 shower.Show(linkedForm,
                     LM.invalidDataOnTable(sourceTable.TableName)
@@ -1029,7 +1030,7 @@ namespace mdl_winform {
 
             if (m.EntityChanged) {
                 r = m.NewSourceRow;
-                if (QueryCreator.IsSubEntity(sourceTable, ds.Tables[primaryTableName])) {
+                if (MetaModel.IsSubEntity(sourceTable, ds.Tables[primaryTableName])) {
                     entityChanged = true;
                 }
 
@@ -1195,7 +1196,7 @@ namespace mdl_winform {
             string tablename = null;
             var kind = GetField(tag, 0);
             var type = GetField(tag, 2);
-            var startFilter = GetLastField(tag, 3);
+            var startFilter = MetaExpression.fromString(GetLastField(tag, 3));
 
 
             //Gets start value - start field from control named textboxname
@@ -1320,7 +1321,7 @@ namespace mdl_winform {
             closeDisabled = true;
 
             //Get all conditions from "table" linked control in groupbox
-            string filter;
+            q filter;
             var oldtag = T.Tag.ToString();
             if (ai.kind == "AutoManage") {
                 T.Tag = null;
@@ -1360,7 +1361,7 @@ namespace mdl_winform {
                 selected = true;
             }
 
-            filter = GetData.MergeFilters(filter, ai.startfilter);
+            filter = q.and(filter, ai.startfilter);
 
             var newStr = T.Name + "#" + T.Text;
             if (newStr == helpForm.lastTextNoFound) {
@@ -1501,10 +1502,10 @@ namespace mdl_winform {
                 return;
             }
 
-            var metaT = dispatcher.Get(DataAccess.GetTableForReading(T)) as IWinFormMetaData ;
+            var metaT = dispatcher.Get(T.tableForReading()) as IWinFormMetaData ;
             if (dispatcher.unrecoverableError) {
                 ErroreIrrecuperabile = true;
-                shower.ShowError(linkedForm,LM.errorLoadingMeta(DataAccess.GetTableForReading(T)),LM.ErrorTitle);
+                shower.ShowError(linkedForm,LM.errorLoadingMeta(T.tableForReading()),LM.ErrorTitle);
                 return;
             }
 
@@ -1532,7 +1533,7 @@ namespace mdl_winform {
                 metaT.DescribeTree(view, T, ListingType(gridTag, 1));
                 ITreeViewManager m = TreeViewManager.GetManager(T);
                 m.security = security;
-                m.calcTreeViewDataAccess(getData, q);
+                m.calcTreeViewDataAccess(getData);
                 return;
             }
 
@@ -1544,7 +1545,7 @@ namespace mdl_winform {
 
                 var tt = (DataTable)box.DataSource;
                 var realTable = ds.Tables[tt.TableName];
-                var metaSource = dispatcher.Get(DataAccess.GetTableForReading(tt));
+                var metaSource = dispatcher.Get(tt.tableForReading());
                 if (realTable == null)
                     return;
                 var insertfilter = QueryCreator.GetFilterForInsert(realTable) ?? metaSource.GetFilterForInsert(realTable);
@@ -1628,7 +1629,7 @@ namespace mdl_winform {
 	        //MetaFactory.factory.getSingleton<IFormCreationListener>()?.hide(linkedForm);
 
             if (linkedForm != null) UnregisterAllEvents(linkedForm);
-            ErrorLogger.Logger.warnEvent("CloseForm:"+linkedForm.GetType().Assembly.ManifestModule.ToString().Replace(".dll",""));
+            ErrorLogger.Logger.WarnEvent("CloseForm:"+linkedForm.GetType().Assembly.ManifestModule.ToString().Replace(".dll",""));
             isClosing = true;
             UnlinkToolBar();
             if (currentListForm != null) currentListForm.close();
@@ -1925,21 +1926,21 @@ namespace mdl_winform {
             var formType = linkedForm.GetType();
             var formMethod = formType.GetMethod("MetaData_AfterRowSelect", BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
             if (formMethod == null) return;
-            var handle = mdl_utils.metaprofiler.StartTimer("AfterRowSelect()");
+            var handle = mdl_utils.MetaProfiler.StartTimer("AfterRowSelect()");
             bool savedLocked = locked;
             try {
                 locked = true;
                 formMethod.Invoke(linkedForm, new object[2] {T, R});
             }
             catch (Exception e) {
-                var err = $"Errore chiamando il metodo AfterRowSelect su tabella {T.TableName}  del form {linkedForm.Name} {primaryTable}:\r\n {QueryCreator.GetErrorString(e)}";
+                var err = $"Errore chiamando il metodo AfterRowSelect su tabella {T.TableName}  del form {linkedForm.Name} {primaryTable}:\r\n {ErrorLogger.GetErrorString(e)}";
                 shower.ShowException(linkedForm, err, e);
                 ErroreIrrecuperabile = true;
                 logError(err, e);
             }
 
             locked = savedLocked;
-            mdl_utils.metaprofiler.StopTimer(handle);
+            mdl_utils.MetaProfiler.StopTimer(handle);
         }
 
         /// <summary>
@@ -1954,7 +1955,7 @@ namespace mdl_winform {
                 FormType.GetMethod("MetaData_BeforeRowSelect",  BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
             if (FormMethod == null) return;
 
-            int handle = mdl_utils.metaprofiler.StartTimer("myBeforeRowSelect()");
+            int handle = mdl_utils.MetaProfiler.StartTimer("myBeforeRowSelect()");
             bool savedLocked = locked;
             try {
                 locked = true;
@@ -1969,7 +1970,7 @@ namespace mdl_winform {
                 logError(err, E);
             }
             locked = savedLocked;
-            mdl_utils.metaprofiler.StopTimer(handle);
+            mdl_utils.MetaProfiler.StopTimer(handle);
 
         }
 
@@ -1979,20 +1980,20 @@ namespace mdl_winform {
         /// <param name="method"></param>
         public void CallMethod(string method) {
             if (ErroreIrrecuperabile || isClosing) return;
-            if ((conn != null) && (conn.openError)) {
+            if ((conn != null) && (conn.BrokenConnection)) {
                 return;
             }
 
             Type FormType = linkedForm.GetType();
             MethodInfo FormMethod = FormType.GetMethod("MetaData_" + method,  BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);//| BindingFlags.Static
             if (FormMethod == null) return;
-            int handle = mdl_utils.metaprofiler.StartTimer(primaryTable + ":MetaData_" + method);
+            int handle = mdl_utils.MetaProfiler.StartTimer(primaryTable + ":MetaData_" + method);
             try {
                 FormMethod.Invoke(linkedForm, new Type[0]);
 
             }
             catch (Exception e) {
-                if (conn == null || conn.openError) {
+                if (conn == null || conn.BrokenConnection) {
                     MetaFactory.factory.getSingleton<IMessageShower>().Show(LM.dbConnectionInterrupted,LM.ErrorTitle);
                     ErroreIrrecuperabile = true;
                     linkedForm.Close();
@@ -2008,10 +2009,9 @@ namespace mdl_winform {
                         oggetto += "(tab.vuota)";
                     }
                     else {
-                        var key = "(error getting-key)";
+                        q key = null;
                         try {
-                            key = QueryCreator.WHERE_KEY_CLAUSE(primaryTable.Rows[0],
-                                DataRowVersion.Default, true);
+                            key = q.keyCmp(primaryTable.Rows[0]);
                         }
                         catch {
                             // ignored
@@ -2035,7 +2035,7 @@ namespace mdl_winform {
                 shower.ShowException(linkedForm,err, e);
             }
 
-            mdl_utils.metaprofiler.StopTimer(handle);
+            mdl_utils.MetaProfiler.StopTimer(handle);
 
         }
 
@@ -2055,7 +2055,7 @@ namespace mdl_winform {
 		        //metaprofiler.StopTimer(ss);
 		        return;
 	        }
-	        var s = mdl_utils.metaprofiler.StartTimer($"paintGbox * {g.Name}");
+	        var s = mdl_utils.MetaProfiler.StartTimer($"paintGbox * {g.Name}");
 	        try {
 
 		        //get the text size in groupbox
@@ -2080,7 +2080,7 @@ namespace mdl_winform {
 	        catch {
 		        // ignored
 	        }
-	        mdl_utils.metaprofiler.StopTimer(s);
+	        mdl_utils.MetaProfiler.StopTimer(s);
 	        //}
 	        //metaprofiler.StopTimer(ss);
         }
@@ -2143,9 +2143,9 @@ namespace mdl_winform {
         /// </summary>
         /// <param name="c"></param>
         private void setColor(Control c) {
-	        var s = mdl_utils.metaprofiler.StartTimer($"SetColorCtrl * {c?.GetType()}");
+	        var s = mdl_utils.MetaProfiler.StartTimer($"SetColorCtrl * {c?.GetType()}");
 	        if (c == null) {
-		        mdl_utils.metaprofiler.StopTimer(s);
+		        mdl_utils.MetaProfiler.StopTimer(s);
 		        return;
 	        }
 
@@ -2175,7 +2175,7 @@ namespace mdl_winform {
 	                tb.DrawItem += Tb_DrawItem;
                 }
 
-                mdl_utils.metaprofiler.StopTimer(s);
+                mdl_utils.MetaProfiler.StopTimer(s);
                 return;
             }
 
@@ -2194,7 +2194,7 @@ namespace mdl_winform {
                 }
 
                 //g.Refresh();
-                mdl_utils.metaprofiler.StopTimer(s);
+                mdl_utils.MetaProfiler.StopTimer(s);
 
                 return;
             }
@@ -2233,7 +2233,7 @@ namespace mdl_winform {
 	                b.EnabledChanged += Cmb_EnabledChanged;
                 }
 
-                mdl_utils.metaprofiler.StopTimer(s);
+                mdl_utils.MetaProfiler.StopTimer(s);
                 return;
             }
 
@@ -2256,7 +2256,7 @@ namespace mdl_winform {
 	                cmb.EnabledChanged += Cmb_EnabledChanged;
                 }
 
-                mdl_utils.metaprofiler.StopTimer(s);
+                mdl_utils.MetaProfiler.StopTimer(s);
 
                 return;
             }
@@ -2271,7 +2271,7 @@ namespace mdl_winform {
                     T.BackColor = formcolors.TextBoxNormalBackColor();
                     T.ForeColor = formcolors.TextBoxNormalForeColor();
                 }
-                mdl_utils.metaprofiler.StopTimer(s);
+                mdl_utils.MetaProfiler.StopTimer(s);
 
                 return;
             }
@@ -2292,7 +2292,7 @@ namespace mdl_winform {
 	                T.EnabledChanged += Cmb_EnabledChanged;
                 }
 
-                mdl_utils.metaprofiler.StopTimer(s);
+                mdl_utils.MetaProfiler.StopTimer(s);
 
                 return;
             }
@@ -2313,7 +2313,7 @@ namespace mdl_winform {
 	                T.EnabledChanged += Cmb_EnabledChanged;
                 }
 
-                mdl_utils.metaprofiler.StopTimer(s);
+                mdl_utils.MetaProfiler.StopTimer(s);
 
                 return;
             }
@@ -2321,36 +2321,36 @@ namespace mdl_winform {
             if (c is TreeView) {
                 ((TreeView) c).BackColor = formcolors.TreeBackColor();
                 ((TreeView) c).ForeColor = formcolors.TreeForeColor();
-                mdl_utils.metaprofiler.StopTimer(s);
+                mdl_utils.MetaProfiler.StopTimer(s);
                 return;
             }
 
             if (c is DataGrid gg) {
                 gg.BackgroundColor = formcolors.GridBackgroundColor();
-                mdl_utils.metaprofiler.StopTimer(s);
+                mdl_utils.MetaProfiler.StopTimer(s);
                 return;
             }
             if (c is DataGridView gv) {
 	            gv.BackgroundColor = formcolors.GridBackgroundColor();
-	            mdl_utils.metaprofiler.StopTimer(s);
+	            mdl_utils.MetaProfiler.StopTimer(s);
 	            return;
             }
 
             c.BackColor = formcolors.MainBackColor();
             c.ForeColor = formcolors.MainForeColor();
-            mdl_utils.metaprofiler.StopTimer(s);
+            mdl_utils.MetaProfiler.StopTimer(s);
         }
 
         /// <summary>
         /// Clear form controls and empty data
         /// </summary>
         public void Clear() {
-            int handle = mdl_utils.metaprofiler.StartTimer("Clear()");
+            int handle = mdl_utils.MetaProfiler.StartTimer("Clear()");
             helpForm.lastTextNoFound = "";
             formState = form_states.setsearch;
             DrawState = form_drawstates.clearing;
             metaModel.AllowAllClear(ds);
-            getData.CLEAR_ENTITY();
+            getData.ClearTables();
             //if (comboboxtorefilter) helpForm.comboBoxToRefilter = true;
             helpForm.ClearForm(linkedForm);
             //if (comboboxtorefilter) helpForm.comboBoxToRefilter = false;
@@ -2366,7 +2366,7 @@ namespace mdl_winform {
             //StartFilter=null;
             CallMethod("AfterClear");
             DrawState = form_drawstates.done;
-            mdl_utils.metaprofiler.StopTimer(handle);
+            mdl_utils.MetaProfiler.StopTimer(handle);
         }
 
         /// <summary>
@@ -2382,7 +2382,7 @@ namespace mdl_winform {
             if (destroyed) return;
             if (r == null) return;
             if (primaryTable == null) return;
-            var handle = mdl_utils.metaprofiler.StartTimer("SelectRow(R,Listtype)");
+            var handle = mdl_utils.MetaProfiler.StartTimer("SelectRow(R,Listtype)");
             try {
                 if (isList) {
                     if (isTree) TreeSelectRow(r, listType);
@@ -2391,7 +2391,7 @@ namespace mdl_winform {
 
                 formState = form_states.setsearch;
                 DrawState = form_drawstates.clearing;
-                getData.CLEAR_ENTITY();
+                getData.ClearTables();
                 GoingToEditMode = true;
                 eventManager.dispatch(new StartClearMainRowEvent());
                 Clear(); //(true)
@@ -2401,7 +2401,7 @@ namespace mdl_winform {
 
                 GoingToEditMode = false;
 
-                getData.SEARCH_BY_KEY(r);
+                getData.SearchByKey(r).GetAwaiter().GetResult();
                 if (primaryTable.Rows.Count == 0) {
                     MetaFactory.factory.getSingleton<IMessageShower>().Show(LM.selectedRowNotPresent);
                     //Clear(true);
@@ -2412,7 +2412,7 @@ namespace mdl_winform {
                 DO_GET(false, null);
                 eventManager.EnableAutoEvents();
 
-                if ((conn != null) && (conn.openError)) {
+                if ((conn != null) && (conn.BrokenConnection)) {
                     MetaFactory.factory.getSingleton<IMessageShower>().Show(LM.dbConnectionInterrupted);
                     ErroreIrrecuperabile = true;
                     return;
@@ -2435,7 +2435,7 @@ namespace mdl_winform {
                 DrawState = form_drawstates.done;
             }
             finally {
-                mdl_utils.metaprofiler.StopTimer(handle);
+                mdl_utils.MetaProfiler.StopTimer(handle);
             }
         }
 
@@ -2447,21 +2447,21 @@ namespace mdl_winform {
         /// <param name="oneRow">if true, data getting only considers one row 
         ///  of primary table</param>
         public virtual void DO_GET(bool onlyperipherals, DataRow oneRow) {
-            var handle = mdl_utils.metaprofiler.StartTimer("DO_GET");
+            var handle = mdl_utils.MetaProfiler.StartTimer("DO_GET");
             if (!onlyperipherals) CallMethod("BeforeGet");
             try {
                 if (helpForm != null) eventManager.DisableAutoEvents();
                 getData.ReadCached();
-                getData.DO_GET(onlyperipherals, oneRow);
+                getData.Get(onlyperipherals, oneRow);
                 if (helpForm != null) eventManager.EnableAutoEvents();
             }
             catch (Exception E) {
                 ErroreIrrecuperabile = true;
-                errorLogger.markEvent(QueryCreator.GetErrorString(E));
+                errorLogger.MarkEvent(ErrorLogger.GetErrorString(E));
                 shower.ShowException(linkedForm, "Error",E);
             }
 
-            mdl_utils.metaprofiler.StopTimer(handle);
+            mdl_utils.MetaProfiler.StopTimer(handle);
         }
 
         /// <summary>
@@ -2474,7 +2474,7 @@ namespace mdl_winform {
             if (R == null) return;
 
 
-            var handle = mdl_utils.metaprofiler.StartTimer("TreeSelectRow");
+            var handle = mdl_utils.MetaProfiler.StartTimer("TreeSelectRow");
             eventManager.DisableAutoEvents();
             try {
                 HelpForm.SetLastSelected(primaryTable, null);
@@ -2493,7 +2493,7 @@ namespace mdl_winform {
 
             }
             finally {
-                mdl_utils.metaprofiler.StopTimer(handle);
+                mdl_utils.MetaProfiler.StopTimer(handle);
 
             }
 
@@ -2526,7 +2526,7 @@ namespace mdl_winform {
         public void ReFillControls() {
             if (linkedForm==null)return;
             
-            int handle = mdl_utils.metaprofiler.StartTimer("ReFillControls");
+            int handle = mdl_utils.MetaProfiler.StartTimer("ReFillControls");
             setFormText();
             try {
                 ReFillControls(linkedForm.Controls);
@@ -2537,7 +2537,7 @@ namespace mdl_winform {
                 shower.ShowException(linkedForm, LM.errorShowingForm, E);
             }
 
-            mdl_utils.metaprofiler.StopTimer(handle);
+            mdl_utils.MetaProfiler.StopTimer(handle);
         }
 
         /// <summary>
@@ -2559,7 +2559,7 @@ namespace mdl_winform {
             //gets all pheripherals tables
             var r = HelpForm.GetLastSelected(primaryTable);
             if (refreshPeripherals) {
-                getData.DO_GET(true, r); //fresh peripherals table, not entity tables
+                getData.Get(true, r); //fresh peripherals table, not entity tables
                 if (ErroreIrrecuperabile) {
                     DrawState = saved;
                     return;
@@ -2811,7 +2811,7 @@ namespace mdl_winform {
         /// </summary>
         public void FreshToolBar() {
             if (!formInited && !isList) return;
-            var handle = mdl_utils.metaprofiler.StartTimer("FreshToolBar");
+            var handle = mdl_utils.MetaProfiler.StartTimer("FreshToolBar");
             try {
                 var tb = getToolBar();
                 if (tb == null) return;
@@ -2820,7 +2820,7 @@ namespace mdl_winform {
                 //TM.FreshButtons(); already in linkTo
             }
             finally {
-                mdl_utils.metaprofiler.StopTimer(handle);
+                mdl_utils.MetaProfiler.StopTimer(handle);
             }
         }
 
@@ -2864,7 +2864,7 @@ namespace mdl_winform {
 
         void createParentIndexes(IIndexManager idm, DataTable t) {
 	        foreach (DataRelation r in t.ChildRelations) {
-		        if (metaModel.isSubEntityRelation(r)) continue;
+		        if (MetaModel.IsSubEntityRelation(r)) continue;
 		        idm.createPrimaryKeyIndex(r.ParentTable);
 	        }
         }
@@ -2904,7 +2904,7 @@ namespace mdl_winform {
             meta.NewSourceRow = sourceRow; //temporary value
 
             if (isList) return false; //it should never happen (a form-list can't be a subentity!)
-            var unaliased = DataAccess.GetTableForReading(sourceRow.Table);
+            var unaliased = sourceRow.Table.tableForReading();
             var T = ds.Tables[unaliased];
             if (T == null) return true;
             if (T.Rows.Count != 1) {
@@ -2916,11 +2916,11 @@ namespace mdl_winform {
             var externalRow = T.Rows[0]; //Riga DI QUESTO FORM (OSSIA IL DETTAGLIO)
 
             var dsSource = sourceRow.Table.DataSet;
-            var changes = metaModel.XVerifyChangeChilds(dsSource, sourceRow.Table, ds, externalRow);
-            if (!changes) changes = metaModel.XVerifyChangeChilds(ds, T, dsSource, sourceRow);
+            var changes = MetaModel.xVerifyChangeChilds(sourceRow.Table, externalRow);
+            if (!changes) changes = MetaModel.xVerifyChangeChilds(T, sourceRow);
             if (!changes) {
-                GetData.CalculateRow(sourceRow);
-                if (PostData.CheckForFalseUpdate(sourceRow)) sourceRow.AcceptChanges();
+                metaModel.CalculateRow(sourceRow);
+                if (sourceRow.IsFalseUpdate()) sourceRow.AcceptChanges();
                 return true;
             }
 
@@ -2928,15 +2928,15 @@ namespace mdl_winform {
             // undo modification when needed.
             try {
                 if (sourceRow.RowState == DataRowState.Added) {
-                    var oldselector = RowChange.GetAllSelectors(T, sourceRow, qhc);
-                    var newselector = RowChange.GetAllSelectors(T, externalRow, qhc);
+                    var oldselector = RowChange.GetHashSelectors(T, sourceRow);
+                    var newselector = RowChange.GetHashSelectors(T, externalRow);
                     if (oldselector != newselector) {
-                        RowChange.CalcTemporaryID(sourceRow.Table, externalRow);
+                        RowChange.CalcTemporaryID(externalRow, sourceRow.Table);
                     }
 
-                    var filter = QueryCreator.WHERE_KEY_CLAUSE(externalRow, DataRowVersion.Default, false);
+                    var filter = q.keyCmp(externalRow); //, DataRowVersion.Default, false);
 
-                    var existentFound = sourceRow.Table.Select(filter, null, DataViewRowState.CurrentRows);
+                    var existentFound = sourceRow.Table.filter(filter);
                     if (existentFound.Length > 0) {
                         if (existentFound[0] != sourceRow) {
                             MetaFactory.factory.getSingleton<IMessageShower>().Show(LM.primaryKeyConflict,LM.adviceLabel);
@@ -2993,7 +2993,7 @@ namespace mdl_winform {
             foreach (DataRelation rel in T.ChildRelations) {
                 if (!rif.Tables.Contains(rel.ChildTable.TableName)) continue;
                 if (!GetData.CheckChildRel(rel)) continue; //not a subentityrel
-                var childs = rDest.iGetChildRows(rel);
+                var childs = rDest.getChildRows(rel);
                 foreach (var child in childs) {
                     xRemoveChilds(rif, child);
                 }
@@ -3021,7 +3021,7 @@ namespace mdl_winform {
                 if (!dest.Tables.Contains(rel.ChildTable.TableName)) continue;
                 if (!GetData.CheckChildRel(rel)) continue; //not a subentityrel
                 var childTable = rif.Tables[rel.ChildTable.TableName];
-                RowChange.CopyAutoIncrementProperties(childTable, dest.Tables[childTable.TableName]);
+                dest.Tables[childTable.TableName].copyAutoIncrementPropertiesFrom(childTable);
 
                 for (int i=0; i<childTable.Rows.Count;i++) {
                     var child = childTable.Rows[i];
@@ -3070,14 +3070,14 @@ namespace mdl_winform {
 
             if ((toCopy.RowState == DataRowState.Modified || toCopy.RowState == DataRowState.Unchanged)
                 && !forceAddState) {
-                GetData.CalculateRow(dest);
-                if (PostData.CheckForFalseUpdate(dest)) dest.AcceptChanges();
+                metaModel.CalculateRow(dest);
+                if (dest.IsFalseUpdate()) dest.AcceptChanges();
                 return dest;
             }
 
             //Vede se nella tab. di dest. c'è una riga cancellata che matcha
-            var filter = QueryCreator.WHERE_KEY_CLAUSE(toCopy, DataRowVersion.Default, false);
-            var deletedFound = destTable.Select(filter, null, DataViewRowState.Deleted);
+            var filter = q.keyCmp(toCopy);
+            var deletedFound = destTable.filter(filter, all:true).Where(r=>r.RowState == DataRowState.Deleted).ToArray();
             if (deletedFound.Length == 1) {
                 dest.BeginEdit();
                 destTable.Columns._forEach(c => {
@@ -3103,13 +3103,13 @@ namespace mdl_winform {
                     }
                 }
 
-                GetData.CalculateRow(dest);
-                if (PostData.CheckForFalseUpdate(dest)) dest.AcceptChanges();
+                metaModel.CalculateRow(dest);
+                if (dest.IsFalseUpdate()) dest.AcceptChanges();
                 return dest;
             }
 
             destTable.Rows.Add(dest);
-            GetData.CalculateRow(dest);
+            metaModel.CalculateRow(dest);
             return dest;
 
         }
@@ -3152,9 +3152,9 @@ namespace mdl_winform {
             else {
                 if (ds.HasChanges()) {
                     var postD = meta.Get_PostData();
-                    var err = postD.initClass(ds, conn);
+                    var err = postD.InitClass(ds, conn).GetAwaiter().GetResult();
                     res = false;
-                    if (err == null) res = postD.DO_POST();
+                    if (err == null) res = postD.InteractiveSaveData();
                     if (res) entityChanged = true;
                 }
             }
@@ -3351,7 +3351,7 @@ namespace mdl_winform {
                 var subEntityRow = HelpForm.GetCurrChildRow(primaryDataRow, subTable);
                 if (subEntityRow == null) {
                     var err = $"More than one row present in table \'{subentity}\'. Can\'t validate update";
-                    errorLogger.markEvent(err);
+                    errorLogger.MarkEvent(err);
                     logError(err, null);
                     continue;
                 }
@@ -3368,13 +3368,13 @@ namespace mdl_winform {
         /// </summary>
         /// <returns></returns>
         public bool HasUnsavedChanges() {
-            var handle = mdl_utils.metaprofiler.StartTimer("HasUnsavedChanges()");
+            var handle = mdl_utils.MetaProfiler.StartTimer("HasUnsavedChanges()");
             try {
                 GetFormData(true); //gets data without checks  
-                return metaModel.hasChanges(ds, primaryTable, meta.SourceRow, isSubentity);
+                return metaModel.HasChanges(primaryTable, meta.SourceRow, isSubentity);
             }
             finally {
-                mdl_utils.metaprofiler.StopTimer(handle);
+                mdl_utils.MetaProfiler.StopTimer(handle);
             }
         }
 
@@ -3450,14 +3450,14 @@ namespace mdl_winform {
 
             //            if (PrimaryDataTable.Rows.Count!=1) return;
             //            DataRow primary = PrimaryDataTable.Rows[0];
-            if (RowChange.MakeChild(r, T, primary, relname)) return;
+            if (primary.MakeChildByRelation(r, relationName:relname)) return;
             foreach (var extraName in helpForm.getExtraEntities()) {
                 var extraTable = ds.Tables[extraName];
                 var rel = QueryCreator.GetParentChildRel(primaryTable, extraTable);
                 if (rel == null) continue;
-                var childRow = primary.iGetChildRows(rel);
+                var childRow = primary.getChildRows(rel);
                 if (childRow.Length != 1) continue;
-                if (RowChange.MakeChild(r, T, childRow[0], null)) return;
+                if (childRow[0].MakeChildOf(r)) return;
             }
         }
 
@@ -3479,12 +3479,12 @@ namespace mdl_winform {
                 return;
             }
 
-            if (RowChange.MakeChild(primary, primary.Table, r, relname)) {
+            if (r.MakeChildByRelation(primary, primary.Table,  relname)) {
                 if (relname == null) {
-                    metaModel.addNotEntityChild(primary.Table, r.Table);
+                    metaModel.AddNotEntityChild(primary.Table, r.Table);
                 }
                 else {
-                    metaModel.addNotEntityChild(r.Table, relname);
+                    metaModel.AddNotEntityChild(r.Table, relname);
                 }
             }
         }
@@ -3503,7 +3503,7 @@ namespace mdl_winform {
           
 
             if (linkedTable.Rows.Count > 0) {
-                metaModel.addNotEntityChild(primaryTable, linkedTable);
+                metaModel.AddNotEntityChild(primaryTable, linkedTable);
             }
             else {
                 metaModel.UnMarkTableAsNotEntityChild(linkedTable);
@@ -3527,7 +3527,7 @@ namespace mdl_winform {
             if (metaModel.UnlinkDataRow(primaryTable, r) == null) return null;
 
             if (linkedTable.Rows.Count > 0) {
-                metaModel.addNotEntityChild(primaryTable, linkedTable);
+                metaModel.AddNotEntityChild(primaryTable, linkedTable);
             }
             else {
                 metaModel.UnMarkTableAsNotEntityChild(linkedTable);
@@ -3743,7 +3743,7 @@ namespace mdl_winform {
             string cmd = GetFieldLower(command, 0);
             if (cmd != "choose") return false;
             string entity = GetFieldLower(command, 1);
-            string unaliased = DataAccess.GetTableForReading(ds.Tables[entity]);
+            string unaliased = ds.Tables[entity].tableForReading();
             if (unaliased == null) {
                 shower.ShowError(linkedForm, LM.errorRunningCommand(command), LM.ErrorTitle);
                     //$"Errore nell\'esecuzione del comando {command}", "Errore");
@@ -3752,7 +3752,8 @@ namespace mdl_winform {
             }
 
             string listtype = GetFieldLower(command, 2);
-            string filter = GetLastField(command, 3);
+            string originalFilter  = GetLastField(command, 3);
+            q filter = originalFilter=="clear"? null:MetaExpression.fromString(originalFilter);
             var M = dispatcher.GetWinFormMeta(unaliased);
             if (dispatcher.unrecoverableError) {
                 ErroreIrrecuperabile = true;
@@ -3773,27 +3774,29 @@ namespace mdl_winform {
             var entityTable = ds.Tables[entity];
 
             //sometimes unnecessary cause SelectOne does the filter merging
-            if (filter != "clear" && entity != unaliased) filter = GetData.MergeFilters(filter, entityTable);
+            if (originalFilter != "clear" && entity != unaliased) {
+                filter = GetData.MergeFilters(filter, entityTable);
+            }
 
             //Commento perché un choose dovrebbe sempre filtrare il filtro per la selezione non altro
             //if (InsertMode && filter != "clear")
             //    filter = QHS.AppAnd(filter, M.GetFilterForInsert(EntityTable));
             //if (IsEmpty && filter != "clear")
             //    filter = QHS.AppAnd(filter, M.GetFilterForSearch(EntityTable));
-            if (filter != "clear")
-                filter = q.AppAnd(filter, M.GetFilterForSearch(entityTable));
+            if (originalFilter != "clear")
+                filter = q.and(filter, M.GetFilterForSearch(entityTable));
 
 
 
             M.ExtraParameter =
-                metaModel.getExtraParams( ds.Tables[entity]); // DS.Tables[entity].ExtendedProperties[FormController.extraParams];
+                metaModel.GetExtraParams( ds.Tables[entity]); // DS.Tables[entity].ExtendedProperties[FormController.extraParams];
             M.ds = ds.Clone();
             M.ds.Tables[entity].Clear();
 
 
             DataRow SelectedRow = null;
 
-            if (filter == "clear") {
+            if (originalFilter == "clear") {
                 helpForm.FillSpecificRowControls(controlliTarget, entityTable, null);
                 //FillTableControls(LinkedForm, EntityTable, null);
                 //myAfterRowSelect(EntityTable,null);
@@ -3802,10 +3805,10 @@ namespace mdl_winform {
                 return false;
             }
 
-            if (filter != "clear") {
+            if (originalFilter != "clear") {
                 //filter = GetData.MergeFilters(filter,DS.Tables[entity]);
                 DataTable Exclude = null;
-                if (metaModel.isNotEntityChild(entityTable)) Exclude = entityTable;
+                if (metaModel.IsNotEntityChild(entityTable)) Exclude = entityTable;
                 M.getData = getData; // era myGetData;
                 SelectedRow = M.SelectOne(listtype, filter, unaliased,  Exclude);
             }
@@ -3822,7 +3825,7 @@ namespace mdl_winform {
             if (SelectedRow.Table != entityTable) {
                 //search selected row in EntityTable
                 //var keyfilter = QueryCreator.WHERE_REL_CLAUSE(SelectedRow, entityTable.PrimaryKey, entityTable.PrimaryKey, DataRowVersion.Default, false);
-                var existingRow = entityTable._Filter(Q.mCmp(SelectedRow, entityTable.PrimaryKey));//.Select(keyfilter);
+                var existingRow = entityTable.filter(q.mCmp(SelectedRow, entityTable.PrimaryKey));//.Select(keyfilter);
                 if (existingRow.Length == 0) {
                     var newRow = entityTable.NewRow();
                     if (M.GetRowFromList(SelectedRow, listtype, newRow)) {
@@ -3834,8 +3837,8 @@ namespace mdl_winform {
 
                     }
                     else {
-                        if (RowChange.ChildRelation(primaryTable, entityTable, null) != null)
-                            SelectedRow = getData.GetByKey(entityTable, SelectedRow);
+                        if (RowChange.FindChildRelation(primaryTable, entityTable) != null)
+                            SelectedRow = getData.GetByKey(entityTable, SelectedRow).GetAwaiter().GetResult();
                         else
                             SelectedRow.Table.TableName = entityTable.TableName;
                     }
@@ -3901,18 +3904,14 @@ namespace mdl_winform {
         /// <param name="canprefill"></param>
         /// <param name="cs">Control collection to eventually update</param>
         void ManageSelectedRow(DataRow selected, DataTable monitored, bool canprefill, Control.ControlCollection cs) {
-            string keyfilter = null;
-            string sqlkeyfilter = null;
-            Q qKeyFilter = null;
+            q keyfilter = null;
             if (selected != null) {
-                mdl_utils.DataSetUtils.CopyPrimaryKey(selected.Table, monitored);
-                keyfilter = QueryCreator.WHERE_KEY_CLAUSE(selected,DataRowVersion.Default, false);
-                qKeyFilter = Q.keyCmp(selected);
-                sqlkeyfilter = QueryCreator.WHERE_KEY_CLAUSE(selected,DataRowVersion.Default, true);
+                DataSetUtils.CopyPrimaryKey(selected.Table, monitored);
+                keyfilter = q.keyCmp(selected);
             }
 
             if (CanRecache(monitored)) {
-                GetData.ReCache(monitored);
+                metaModel.ReCache(monitored);
             }
 
             beforeRowSelect(monitored, selected);
@@ -3925,7 +3924,7 @@ namespace mdl_winform {
 
                 if (selected != null) {
 	                selected.Table.TableName = monitored.TableName; //trick to tell helpform!
-                    var oneSelected = monitored._Filter(qKeyFilter);		//.Select(keyfilter);
+                    var oneSelected = monitored.filter(keyfilter);		//.Select(keyfilter);
                     if (oneSelected.Length > 0) selected = oneSelected[0];
                 }
 
@@ -3937,8 +3936,8 @@ namespace mdl_winform {
             }
             else {
                 if (selected != null && selected.RowState == DataRowState.Detached && selected.Table == monitored) {
-                    conn.RUN_SELECT_INTO_TABLE(monitored, null, sqlkeyfilter, null, false);
-                    var oneSelected = monitored._Filter(qKeyFilter);	//q.keyCmp(selected)	//.Select(keyfilter);
+                    conn.SelectIntoTable(monitored, filter: keyfilter);
+                    var oneSelected = monitored.filter(keyfilter);	//q.keyCmp(selected)	//.Select(keyfilter);
                     if (oneSelected.Length > 0) {
                         selected = oneSelected[0];
                     }
@@ -3965,25 +3964,25 @@ namespace mdl_winform {
                 //PRIMA ANCORA:
                 //FreshForm(Monitored.TableName); //21/1/2003
                 if (selected?.RowState == DataRowState.Detached) selected = null;
-                if (selected != null && string.IsNullOrEmpty(keyfilter)) {
+                if (selected != null && keyfilter is null) {
                     meta.LogError(
                         $"Accesso a tabella senza chiave sulla tabella {monitored.TableName} nel form {linkedForm?.Name}",
                         null);
                 }
                 
-                if (selected == null && qKeyFilter!=null) {
+                if (selected == null && !(keyfilter  is null)) {
                     //Some times keyfilter is not really a key so it's necessary to use also static filter of related table
-                    conn.RUN_SELECT_INTO_TABLE(monitored, null, GetData.MergeFilters(keyfilter,monitored), null, false);
-                    var oneSelected = monitored._Filter(qKeyFilter);	//.Select(keyfilter);
+                    conn.SelectIntoTable(monitored, filter:GetData.MergeFilters(keyfilter,monitored));
+                    var oneSelected = monitored.filter(keyfilter);	//.Select(keyfilter);
                     if (oneSelected.Length > 0) selected = oneSelected[0];
                 }
 
                 if (selected != null) {
-                    var oneSelected = monitored._Filter(Q.keyCmp(selected));	//.Select(keyfilter);
+                    var oneSelected = monitored.filter(q.keyCmp(selected));	//.Select(keyfilter);
                     if (oneSelected.Length == 0) {
                         //Some times keyfilter is not really a key so it's necessary to use also static filter of related table
-                        conn.RUN_SELECT_INTO_TABLE(monitored, null, GetData.MergeFilters(keyfilter,monitored), null, false);
-                        oneSelected = monitored._Filter(Q.keyCmp(selected));	//.Select(keyfilter);
+                        conn.SelectIntoTable(monitored, filter: GetData.MergeFilters(keyfilter,monitored));
+                        oneSelected = monitored.filter(q.keyCmp(selected));	//.Select(keyfilter);
                     }
 
                     if (oneSelected.Length > 0) selected = oneSelected[0];
@@ -4009,7 +4008,7 @@ namespace mdl_winform {
         public bool EditDataRow(DataRow r, string _editType, out DataRow outputRow) {
             //OutputRow = null;
             var sourceTable = r.Table;
-            var unaliased = DataAccess.GetTableForReading(sourceTable);
+            var unaliased = sourceTable.tableForReading();
 
             var m = dispatcher.GetWinFormMeta(unaliased);
             if (dispatcher.unrecoverableError) {
@@ -4029,7 +4028,7 @@ namespace mdl_winform {
             //la seg. è causa di errori,poiché non sempre DS è valorizzato.
             //M.ExtraParameter= DS.Tables[SourceTable.TableName].ExtendedProperties[ExtraParams];
             m.ExtraParameter =
-                metaModel.getExtraParams(sourceTable); //SourceTable.ExtendedProperties[FormController.extraParams];
+                metaModel.GetExtraParams(sourceTable); //SourceTable.ExtendedProperties[FormController.extraParams];
 
             m.SetDefaults(sourceTable);
             m.SourceRow = r; //r is not null
@@ -4068,7 +4067,7 @@ namespace mdl_winform {
             /// <summary>
             /// Startfilter specified for the search 
             /// </summary>
-            public string startfilter;
+            public MetaExpression startfilter;
 
             /// <summary>
             /// Field linked to the activating textbox
@@ -4137,7 +4136,7 @@ namespace mdl_winform {
             /// <param name="kind">AutoManage or AutoChoose</param>
             public AutoInfo(GroupBox G,
                 string type,
-                string startfilter,
+                q startfilter,
                 string startfield,
                 string table,
                 string kind) {
@@ -4172,13 +4171,13 @@ namespace mdl_winform {
                 return;
             }
 
-            if (A.ParentTable._Filter(Q.eq(A.parentfield,idValue)).Length == 0) {		//.Select(QHC.CmpEq(A.parentfield, idValue
+            if (A.ParentTable.filter(q.eq(A.parentfield,idValue)).Length == 0) {		//.Select(QHC.CmpEq(A.parentfield, idValue
                 A.ParentTable.Clear();
-                conn.RUN_SELECT_INTO_TABLE(A.ParentTable, null, q.CmpEq(A.parentfield, idValue), null, false);
+                conn.SelectIntoTable(A.ParentTable, filter: q.eq(A.parentfield, idValue)).GetAwaiter().GetResult();
             }
 
             //if (A.ParentTable.Select(QHC.CmpEq(A.parentfield, idValue)).Length == 0) return; //Errore nei dati
-            if (A.ParentTable._Filter(Q.eq(A.parentfield,idValue)).Length == 0) return; //Errore nei dati
+            if (A.ParentTable.filter(q.eq(A.parentfield,idValue)).Length == 0) return; //Errore nei dati
             helpForm.FillSpecificRowControls(A.G.Controls, A.ParentTable, A.ParentTable.Rows[0]);
             if (A.ChildTable.Rows.Count == 1) {
                 A.ChildTable.Rows[0][A.childfield] = idValue;
@@ -4200,7 +4199,7 @@ namespace mdl_winform {
             var id = a.GetInvisibleText();
             return id == ""
                 ? DBNull.Value
-                : mdl_utils.HelpUi.GetObjectFromString(a.ChildTable.Columns[a.childfield].DataType, id, "g");
+                : HelpUi.GetObjectFromString(a.ChildTable.Columns[a.childfield].DataType, id, "g");
         }
 
         #endregion
@@ -4272,7 +4271,7 @@ namespace mdl_winform {
             var sourceDataSet = (DataSet) g.DataSource;
             if (sourceDataSet == null) {
                 shower.Show(linkedForm,
-                    $"DataGrid {g.Name} in Form {g.FindForm()?.Name} has a wrong Tag ({mdl_utils.Quoting.quotedstrvalue(g.Tag, false)})");
+                    $"DataGrid {g.Name} in Form {g.FindForm()?.Name} has a wrong Tag ({mdl_utils.Quoting.quote(g.Tag, false)})");
                 return null;
             }
 
@@ -4294,7 +4293,7 @@ namespace mdl_winform {
                     LM.confirmTitle, mdl.MessageBoxButtons.OKCancel) == mdl.DialogResult.Cancel) return null;
 
             currDr.Delete();
-            if (QueryCreator.IsSubEntity(sourceTable, ds.Tables[primaryTableName])) {
+            if (MetaModel.IsSubEntity(sourceTable, ds.Tables[primaryTableName])) {
                 entityChanged = true;
             }
 
@@ -4326,7 +4325,7 @@ namespace mdl_winform {
 
             var sourceDataSet = (DataSet) g.DataSource;
             if (sourceDataSet == null) {
-                shower.Show(linkedForm, $"DataGrid {g.Name} in Form {g.FindForm()?.Name} has a wrong Tag ({mdl_utils.Quoting.quotedstrvalue(g.Tag, false)})");
+                shower.Show(linkedForm, $"DataGrid {g.Name} in Form {g.FindForm()?.Name} has a wrong Tag ({mdl_utils.Quoting.quote(g.Tag, false)})");
                 return null;
             }
 
@@ -4382,10 +4381,10 @@ namespace mdl_winform {
             //entity is the name of the table in the DataSet
             var entity = GetFieldLower(command, 1);
             //unaliased is the name of the actual metadata to build and get from db
-            var unaliased = DataAccess.GetTableForReading(ds.Tables[entity]) ?? entity;
+            var unaliased = ds.Tables[entity].tableForReading() ?? entity;
 
             var editmode = GetFieldLower(command, 2);
-            var filter = GetLastField(command, 3);
+            var filter = MetaExpression.fromString( GetLastField(command, 3));
 
             var m = dispatcher.GetWinFormMeta(unaliased);
             if (dispatcher.unrecoverableError) {
@@ -4417,8 +4416,7 @@ namespace mdl_winform {
                 return false;
             }
 
-            m.ExtraParameter =
-                metaModel.getExtraParams(ds.Tables[entity]); //.ExtendedProperties[FormController.extraParams];
+            m.ExtraParameter = metaModel.GetExtraParams(ds.Tables[entity]); //.ExtendedProperties[FormController.extraParams];
             m.edit_type = editmode;
             m.ds = ds.Clone();
             m.ds.Tables[entity].Clear();
@@ -4430,7 +4428,7 @@ namespace mdl_winform {
                 //try to load a row directly, without opening a new form		
                 var stripped = startvalue;
                 if (stripped.EndsWith("%")) stripped = stripped.TrimEnd('%');
-                var filter2 = q.AppAnd(filter, q.CmpEq(startfield, stripped));
+                var filter2 = q.and(filter, q.eq(startfield, stripped));
                 //GetData.MergeFilters(filter,"("+startfield+"='"+stripped+"')");			
                 //m.myGetData = myGetData; //inutile, c'è già la successiva
                 m.getData = getData;
@@ -4443,7 +4441,7 @@ namespace mdl_winform {
                     }
 
                     if (entityTable.TableName == unaliased) entityTable.TableName = entity;
-                    mdl_utils.DataSetUtils.CopyPrimaryKey(entityTable, ds.Tables[entity]);
+                    DataSetUtils.CopyPrimaryKey(entityTable, ds.Tables[entity]);
                 }
             }
 
@@ -4567,12 +4565,12 @@ namespace mdl_winform {
         /// </summary>
         /// <param name="baseFilter">Initial filter to apply when filling form</param>
         /// <returns></returns>
-        bool filterList(string baseFilter) {           
+        bool filterList(q baseFilter) {           
             var filter = helpForm.GetSearchCondition(linkedForm);
-            filter = GetData.MergeFilters(filter, baseFilter);
+            filter = q.and(filter, baseFilter);
 
             eventManager.DisableAutoEvents();
-            getData.GET_PRIMARY_TABLE(filter);
+            getData.GetPrimaryTable(filter);
             eventManager.EnableAutoEvents();
             if (primaryTable.Rows.Count == 0) {
                 shower.Show(linkedForm, LM.noElementFound);
@@ -4599,7 +4597,7 @@ namespace mdl_winform {
         /// <param name="filterstart">additional filter to append to the
         ///  form-retrived condition</param>
         /// <returns></returns>
-        public static bool searchRow(Form f, string listType, string filterstart) {
+        public static bool searchRow(Form f, string listType, q filterstart) {
             var ctrl = f.getInstance<IFormController>();
             return ctrl != null && ctrl.searchRow(listType, filterstart, false);
         }
@@ -4610,9 +4608,9 @@ namespace mdl_winform {
         /// <param name="T"></param>
         /// <returns></returns>
         bool CanRecache(DataTable T) {
-            if (!metaModel.canClear(T)) return false;
+            if (!metaModel.CanClear(T)) return false;
             if (T == primaryTable) return false;
-            return !QueryCreator.IsSubEntity(T, primaryTable);
+            return !MetaModel.IsSubEntity(T, primaryTable);
         }
 
          /// <summary>
@@ -4630,7 +4628,7 @@ namespace mdl_winform {
                         var ds2 = ds.Copy();
                         ds2.copyIndexFrom(ds);
                         //var keyfilter = QueryCreator.WHERE_KEY_CLAUSE(oneRow,DataRowVersion.Default, false);
-                        var myRow = ds2.Tables[primaryTableName]._Filter(Q.keyCmp(oneRow)).FirstOrDefault();//.Select(keyfilter)[0];
+                        var myRow = ds2.Tables[primaryTableName].filter(q.keyCmp(oneRow)).FirstOrDefault();//.Select(keyfilter)[0];
 
                         SelectRow(myRow, meta.DefaultListType);
                         //	DO_GET(false,OneRow);
@@ -4642,8 +4640,8 @@ namespace mdl_winform {
 
             foreach (DataTable T in ds.Tables) {
                 if (!CanRecache(T)) continue;
-                if (metaModel.canRead(T)) continue;
-                metaModel.clear(T); // T.Clear();
+                if (metaModel.CanRead(T)) continue;
+                metaModel.Clear(T); // T.Clear();
                 GetData.ReCache(T);
             }
 
@@ -4772,20 +4770,20 @@ namespace mdl_winform {
             if (linkedForm != null && linkedForm.IsDisposed) return;
 
             checkConn();
-            if ((conn != null) && (conn.openError)) {
+            if ((conn != null) && (conn.BrokenConnection)) {
                 shower.Show(LM.dbConnectionInterrupted);
                 return;
             }
 
             if (doingCommand) return;
             doingCommand = true;
-            int handler = mdl_utils.metaprofiler.StartTimer("doMainCommand * " + tag);
+            int handler = mdl_utils.MetaProfiler.StartTimer("doMainCommand * " + tag);
             try {
                 //QueryCreator.MarkEvent(linkedForm.Name+":"+tag);
                 InternalDoMainCommand(tag);
             }
             catch (Exception E) {
-                mdl_utils.metaprofiler.StopTimer(handler);
+                mdl_utils.MetaProfiler.StopTimer(handler);
                 doingCommand = false;
                 if (tag == null) tag = LM.emptyWithinPar;
                 logError(LM.errorRunningCommand(tag), E);  //"Errore eseguendo il comando " + tag, E);
@@ -4794,8 +4792,8 @@ namespace mdl_winform {
                 ErroreIrrecuperabile = true;
                 return;
             }
-            mdl_utils.metaprofiler.StopTimer(handler);
-            if ((conn != null) && (conn.openError)) {
+            mdl_utils.MetaProfiler.StopTimer(handler);
+            if ((conn != null) && (conn.BrokenConnection)) {
                 shower.Show(LM.dbConnectionInterrupted);
             }
 
@@ -4849,8 +4847,8 @@ namespace mdl_winform {
                 curroperation = mainoperations.search;
                 bool emptylist = cmd.Equals("emptylist");
                 var listtype = GetFieldLower(tag, 1) ?? meta.DefaultListType;
-                var startfilter = GetLastField(tag, 2) ?? meta.StartFilter;
-                startfilter = GetData.MergeFilters(startfilter, meta.additional_search_condition);
+                q startfilter = q.fromString(GetLastField(tag, 2)) ?? meta.StartFilter;
+                startfilter = q.and(startfilter, meta.additional_search_condition);
                 if ((!isList) || isTree) {
                     searchRow(listtype, startfilter, emptylist);
                     curroperation = mainoperations.none;
@@ -4977,7 +4975,7 @@ namespace mdl_winform {
                     return;
                 }
 
-                var r = m.Get_New_Row(null, primaryTable);
+                var r = m.GetNewRow(null, primaryTable);
                 if (r == null) return;
 
                 m.SourceRow = r; //r is not null
@@ -5034,14 +5032,14 @@ namespace mdl_winform {
                     return;
                 }
 
-                var r = m.Get_New_Row(null, primaryTable);
+                var r = m.GetNewRow(null, primaryTable);
                 if (r == null) return;
 
                 r.BeginEdit();
                 for (var i = 0; i < primaryTable.Columns.Count; i++) {
                     var c = primaryTable.Columns[i];
                     //don't copy autoincrements
-                    if (RowChange.IsAutoIncrement(c)) continue;
+                    if (c.IsAutoIncrement()) continue;
                     //don't copy keys
                     if (QueryCreator.IsPrimaryKey(primaryTable, c.ColumnName)) continue;
                     r[i] = currCopy[i];
@@ -5160,7 +5158,7 @@ namespace mdl_winform {
             }
 
             meta.SetDefaults(primaryTable);
-            var r = meta.Get_New_Row(parent, ds.Tables[primaryTableName]);
+            var r = meta.GetNewRow(parent, ds.Tables[primaryTableName]);
             if (r == null) {
                 curroperation = mainoperations.none;
                 return false;
@@ -5219,7 +5217,7 @@ namespace mdl_winform {
             var dsCopy = ds.Copy();
             dsCopy.copyIndexFrom(ds);
             //var keyfilter = QueryCreator.WHERE_KEY_CLAUSE(currRow, DataRowVersion.Default, false);
-            var primaryRowCopy = dsCopy.Tables[primaryTable.TableName]._Filter(Q.keyCmp(currRow)).FirstOrDefault();//.Select(keyfilter)[0];
+            var primaryRowCopy = dsCopy.Tables[primaryTable.TableName].filter(q.keyCmp(currRow)).FirstOrDefault();//.Select(keyfilter)[0];
 
 
             if (!isList) {
@@ -5233,7 +5231,7 @@ namespace mdl_winform {
             }
 
             meta.SetDefaults(primaryTable);
-            var r = meta.Get_New_Row(null, ds.Tables[primaryTable.TableName]);
+            var r = meta.GetNewRow(null, ds.Tables[primaryTable.TableName]);
             if (r == null) {
                 shower.Show(linkedForm, LM.invalidDataOnTable(primaryTable.TableName));
                 //$"La tabella {TableName} contiene dati non validi. Contattare il servizio di assistenza.");
@@ -5243,7 +5241,7 @@ namespace mdl_winform {
             for (var i = 0; i < primaryTable.Columns.Count; i++) {
                 var c = primaryTable.Columns[i];
                 if (isList) {
-                    if (RowChange.IsAutoIncrement(c)) continue;                             //don't copy autoincrements                    
+                    if (c.IsAutoIncrement()) continue;                             //don't copy autoincrements                    
                     if (QueryCreator.IsPrimaryKey(primaryTable, c.ColumnName)) continue;//don't copy keys
                 }
 
@@ -5293,11 +5291,11 @@ namespace mdl_winform {
         void recursiveNewCopyChilds(DataRow destRow, DataRow sourceRow) {
             var relC = sourceRow.Table.ChildRelations;
             foreach (DataRelation rel in relC) {
-                if (QueryCreator.SkipInsertCopy(rel.ChildTable)) continue; //salta la tabella se è di tipo SkipInsertCopy
+                if (QueryCreator.IsSkipInsertCopy(rel.ChildTable)) continue; //salta la tabella se è di tipo SkipInsertCopy
                 var childTableName = rel.ChildTable.TableName;
-                if (!QueryCreator.IsSubEntity(ds.Tables[childTableName], destRow.Table)) continue;
+                if (!MetaModel.IsSubEntity(ds.Tables[childTableName], destRow.Table)) continue;
                 if (childTableName == sourceRow.Table.TableName) continue;
-                var childsRowCopy = sourceRow.iGetChildRows(rel);
+                var childsRowCopy = sourceRow.getChildRows(rel);
 
                 foreach (var childSourceRow in childsRowCopy) {
                     var metaChild = dispatcher.Get(childTableName);
@@ -5308,7 +5306,7 @@ namespace mdl_winform {
                     }
 
                     metaChild.SetDefaults(ds.Tables[childTableName]);
-                    var newChildRow = metaChild.Get_New_Row(destRow, ds.Tables[childTableName]);
+                    var newChildRow = metaChild.GetNewRow(destRow, ds.Tables[childTableName]);
                     newChildRow.BeginEdit();
                     foreach (DataColumn childCol in ds.Tables[childTableName].Columns) {
                         var skipthis = false;

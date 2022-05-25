@@ -8,46 +8,67 @@ using System.Text;
 using System.Threading.Tasks;
 using q = mdl.MetaExpression;
 #pragma warning disable IDE1006 // Naming Styles
-//using System.EnterpriseServices;
+using static mdl_utils.MetaProfiler;
 
 
 namespace mdl {
 
-	/// <summary>
-	/// Represents the change of a single row that has to be performed on a 
-	///  Database Table
-	/// </summary>
-	public class RowChange {
+    /// <summary>
+    /// Represents the change of a single row that has to be performed on a 
+    ///  Database Table
+    /// </summary>
+    public class RowChange {
 
-		/// <summary>
-		/// DataRow linked to the RowChange
-		/// </summary>
-		public DataRow DR;       
+        /// <summary>
+        /// Field name indicating the user that created the row
+        /// </summary>
+        public virtual string CreateUserField { get; set; } = "cu";
+
+        /// <summary>
+        /// Field name indicating the creation time stamp
+        /// </summary>
+        public virtual string CreateTimeStampField { get; set; } = "ct";
+
+        /// <summary>
+        /// Field name indicating the last user that modified the row, used for optimistic locking
+        /// </summary>
+        public virtual string LastModifyUserField { get; set; } = "lu";
+
+
+        /// <summary>
+        /// Field name indicating the last update time stamp, used for optimistic locking
+        /// </summary>
+        public virtual string LastModifyStampField { get; set; } = "lt";
+
+        /// <summary>
+        /// DataRow linked to the RowChange
+        /// </summary>
+        public DataRow DR;
 
 
 
-		/// <summary>
-		/// Extended Property of DataColumn that states that the column has to be
-		///  calculated during Post Process when it is added to DataBase.
-		/// </summary>
-		/// <remarks>
-		/// The field is calculated like:
-		/// [Row[PrefixField]] [MiddleConst] [LeftPad(newID, IDLength)]
-		/// so that, called the first part [Row[PrefixField]] [MiddleConst] as PREFIX,
-		/// if does not exists another row with the same PREFIX for the ID, the newID=1
-		/// else newID = max(ID of same PREFIX-ed rows) + 1
-		/// </remarks>
-		const string AutoIncrement = "IsAutoIncrement";
-		const string CustomAutoIncrement = "CustomAutoIncrement";
-		const string PrefixField = "PrefixField";
-		const string MiddleConst = "MiddleConst";
-		const string IDLength    = "IDLength";
-		const string Selector    = "Selector";
+        /// <summary>
+        /// Extended Property of DataColumn that states that the column has to be
+        ///  calculated during Post Process when it is added to DataBase.
+        /// </summary>
+        /// <remarks>
+        /// The field is calculated like:
+        /// [Row[PrefixField]] [MiddleConst] [LeftPad(newID, IDLength)]
+        /// so that, called the first part [Row[PrefixField]] [MiddleConst] as PREFIX,
+        /// if does not exists another row with the same PREFIX for the ID, the newID=1
+        /// else newID = max(ID of same PREFIX-ed rows) + 1
+        /// </remarks>
+        const string AutoIncrement = "IsAutoIncrement";
+        const string CustomAutoIncrement = "CustomAutoIncrement";
+        const string PrefixField = "PrefixField";
+        const string MiddleConst = "MiddleConst";
+        const string IDLength = "IDLength";
+        const string Selector = "Selector";
         const string SelectorMask = "SelectorMask";
         const string MySelector = "MySelector";
         const string MySelectorMask = "MySelectorMask";
         const string LinearField = "LinearField";
-        
+
         /// <summary>
         /// Constructor for the class
         /// </summary>
@@ -56,25 +77,25 @@ namespace mdl {
             this.DR = dr;
             EnforcementMessages = null; //new ProcedureMessageCollection();
         }
-        
+
         /// <summary>
         /// Assigns this RowChange to a Collection
         /// </summary>
         /// <param name="rc"></param>
-        public void SetCollection(RowChangeCollection rc){
-            myCollection=rc;        
+        public void SetCollection(RowChangeCollection rc) {
+            myCollection = rc;
         }
         RowChangeCollection myCollection = null;
-		/// <summary>
-		/// Creates a new RowChange linked to a given DataRow
-		/// </summary>
-		/// <param name="dr"></param>
+        /// <summary>
+        /// Creates a new RowChange linked to a given DataRow
+        /// </summary>
+        /// <param name="dr"></param>
         /// <param name="parentCollection"></param>
-		public RowChange(DataRow dr, RowChangeCollection parentCollection){
-			this.DR=dr;
-			EnforcementMessages= null; //new ProcedureMessageCollection();
-            myCollection = parentCollection;		    
-		}
+        public RowChange(DataRow dr, RowChangeCollection parentCollection) {
+            this.DR = dr;
+            EnforcementMessages = null; //new ProcedureMessageCollection();
+            myCollection = parentCollection;
+        }
 
         /// <summary>
         /// List of tables incrementally scanned in the analysis
@@ -82,173 +103,178 @@ namespace mdl {
         public List<string> HasBeenScanned = new List<string>();
 
 
-		/// <summary>
-		/// String representaion of the change
-		/// </summary>
-		/// <returns></returns>
-		public override String ToString() {
-			return TableName+"."+DR.ToString();
-		}    
+        /// <summary>
+        /// String representaion of the change
+        /// </summary>
+        /// <returns></returns>
+        public override String ToString() {
+            return TableName + "." + DR.ToString();
+        }
 
-		/// <summary>
-		/// gets the DataTable that owns the chenged row
-		/// </summary>
-		public DataTable Table {
-			get {
-				return DR.Table;
-			}
-		}
+        /// <summary>
+        /// gets the DataTable that owns the chenged row
+        /// </summary>
+        public DataTable Table {
+            get {
+                return DR.Table;
+            }
+        }
 
-		/// <summary>
-		/// Gets the name of the table to which the changed row belongs
-		/// </summary>
-		public string TableName {
-			get {
-				return DR.Table.TableName;
-			}
-		}            
+        /// <summary>
+        /// Gets the name of the table to which the changed row belongs
+        /// </summary>
+        public string TableName {
+            get {
+                return DR.Table.TableName;
+            }
+        }
 
-		/// <summary>
-		/// Gets the real table that will be used to write the row to the DB
-		/// </summary>
-		public string PostingTable {
-			get {
-				return DR.Table.tableForPosting();
-			}
-		}
-    
-      
+        /// <summary>
+        /// Gets the real table that will be used to write the row to the DB
+        /// </summary>
+        public string PostingTable {
+            get {
+                return DR.Table.tableForPosting();
+            }
+        }
 
-		/// <summary>
-		/// Short description for update, used for composing business rule 
-		///  stored procedure names
-		/// </summary>
-		public const string short_update_descr = "u";
-		/// <summary>
-		/// Short description for insert, used for composing business rule 
-		///  stored procedure names
-		/// </summary>
-		public const string short_insert_descr = "i";
-		/// <summary>
-		/// Short description for delete, used for composing business rule 
-		///  stored procedure names
-		/// </summary>
-		public const string short_delete_descr = "d";
-		/// <summary>
-		/// Used in the composition of the key, during logging
-		/// </summary>
-		public const string KeyDelimiter = " | ";
 
-		/// <summary>
-		/// Gets a i/u/d description of the row status
-		/// </summary>
-		/// <returns></returns>
-		public virtual string ShortStatus(){
-			String Op="";
-			switch(DR.RowState){
-				case DataRowState.Added: 
-					Op = short_insert_descr;//"i"
-					break;
-				case DataRowState.Deleted:
-					Op = short_delete_descr;//"d"
-					break;
-				case DataRowState.Modified:
-					Op= short_update_descr;//"u"
-					break;
-			}
-			return Op;
 
-		}
+        /// <summary>
+        /// Short description for update, used for composing business rule 
+        ///  stored procedure names
+        /// </summary>
+        public const string short_update_descr = "u";
+        /// <summary>
+        /// Short description for insert, used for composing business rule 
+        ///  stored procedure names
+        /// </summary>
+        public const string short_insert_descr = "i";
+        /// <summary>
+        /// Short description for delete, used for composing business rule 
+        ///  stored procedure names
+        /// </summary>
+        public const string short_delete_descr = "d";
+        /// <summary>
+        /// Used in the composition of the key, during logging
+        /// </summary>
+        public const string KeyDelimiter = " | ";
 
-		/// <summary>
-		/// Get the name of Stored procedure to call in pre-check phase
-		/// </summary>
-		/// <returns></returns>
-		public virtual String PreProcNameToCall(){
-			return "sp_"+ShortStatus()+"_"+PostingTable;
-		}
-		/// <summary>
-		/// get the name of Stored procedure to call in post-check phase
-		/// </summary>
-		/// <returns></returns>
-		public virtual String PostProcNameToCall(){
-			return "sp_"+ShortStatus()+"__"+PostingTable;
-		}
-        
-		/// <summary>Gets a filter of TableName AND dboperation (I/U/D)</summary>
-		/// <returns>filter String</returns>
-		public virtual String FilterTableOp(){
-			return "(dbtable = '"+TableName+"' ) AND (dboperation = '"+ShortStatus()+"' )";
-		}
- 
-		/// <summary>
-		/// Gets a filter on Posting Table and DB operation 
-		/// </summary>
-		/// <returns></returns>
-		public virtual String FilterPostTableOp(){
-			return "(dbtable = '"+PostingTable+"' ) AND (dboperation = '"+ShortStatus()+"' )";
-		}
+        /// <summary>
+        /// Gets a i/u/d description of the row status
+        /// </summary>
+        /// <returns></returns>
+        public virtual string ShortStatus() {
+            String Op = "";
+            switch (DR.RowState) {
+                case DataRowState.Added:
+                    Op = short_insert_descr;//"i"
+                    break;
+                case DataRowState.Deleted:
+                    Op = short_delete_descr;//"d"
+                    break;
+                case DataRowState.Modified:
+                    Op = short_update_descr;//"u"
+                    break;
+            }
+            return Op;
 
-		/// <summary>
-		/// Error messages about related stored procedures
-		/// </summary>
-		public ProcedureMessageCollection EnforcementMessages;
+        }
 
-		/// <summary>
-		/// Related rows on other tables
-		/// </summary>
+        /// <summary>
+        /// Get the name of Stored procedure to call in pre-check phase
+        /// </summary>
+        /// <returns></returns>
+        public virtual String PreProcNameToCall() {
+            return $"sp_{ShortStatus()}_{PostingTable}";
+        }
+        /// <summary>
+        /// get the name of Stored procedure to call in post-check phase
+        /// </summary>
+        /// <returns></returns>
+        public virtual String PostProcNameToCall() {
+            return $"sp_{ShortStatus()}__{PostingTable}";
+        }
+
+        /// <summary>Gets a filter of TableName AND dboperation (I/U/D)</summary>
+        /// <returns>filter String</returns>
+        public virtual MetaExpression FilterTableOp() {
+            return q.eq("dbtable", TableName) & q.and("dboperation", ShortStatus());
+        }
+
+        /// <summary>
+        /// Gets a filter on Posting Table and DB operation 
+        /// </summary>
+        /// <returns></returns>
+        public virtual MetaExpression FilterPostTableOp() {
+            return q.eq("dbtable", PostingTable) & q.and("dboperation", ShortStatus());
+        }
+
+        /// <summary>
+        /// Error messages about related stored procedures
+        /// </summary>
+        public ProcedureMessageCollection EnforcementMessages;
+
+        /// <summary>
+        /// Related rows on other tables
+        /// </summary>
         public Dictionary<string, DataRow> Related = new Dictionary<string, DataRow>(); //ex SortedList
 
-		/// <summary>
-		/// Get a new rowchange class linked to a given DataRow
-		/// </summary>
-		/// <param name="R"></param>
-		/// <returns></returns>
-		virtual protected RowChange GetNewRowChange(DataRow R){
-			return new RowChange(R);
-		}
-
-        
-		/// <summary>
-		/// Gets the list of primary key column name separated by KeyDelimiter
-		/// </summary>
-		/// <returns></returns>
-		public string PrimaryKey(){
-			string Key = "";
-			bool first = true;
-			var DV = DataRowVersion.Default;
-			if (DR.RowState== DataRowState.Deleted) DV = DataRowVersion.Original;
-			foreach (var C in DR.Table.PrimaryKey){
-				if (!first) Key += KeyDelimiter;
-				Key += DR[C.ColumnName, DV];
-				first=false;
-			}
-			return Key;
-		}
+        /// <summary>
+        /// Get a new rowchange class linked to a given DataRow
+        /// </summary>
+        /// <param name="R"></param>
+        /// <returns></returns>
+        virtual protected RowChange getNewRowChange(DataRow R) {
+            return new RowChange(R);
+        }
 
 
+        /// <summary>
+        /// Gets the list of primary key column name separated by KeyDelimiter
+        /// </summary>
+        /// <returns></returns>
+        public string PrimaryKey() {
+            string Key = "";
+            bool first = true;
+            var DV = DataRowVersion.Default;
+            if (DR.RowState == DataRowState.Deleted)
+                DV = DataRowVersion.Original;
+            foreach (var C in DR.Table.PrimaryKey) {
+                if (!first)
+                    Key += KeyDelimiter;
+                Key += DR[C.ColumnName, DV];
+                first = false;
+            }
+            return Key;
+        }
 
-		/// <summary>
-		/// Copy an extended property of a datacolumn into another one.
-		/// Checks for column existence in both tables.
-		/// </summary>
-		/// <param name="In"></param>
-		/// <param name="Out"></param>
-		/// <param name="colname"></param>
-		/// <param name="property"></param>
-		static void copyproperty(DataTable In, DataTable Out, string colname, string property){
-			if (In.Columns[colname]==null) return;
-			if (Out.Columns[colname]==null) return;
-			if (In.Columns[colname].ExtendedProperties[property]==null) return;
 
-			Out.Columns[colname].ExtendedProperties[property]=
-				In.Columns[colname].ExtendedProperties[property];
-		}
 
-	    /// <summary>
-	    /// Class for logging errors
-	    /// </summary>
-	    public IErrorLogger errorLogger { get; set; } = ErrorLogger.Logger;
+        /// <summary>
+        /// Copy an extended property of a datacolumn into another one.
+        /// Checks for column existence in both tables.
+        /// </summary>
+        /// <param name="In"></param>
+        /// <param name="Out"></param>
+        /// <param name="colname"></param>
+        /// <param name="property"></param>
+        static void copyproperty(DataTable In, DataTable Out, string colname, string property) {
+            if (In.Columns[colname] == null)
+                return;
+            if (Out.Columns[colname] == null)
+                return;
+            if (In.Columns[colname].ExtendedProperties[property] == null)
+                return;
+
+            Out.Columns[colname].ExtendedProperties[property] =
+                In.Columns[colname].ExtendedProperties[property];
+        }
+
+        /// <summary>
+        /// Class for logging errors
+        /// </summary>
+        public IErrorLogger ErrorLogger { get; set; } = mdl.ErrorLogger.Logger;
 
         /// <summary>
         /// Get a DataRow related to the RowChange, in a given tablename
@@ -257,16 +283,20 @@ namespace mdl {
         /// <returns></returns>
         public DataRow GetRelated(string tablename) {
             string realname = DR.Table.tableForPosting();
-            if (realname == tablename) return DR;                    
-            if (Related.ContainsKey(tablename)) return Related[tablename];
-            SEARCH_RELATED(tablename);
-            if (Related.ContainsKey(tablename)) return Related[tablename];
+            if (realname == tablename)
+                return DR;
+            if (Related.ContainsKey(tablename))
+                return Related[tablename];
+            SearchRelated(tablename);
+            if (Related.ContainsKey(tablename))
+                return Related[tablename];
             return null;
         }
 
-        public bool useIndex=true;
+        public bool useIndex = true;
 
-        /// <summary> Search for rows related to the "Change" variation (referred to ONE row R of ONE table T)
+        /// <summary> 
+        /// Search for rows related to the "Change" variation (referred to ONE row R of ONE table T)
         ///  For each table in DS, are examined the relation to T
         ///  For each table having exactly ONE row related to R, this row is added to Related.
         ///  Rows are added to a list that is indexed by the name of the row DataTable 
@@ -278,43 +308,38 @@ namespace mdl {
         ///     in the same table using more than one path. It assumes that there is
         ///     only one path connecting one table to another.
         /// </remarks>
-        public void SEARCH_RELATED(string tablename) {
-            if (HasBeenScanned.Contains(tablename)) return;
+        public void SearchRelated(string tablename) {
+            if (HasBeenScanned.Contains(tablename))
+                return;
             HasBeenScanned.Add(tablename);
 
             DataRow ROW = this.DR;
             DataTable T = ROW.Table;
-            string realname = T.tableForPosting();
+
             //Tryes to get rows related to ROW.
             DataRowVersion toConsider = DataRowVersion.Default;
-            if (ROW.RowState == DataRowState.Deleted) toConsider = DataRowVersion.Original;
+            if (ROW.RowState == DataRowState.Deleted)
+                toConsider = DataRowVersion.Original;
 
             //Scans relations where T is the parent and T2 s the CHILD
             //We want to find rows in Rel.ChildTable
             foreach (DataRelation rel in T.ChildRelations) {
                 //Here ROW is PARENT TABLE and we search in Rel.ChildTable, T2 is CHILD TABLE
                 DataTable childTable = rel.ChildTable;  //table to search in
-                if (childTable.tableForPosting() !=tablename) continue;
+                if (childTable.tableForPosting() != tablename)
+                    continue;
                 try {
-                    if (rel.ParentTable.TableName != T.TableName) continue;
-                    //string whereclause = QueryCreator.WHERE_REL_CLAUSE(ROW, rel.ParentColumns,rel.ChildColumns, toConsider, false);
-                    var rr = childTable._Filter(q.mGetChilds(ROW, rel, toConsider));  
-								//childTable.Select(whereclause, null, DataViewRowState.CurrentRows);
-                    int n = rr.Length;
-                    //if (n == 0) {
-	                   // string whereclause = QueryCreator.WHERE_REL_CLAUSE(ROW, rel.ParentColumns,rel.ChildColumns, toConsider, false);
-                    //    rr = childTable.Select(whereclause, null, DataViewRowState.Deleted);
-                    //    n = rr.Length;
-                    //}
-
-                    if (n == 1) {
-                        Related[tablename] = rr[0];
-                        return;
-                    }
+                    if (rel.ParentTable.TableName != T.TableName)
+                        continue;
+                    var rr = childTable.filter(q.mGetChilds(ROW, rel, toConsider));
+                    if (rr.Length != 1)
+                        continue;
+                    Related[tablename] = rr[0];
+                    return;
                 }
                 catch (Exception e) {
-                    errorLogger.logException("Errore in SEARCH_RELATED (1)(" + tablename + ")",exception:e);
-                    errorLogger.markException(e,"Error in RowChange.SearchRelated.");                  
+                    ErrorLogger.logException("Errore in SEARCH_RELATED (1)(" + tablename + ")", exception: e);
+                    ErrorLogger.markException(e, "Error in RowChange.SearchRelated.");
                 }
             }//foreach DataRelation
 
@@ -323,30 +348,28 @@ namespace mdl {
             foreach (DataRelation rel in T.ParentRelations) {
                 //Here ROW is CHILD TABLE and we search in Rel.ParentTable
                 DataTable parentTable = rel.ParentTable;
-                if (parentTable.tableForPosting() != tablename) continue;
+                if (parentTable.tableForPosting() != tablename)
+                    continue;
                 try {
-                    if (rel.ChildTable.TableName != T.TableName) continue;
+                    if (rel.ChildTable.TableName != T.TableName)
+                        continue;
                     //string whereclause = QueryCreator.WHERE_REL_CLAUSE(ROW, rel.ChildColumns,rel.ParentColumns, toConsider, false);
                     //var rr = parentTable.Select(whereclause, null, DataViewRowState.CurrentRows);
-                    var rr = parentTable._Filter(q.mGetParents(ROW, rel, toConsider)); 
-                    int n = rr.Length;
-                    //if (n == 0) {
-                    //    rr = parentTable.Select(whereclause, null, DataViewRowState.Deleted);
-                    //    n = rr.Length;
-                    //}
-                    if (n != 1) continue;
+                    var rr = parentTable.filter(q.mGetParents(ROW, rel, toConsider));
+                    if (rr.Length != 1)
+                        continue;
                     Related[tablename] = rr[0];
                     return;
                 }
                 catch (Exception e) {
-                    errorLogger.logException("Errore in SEARCH_RELATED (2)(" + tablename + ")",e); 
-                    errorLogger.markException(e,"Error in RowChange.SearchRelated.");
+                    ErrorLogger.logException("Errore in SEARCH_RELATED (2)(" + tablename + ")", e);
+                    ErrorLogger.markException(e, "Error in RowChange.SearchRelated.");
                 }
             }//foreach DataRelation
 
         }
 
-	 
+
 
 
         #region AUTOINCREMENT FIELD GET/SET
@@ -357,7 +380,7 @@ namespace mdl {
         /// <param name="C"></param>
         /// <param name="ColumnName"></param>
         /// <param name="mask"></param>
-        public static void SetMySelector(DataColumn C,string ColumnName, ulong mask) {
+        internal static void setMySelector(DataColumn C, string ColumnName, ulong mask) {
             var amask = C.ExtendedProperties[MySelectorMask] as string;
             if (!(C.ExtendedProperties[MySelector] is string sel)) {
                 sel = ColumnName;
@@ -368,11 +391,12 @@ namespace mdl {
             }
             if (sel == ColumnName)
                 return;
-            if (sel.StartsWith(ColumnName+","))
+            if (sel.StartsWith(ColumnName + ","))
                 return;
             if (sel.EndsWith("," + ColumnName))
                 return;
-            if (sel.Contains(","+ColumnName+",")) return;
+            if (sel.Contains("," + ColumnName + ","))
+                return;
             sel = sel + "," + ColumnName;
             amask = amask + "," + mask.ToString();
 
@@ -381,17 +405,17 @@ namespace mdl {
         }
 
 
-		/// <summary>
-		/// Add a selector-column to the table. AutoIncrement columns are calculated between
-		///  equal selectors-column rows
-		/// </summary>
-		/// <param name="T"></param>
-		/// <param name="ColumnName"></param>
-		public static void SetSelector(DataTable T, string ColumnName){
-			DataColumn C = T.Columns[ColumnName];
-			C.ExtendedProperties[Selector]="y";
+        /// <summary>
+        /// Add a selector-column to the table. AutoIncrement columns are calculated between
+        ///  equal selectors-column rows
+        /// </summary>
+        /// <param name="T"></param>
+        /// <param name="ColumnName"></param>
+        internal static void setSelector(DataTable T, string ColumnName) {
+            DataColumn C = T.Columns[ColumnName];
+            C.ExtendedProperties[Selector] = "y";
             C.ExtendedProperties[SelectorMask] = null;
-		}
+        }
 
         /// <summary>
         /// Mark a column  as a general selector for a table
@@ -399,7 +423,7 @@ namespace mdl {
         /// <param name="T"></param>
         /// <param name="ColumnName"></param>
         /// <param name="mask"></param>
-        public static void SetSelector(DataTable T, string ColumnName, UInt64 mask) {
+        internal static void setSelector(DataTable T, string ColumnName, UInt64 mask) {
             DataColumn C = T.Columns[ColumnName];
             C.ExtendedProperties[Selector] = "y";
             C.ExtendedProperties[SelectorMask] = mask;
@@ -411,9 +435,9 @@ namespace mdl {
         /// </summary>
         /// <param name="T"></param>
         /// <param name="ColumnName"></param>
-		public static void ClearSelector(DataTable T, string ColumnName){
-			DataColumn C = T.Columns[ColumnName];
-			C.ExtendedProperties[Selector]=null;
+		internal static void clearSelector(DataTable T, string ColumnName) {
+            DataColumn C = T.Columns[ColumnName];
+            C.ExtendedProperties[Selector] = null;
             C.ExtendedProperties[SelectorMask] = null;
         }
 
@@ -422,7 +446,7 @@ namespace mdl {
         /// </summary>
         /// <param name="T"></param>
         /// <param name="ColumnName"></param>
-        public static void ClearMySelector(DataTable T, string ColumnName) {
+        internal static void clearMySelector(DataTable T, string ColumnName) {
             DataColumn C = T.Columns[ColumnName];
             C.ExtendedProperties[MySelector] = null;
             C.ExtendedProperties[MySelectorMask] = null;
@@ -430,22 +454,11 @@ namespace mdl {
 
 
         /// <summary>
-        /// Gets the selector combination for a DataRow
-        /// </summary>
-        /// <param name="DR"></param>
-        /// <param name="C"></param>
-        /// <param name="QH"></param>
-        /// <returns></returns>
-		public static string GetSelector(DataRow DR, DataColumn C, QueryHelper QH){
-			return GetSelector(DR.Table, DR, C, QH);
-		}
-
-        /// <summary>
         /// Gets all field selector for a datacolumn
         /// </summary>
         /// <param name="Col"></param>
         /// <returns></returns>
-        public static List<DataColumn> GetSelectors(DataColumn Col) {
+        internal static List<DataColumn> getSelectors(DataColumn Col) {
             var res = new List<DataColumn>();
             var T = Col.Table;
             foreach (DataColumn C in T.Columns) {
@@ -453,283 +466,184 @@ namespace mdl {
                     res.Add(C);
                 }
             }
-            if(!(Col.ExtendedProperties[MySelector] is string mysel)) return res;
+            if (!(Col.ExtendedProperties[MySelector] is string mysel))
+                return res;
 
-            string[] fname = mysel.Split(',');            
+            string[] fname = mysel.Split(',');
             for (int i = 0; i < fname.Length; i++) {
                 res.Add(T.Columns[fname[i]]);
             }
             return res;
         }
-		
-		/// <summary>
-		/// Gets a condition of all selector fields of a row
-		/// </summary>
-        /// <param name="T"></param>
-		/// <param name="DR"></param>
-        /// <param name="CC"></param>
-        /// <param name="QH"></param>
-		/// <returns></returns>
-		public static string GetSelector(DataTable T, DataRow DR, DataColumn CC, QueryHelper QH){            
-			string sel="";
-            bool onlykey = false; // QueryCreator.IsPrimaryKey(T, CC.ColumnName);
-            foreach (DataColumn C in T.Columns) {
-                if (onlykey) {
-                    if (!QueryCreator.IsPrimaryKey(T, C.ColumnName)) continue;
-                }
-                if (C.ExtendedProperties[Selector] != null) {
-                    if (C.ExtendedProperties[SelectorMask] != null) {
-                        if (DR[C.ColumnName] == DBNull.Value) {
-                            sel = QH.AppAnd(sel, QH.IsNull(C.ColumnName)); 
-                            continue;
-                        }
-                        var mask = (ulong) C.ExtendedProperties[SelectorMask] ;
-                        var val = Convert.ToUInt64( DR[C.ColumnName]);
-                        sel = QH.AppAnd(sel,QH.CmpMask(C.ColumnName,mask,val));
-                    }
-                    else {
-                        sel = QH.AppAnd(sel,QH.CmpEq(C.ColumnName,DR[C.ColumnName]));
-                    }
-                }
-            }
-            //Now gets the SPECIFIC selector
-            if(!(CC.ExtendedProperties[MySelector] is string mysel)) return sel;
-            string []fname = mysel.Split(',');
-            string[] fmask = CC.ExtendedProperties[MySelectorMask].ToString().Split(',');
-            for (int i = 0; i < fname.Length; i++) {
-                string col = fname[i];
-                if (onlykey) {
-                    if (!QueryCreator.IsPrimaryKey(T, col)) continue;
-                }
-                if (DR[col] == DBNull.Value) {
-                    sel = QH.AppAnd(sel, QH.IsNull(col));
-                    continue;
-                }
-                var mask = Convert.ToUInt64(fmask[i]);
-                var val = Convert.ToUInt64(DR[col]);                
-                sel = QH.AppAnd(sel, QH.CmpMask(col, mask, val));
-            }
-
-            return sel;
-		}
 
         /// <summary>
         /// Gets a condition of all selector fields of a row
         /// </summary>
-        /// <param name="T">Table row</param>
         /// <param name="DR"></param>
+        /// <param name="CC"></param>
         /// <param name="QH"></param>
         /// <returns></returns>
-        public static string GetAllSelectors(DataTable T, DataRow DR,  QueryHelper QH) {
-            string sel = "";
-            string allfield = "";
-            string allmask = "";
+        internal static MetaExpression getSelector(DataRow DR, DataColumn CC) {
+            DataTable T = DR.Table;
+            var clauses = new List<MetaExpression>(); //string sel=""
             foreach (DataColumn C in T.Columns) {
                 if (C.ExtendedProperties[Selector] != null) {
                     if (C.ExtendedProperties[SelectorMask] != null) {
-                        UInt64 mask = (UInt64)C.ExtendedProperties[SelectorMask];
-                        UInt64 val = Convert.ToUInt64(DR[C.ColumnName]);
-                        if (allfield == "") {
-                            allfield = C.ColumnName;
-                            allmask = val.ToString();
+                        if (DR[C.ColumnName] == DBNull.Value) {
+                            //sel = QH.AppAnd(sel, QH.IsNull(C.ColumnName)); 
+                            clauses.Add(q.isNull(C.ColumnName));
+                            continue;
                         }
-                        else {
-                            allfield += "," + C.ColumnName;
-                            allmask += "," + val.ToString();
-                        }
+                        var mask = (ulong)C.ExtendedProperties[SelectorMask];
+                        var val = Convert.ToUInt64(DR[C.ColumnName]);
+                        clauses.Add(q.cmpMask(C.ColumnName, mask, val)); //sel = QH.AppAnd(sel,QH.CmpMask(C.ColumnName,mask,val));
                     }
                     else {
-                        if (allfield == "") {
-                            allfield = C.ColumnName;
-                            allmask = "0";
-                        }
-                        else {
-                            allfield += "," + C.ColumnName;
-                            allmask += ",0";
-                        }
-
+                        clauses.Add(q.eq(C.ColumnName, DR[C.ColumnName]));//sel = QH.AppAnd(sel,QH.CmpEq(C.ColumnName,DR[C.ColumnName]));
                     }
                 }
-                if(!(C.ExtendedProperties[MySelector] is string mysel)) continue;
+            }
+            //Now gets the SPECIFIC selector
+            if (!(CC.ExtendedProperties[MySelector] is string mysel))
+                return q.and(clauses);
+            string[] fname = mysel.Split(',');
+            string[] fmask = CC.ExtendedProperties[MySelectorMask].ToString().Split(',');
+            return q.and(fname.Zip(fmask,
+                                (col, mask) => (DR[col] == DBNull.Value) ?
+                                                          q.isNull(col) :
+                                                          q.cmpMask(col, Convert.ToUInt64(mask), Convert.ToUInt64(DR[col])
+                                )));
+        }
+
+        /// <summary>
+        /// Gets an hash of all selector fields of a row (ex GetSelector)
+        /// </summary>
+        /// <param name="T">Table row</param>
+        /// <param name="DR"></param>
+        /// <returns></returns>
+        public static string GetHashSelectors(DataTable T, DataRow DR) {
+            var allSelectors = new HashSet<string>();
+            foreach (DataColumn C in T.Columns) {
+                if (C.ExtendedProperties[Selector] != null) { //C is a global selector
+                    allSelectors.Add(C.ColumnName);
+                }
+                if (!(C.ExtendedProperties[MySelector] is string mysel))
+                    continue;
                 string[] fname = mysel.Split(',');
                 string[] fmask = C.ExtendedProperties[MySelectorMask].ToString().Split(',');
-                for (int i = 0; i < fname.Length; i++) {
-                    if (allfield == fname[i]) continue;
-                    if (allfield.StartsWith(fname[i] + ",")) continue;
-                    if (allfield.EndsWith("," + fname[i])) continue;
-                    if (allfield.Contains("," + fname[i] + ",")) continue;
-                    var mask = Convert.ToUInt64(fmask[i]);
-                    
-                    if (allfield == "") {
-                        allfield = fname[i];
-                        allmask = mask.ToString();
-                    }
-                    else {
-                        allfield += "," + fname[i];
-                        allmask += ","+mask.ToString();
-                    }
-
-                }
-
-            }
-
-            //Now gets the SPECIFIC selector
-            string mysel2 = allfield;
-            if (mysel2 == "") return sel;
-            string[] fname2 = mysel2.Split(',');
-            string[] fmask2 = allmask.Split(',');
-            for (int i = 0; i < fname2.Length; i++) {
-                string col = fname2[i];
-                UInt64 mask = Convert.ToUInt64(fmask2[i]);
-                if (mask == 0) {
-                    sel = QH.AppAnd(sel, QH.CmpEq(col, DR[col]));
-                }
-                else {
-                    //if (mask == 0) continue;
-                    UInt64 val = Convert.ToUInt64(DR[col]);
-                    sel = QH.AppAnd(sel, QH.CmpMask(col, mask, val));
+                foreach (string f in fname) {
+                    allSelectors.Add(f);
                 }
             }
+            var orderedSel = allSelectors.ToArray().OrderBy(n => n).ToArray();
+            return String.Join(",", (from o in orderedSel select $"{o}:{DR[o]}"));
 
-            return sel;
         }
 
 
 
-		/// <summary>
-		/// Copy all autoincrement properties of a table into another one.
-		/// </summary>
-		/// <param name="In"></param>
-		/// <param name="Out"></param>
-		public static void CopyAutoIncrementProperties(DataTable In, DataTable Out){
-			foreach(DataColumn C in Out.Columns){
-				foreach (string prop in new string [] { 
-														  AutoIncrement, CustomAutoIncrement, 
-														   PrefixField, MiddleConst, IDLength,
-														  Selector, SelectorMask, MySelector, MySelectorMask,
-                    LinearField}){
-					copyproperty(In, Out, C.ColumnName, prop);
-				}
-			}
-		}
+        /// <summary>
+        /// Copy all autoincrement properties of a table into another one.
+        /// </summary>
+        /// <param name="In"></param>
+        /// <param name="Out"></param>
+        internal static void copyAutoIncrementProperties(DataTable In, DataTable Out) {
+            foreach (DataColumn C in Out.Columns) {
+                foreach (string prop in new string[] {
+                                                          AutoIncrement, CustomAutoIncrement,
+                                                           PrefixField, MiddleConst, IDLength,
+                                                          Selector, SelectorMask, MySelector, MySelectorMask,
+                    LinearField}) {
+                    copyproperty(In, Out, C.ColumnName, prop);
+                }
+            }
+        }
 
 
-		/// <summary>
-		/// Mark a column as an autoincrement, specifying how the calculated ID must be
-		///  composed.
-		/// </summary>
-		/// <param name="C">Column to set</param>
-		/// <param name="prefix">field of rows to be put in front of ID</param>
-		/// <param name="middle">middle constant part of ID</param>
-		/// <param name="length">length of the variable part of the ID</param>
-		/// <remarks>
-		/// The field will be calculated like:
-		/// [Row[PrefixField]] [MiddleConst] [LeftPad(newID, IDLength)]
-		/// so that, called the first part [Row[PrefixField]] [MiddleConst] as PREFIX,
-		/// if does not exists another row with the same PREFIX for the ID, the newID=1
-		/// else newID = max(ID of same PREFIX-ed rows) + 1
-		/// </remarks>
-		static public void MarkAsAutoincrement(DataColumn C, 
-				string prefix, 
-				string middle,
-				int length){
-			C.ExtendedProperties[AutoIncrement]="s";
-			C.ExtendedProperties[PrefixField]=prefix;
-			C.ExtendedProperties[MiddleConst]=middle;
-			C.ExtendedProperties[IDLength]=length;
-		}
 
-		/// <summary>
-		/// Set a DataColumn as "AutoIncrement", specifying how the calculated ID must be
-		///  composed.
-		/// </summary>
-		/// <param name="C">Column to set</param>
-		/// <param name="prefix">field of rows to be put in front of ID</param>
-		/// <param name="middle">middle constant part of ID</param>
-		/// <param name="length">length of the variable part of the ID</param>
-		/// <param name="linear">if true, Selector Fields, Middle Const and Prefix 
-		///		fields are not taken into account while calculating the field</param>
-		/// <remarks>
-		/// The field will be calculated like:
-		/// [Row[PrefixField]] [MiddleConst] [LeftPad(newID, IDLength)]
-		/// so that, called the first part [Row[PrefixField]] [MiddleConst] as PREFIX,
-		/// if does not exists another row with the same PREFIX for the ID, the newID=1
-		/// else newID = max(ID of same PREFIX-ed rows) + 1
-		/// </remarks>
-		static public void MarkAsAutoincrement(DataColumn C, 
-					string prefix, 
-					string middle,
-					int length, 
-					bool linear){
-			if (C==null){
-				
-				ErrorLogger.Logger.markEvent("Cant mark autoincrement a null Column");
-				return;
-			}
-			C.ExtendedProperties[AutoIncrement]="s";
-			C.ExtendedProperties[PrefixField]=prefix;
-			C.ExtendedProperties[MiddleConst]=middle;
-			C.ExtendedProperties[IDLength]=length;
-			if (linear) C.ExtendedProperties[LinearField]="1";
-		}
 
-		/// <summary>
-		/// Removes autoincrement property from a DataColumn
-		/// </summary>
-		/// <param name="C"></param>
-		static public void ClearAutoIncrement(DataColumn C){
-			C.ExtendedProperties[AutoIncrement]=null;
-		}
+        /// <summary>
+        /// Set a DataColumn as "AutoIncrement", specifying how the calculated ID must be
+        ///  composed.
+        /// </summary>
+        /// <param name="C">Column to set</param>
+        /// <param name="prefix">field of rows to be put in front of ID</param>
+        /// <param name="middle">middle constant part of ID</param>
+        /// <param name="length">length of the variable part of the ID</param>
+        /// <param name="linear">if true, Selector Fields, Middle Const and Prefix 
+        ///		fields are not taken into account while calculating the field</param>
+        /// <remarks>
+        /// The field will be calculated like:
+        /// [Row[PrefixField]] [MiddleConst] [LeftPad(newID, IDLength)]
+        /// so that, called the first part [Row[PrefixField]] [MiddleConst] as PREFIX,
+        /// if does not exists another row with the same PREFIX for the ID, the newID=1
+        /// else newID = max(ID of same PREFIX-ed rows) + 1
+        /// </remarks>
+        static internal void markAsAutoincrement(DataColumn C,
+                    string prefix,
+                    string middle,
+                    int length,
+                    bool linear = false) {
+            if (C == null) {
+                mdl.ErrorLogger.Logger.MarkEvent("Cant mark autoincrement a null Column");
+                return;
+            }
+            C.ExtendedProperties[AutoIncrement] = "s";
+            C.ExtendedProperties[PrefixField] = prefix;
+            C.ExtendedProperties[MiddleConst] = middle;
+            C.ExtendedProperties[IDLength] = length;
+            if (linear)
+                C.ExtendedProperties[LinearField] = "1";
+        }
 
-		/// <summary>
-		/// Tells whether a Column is a AutoIncrement 
-		/// </summary>
-		/// <param name="C"></param>
-		/// <returns>true if Column is Auto Increment</returns>
-		static public bool IsAutoIncrement(DataColumn C){
-			if (C.ExtendedProperties[AutoIncrement]!=null) return true; 
-			return false;
-		}
+        /// <summary>
+        /// Removes autoincrement property from a DataColumn
+        /// </summary>
+        /// <param name="C"></param>
+        static internal void clearAutoIncrement(DataColumn C) {
+            C.ExtendedProperties[AutoIncrement] = null;
+        }
+
+        /// <summary>
+        /// Tells whether a Column is a AutoIncrement 
+        /// </summary>
+        /// <param name="C"></param>
+        /// <returns>true if Column is Auto Increment</returns>
+        static internal bool isAutoIncrement(DataColumn C) {
+            if (C.ExtendedProperties[AutoIncrement] != null)
+                return true;
+            return false;
+        }
 
         /// <summary>
         /// Tells PostData to evaluate a specified column through the specified customFunction
         /// </summary>
         /// <param name="C">Column to evaluate</param>
         /// <param name="CustomFunction">delegate to call for evaluating autoincrement column</param>
-        [Obsolete]
-        static public void MarkAsCustomAutoincrement(DataColumn C, 
-			CustomCalcAutoID CustomFunction){
-			C.ExtendedProperties[CustomAutoIncrement]= CustomFunction;
-		}
+        static internal void markAsCustomAutoincrement(DataColumn C, CustomCalcAutoId CustomFunction) {
+            C.ExtendedProperties[CustomAutoIncrement] = CustomFunction;
+        }
 
 
-        /// <summary>
-        ///  Tells PostData to evaluate a specified column through the specified customFunction
-        /// </summary>
-        /// <param name="C"></param>
-        /// <param name="CustomFunction"></param>
-        static public void markAsCustomAutoincrement(DataColumn C,
-	        CustomCalcAutoId CustomFunction) {
-	        C.ExtendedProperties[CustomAutoIncrement] = CustomFunction;
-	    }
 
         /// <summary>
         /// Tells whether a Column is a Custom AutoIncrement one
         /// </summary>
         /// <param name="C"></param>
         /// <returns>true if Column is Custom Auto Increment</returns>
-        static public bool IsCustomAutoIncrement(DataColumn C){
-			if (C.ExtendedProperties[CustomAutoIncrement]!=null) return true;
-			return false;
-		}
+        static internal bool isCustomAutoIncrement(DataColumn C) {
+            if (C.ExtendedProperties[CustomAutoIncrement] != null)
+                return true;
+            return false;
+        }
 
-		/// <summary>
-		/// Removes Custom-autoincrement property from a DataColumn
-		/// </summary>
-		/// <param name="C"></param>
-		static public void ClearCustomAutoIncrement(DataColumn C){
-			C.ExtendedProperties[CustomAutoIncrement]=null;
-		}
+        /// <summary>
+        /// Removes Custom-autoincrement property from a DataColumn
+        /// </summary>
+        /// <param name="C"></param>
+        static internal void clearCustomAutoIncrement(DataColumn C) {
+            C.ExtendedProperties[CustomAutoIncrement] = null;
+        }
 
         #endregion
 
@@ -740,6 +654,8 @@ namespace mdl {
         /// </summary>
         public bool HasCustomAutoFields = false;
 
+
+
         /// <summary>
         /// Function called to evaluate a custom autoincrement column
         /// </summary>
@@ -747,18 +663,7 @@ namespace mdl {
         /// <param name="c">Column to evaluate</param>
         /// <param name="conn">Connection to database</param>
         /// <returns></returns>
-        [Obsolete]
-        public delegate object CustomCalcAutoID(DataRow dr, DataColumn c,DataAccess conn);
-
-
-	    /// <summary>
-	    /// Function called to evaluate a custom autoincrement column
-	    /// </summary>
-	    /// <param name="dr">DataRow evaluated</param>
-	    /// <param name="c">Column to evaluate</param>
-	    /// <param name="conn">Connection to database</param>
-	    /// <returns></returns>
-	    public delegate object CustomCalcAutoId(DataRow dr, DataColumn c, IDataAccess conn);
+        public delegate Task<object> CustomCalcAutoId(DataRow dr, DataColumn c, IDataAccess conn);
 
 
         /// <summary>
@@ -766,15 +671,15 @@ namespace mdl {
         /// </summary>
         /// <param name="DR">DataRow to insert</param>
         /// <param name="Conn"></param>
-        protected void CalcAutoID(DataRow DR,IDataAccess Conn){
-			DR.BeginEdit();
-			foreach (DataColumn C in DR.Table.Columns){
-				if (IsAutoIncrement(C)){
-					CalcAutoID(DR, C, Conn);
-				}
-			}            
-			DR.EndEdit();
-		}
+        protected async Task calcAutoID(DataRow DR, IDataAccess Conn) {
+            DR.BeginEdit();
+            foreach (DataColumn C in DR.Table.Columns) {
+                if (isAutoIncrement(C)) {
+                    await calcAutoID(DR, C, Conn);
+                }
+            }
+            DR.EndEdit();
+        }
 
         /// <summary>
         /// Tells PostData that the given table is optimized, i.e. autoincrement values have to be cached
@@ -782,13 +687,15 @@ namespace mdl {
         /// <param name="T"></param>
         /// <param name="isOptimized"></param>
         public static void SetOptimized(DataTable T, bool isOptimized) {
-            if (T == null) return;
+            if (T == null)
+                return;
             if (!isOptimized) {
                 T.ExtendedProperties["isOptimized"] = null;
                 return;
             }
-            if (T.ExtendedProperties["isOptimized"] != null) return;
-            T.ExtendedProperties["isOptimized"] = new Dictionary<string,int>();
+            if (T.ExtendedProperties["isOptimized"] != null)
+                return;
+            T.ExtendedProperties["isOptimized"] = new Dictionary<string, int>();
         }
 
         /// <summary>
@@ -796,8 +703,10 @@ namespace mdl {
         /// </summary>
         /// <param name="T"></param>
         public static void ClearMaxCache(DataTable T) {
-            if (T == null) return;
-            if (T.ExtendedProperties["isOptimized"] == null) return;
+            if (T == null)
+                return;
+            if (T.ExtendedProperties["isOptimized"] == null)
+                return;
             T.ExtendedProperties["isOptimized"] = new Dictionary<string, int>();
         }
 
@@ -807,7 +716,8 @@ namespace mdl {
         /// <param name="T"></param>
         /// <returns></returns>
         public static bool IsOptimized(DataTable T) {
-            if (T == null) return false;
+            if (T == null)
+                return false;
             return (T.ExtendedProperties["isOptimized"] != null);
         }
 
@@ -818,8 +728,9 @@ namespace mdl {
         /// <param name="expr">expression for the max</param>
         /// <param name="filter">filter applied</param>
         /// <param name="num">new maximum to set</param>
-        public static void SetMaxExpr(DataTable T, string expr, string filter,int num) {
-            if(!(T.ExtendedProperties["isOptimized"] is Dictionary<string, int> h)) return;
+        protected static void setMaxExpr(DataTable T, string expr, string filter, int num) {
+            if (!(T.ExtendedProperties["isOptimized"] is Dictionary<string, int> h))
+                return;
             h[expr + "§" + filter] = num;
         }
 
@@ -831,86 +742,57 @@ namespace mdl {
         /// <param name="filter">filter to apply</param>
         /// <param name="minimum">minimum value wanted</param>
         /// <returns></returns>
-        public static int GetMaxExpr(DataTable T, string expr, string filter,int minimum) {
+        protected static int getMaxExpr(DataTable T, string expr, string filter, int minimum) {
             var h = T.ExtendedProperties["isOptimized"] as Dictionary<string, int>;
-            string k=expr + "§" + filter;
-            int res=minimum;
+            string k = expr + "§" + filter;
+            int res = minimum;
             if (h.ContainsKey(k)) {
-                res= h[k];
+                res = h[k];
             }
             h[k] = res + 1;
             return res;
         }
-        
+
         /// <summary>
         /// Sets mininimum value for evaluating temporary autoincrement columns
         /// </summary>
         /// <param name="C"></param>
         /// <param name="min"></param>
-        public static void setMinimumTempValue(DataColumn C,int min){
+        public static void SetMinimumTempValue(DataColumn C, int min) {
             C.ExtendedProperties["minimumTempValue"] = min;
         }
 
-        static string MAX_SUBSTRING(DataRow R,
+        static string maxSubstring(DataRow R,
             string colname,
             int start,
             int len,
             string filter) {
-                int minimum = 0;
-                if (R.Table.Columns[colname].ExtendedProperties["minimumTempValue"] != null) {
-                    minimum = Convert.ToInt32(R.Table.Columns[colname].ExtendedProperties["minimumTempValue"]);
-                }
-                DataTable T = R.Table;
-                if (!IsOptimized(T)) {
-                    int n = MAX_SUBSTRING_OLD(T, colname, start, len, filter);
-                    if (n < minimum) n = minimum;
-                    return n.ToString();
-                }
-                string expr = colname + "," + len;
-                int res = GetMaxExpr(T, expr, filter,minimum);
-                if (res > 0) return res.ToString();
-                
-            /*
-             * 2/6/2014: ritengo sbagliata l'ottimizzazione sottostante, qui stiamo parlando di righe in memoria non su db
-             *  pertanto l'essere la riga padre in stato di insert non dice nulla sui valori assunti dalle figlie in memoria,
-             *  se sto chiamando questa funzione è perchè  voglio aumentare il valore del campo ad autoincremento per non avere
-             *   conflitti IN MEMORIA 
-            //Vede tutte le parent relation in cui sia contenuta una colonna chiave di R e che sia pure in selectors.
-            // se trova una parent relation del genere, in cui il parent row sia uno, e in cui la colonna parent 
-            //  sia un campo ad autoincremento per il parent, ed il parent è in stato di ADDED
-            //  ALLORA
-            //  PUO' EVITARSI LA SELECT e restituire direttamente 0
-                DataColumn C = T.Columns[colname];
-            List<DataColumn> selectors = RowChange.GetSelectors(C);
-            foreach (DataColumn sel in selectors) {
-                if (!QueryCreator.IsPrimaryKey(T, sel.ColumnName)) continue;
-                foreach (DataRelation parRel in R.Table.ParentRelations) {
-                    DataRow[] parRow = R.GetParentRows(parRel);
-                    if (parRow.Length != 1) continue;
-                    DataRow parent = parRow[0];
-                    if (parent.RowState != DataRowState.Added) continue;
-                    //vede il nome della colonna corrispondente al selettore sel, nel parent
-                    DataColumn parentCol = null;
-                    for (int i = 0; i < parRel.ChildColumns.Length; i++) {
-                        if (parRel.ChildColumns[i] == sel) {
-                            parentCol = parRel.ParentColumns[i];
-                        }
-                    }
-                    if (parentCol == null) continue;
-                    if (!RowChange.IsAutoIncrement(parentCol)) continue;
-                    return minimum.ToString(); //THIS IS THE CASE!!!!!
-                }
+            int minimum = 0;
+            if (R.Table.Columns[colname].ExtendedProperties["minimumTempValue"] != null) {
+                minimum = Convert.ToInt32(R.Table.Columns[colname].ExtendedProperties["minimumTempValue"]);
             }
-            */
-            res =  MAX_SUBSTRING_OLD(T, colname, start, len, filter);
-            if (res < minimum) res = minimum;
-            SetMaxExpr(T, expr, filter, res+1);
+            DataTable T = R.Table;
+            if (!IsOptimized(T)) {
+                int n = maxSubstringClean(T, colname, start, len, filter);
+                if (n < minimum)
+                    n = minimum;
+                return n.ToString();
+            }
+            string expr = colname + "," + len;
+            int res = getMaxExpr(T, expr, filter, minimum);
+            if (res > 0)
+                return res.ToString();
+
+
+            res = maxSubstringClean(T, colname, start, len, filter);
+            if (res < minimum)
+                res = minimum;
+            setMaxExpr(T, expr, filter, res + 1);
             return res.ToString();
         }
 
 
-
-        static int MAX_SUBSTRING_OLD(DataTable T,
+        static int maxSubstringClean(DataTable T,
             string colname,
             int start,
             int len,
@@ -936,10 +818,13 @@ namespace mdl {
                     //if (R.RowState == DataRowState.Deleted) continue;
                     //if (R.RowState == DataRowState.Detached) continue;
                     string s = r[colname].ToString();
-                    if (s.Length <= start) continue;
+                    if (s.Length <= start)
+                        continue;
                     int thislen = len;
-                    if (thislen == 0) thislen = s.Length - start;
-                    if (start + thislen > s.Length) thislen = s.Length - start;
+                    if (thislen == 0)
+                        thislen = s.Length - start;
+                    if (start + thislen > s.Length)
+                        thislen = s.Length - start;
                     string substr = s.Substring(start, thislen);
                     if (MAX == null) {
                         MAX = substr;
@@ -960,7 +845,8 @@ namespace mdl {
                         }
 
                         //if (substr.CompareTo(MAX)>0) MAX=substr;
-                        if (xx > maxsub) maxsub = xx;
+                        if (xx > maxsub)
+                            maxsub = xx;
                     }
                 }
             }
@@ -968,10 +854,13 @@ namespace mdl {
             foreach (var r in filteredDeletedRows) {
                 //if (R.RowState != DataRowState.Deleted) continue;
                 string s = r[colname, DataRowVersion.Original].ToString();
-                if (s.Length <= start) continue;
+                if (s.Length <= start)
+                    continue;
                 int thislen = len;
-                if (thislen == 0) thislen = s.Length - start;
-                if (start + thislen > s.Length) thislen = s.Length - start;
+                if (thislen == 0)
+                    thislen = s.Length - start;
+                if (start + thislen > s.Length)
+                    thislen = s.Length - start;
                 string substr = s.Substring(start, thislen);
                 if (MAX == null) {
                     MAX = substr;
@@ -992,7 +881,8 @@ namespace mdl {
                     }
 
                     //if (substr.CompareTo(MAX)>0) MAX=substr;
-                    if (xx > maxsub) maxsub = xx;
+                    if (xx > maxsub)
+                        maxsub = xx;
                 }
 
             }
@@ -1001,105 +891,92 @@ namespace mdl {
         }
 
 
+
+
         /// <summary>
-        /// Evaluate a temporary column of a DataRow
+        /// Evaluates a temporary value for a field of a row, basing on AutoIncrement 
+        ///  properties of the column, without reading from DB.
         /// </summary>
         /// <param name="R"></param>
         /// <param name="C"></param>
-		public static void CalcTemporaryID(DataRow R, DataColumn C){
-			CalcTemporaryID(R.Table, R, C);
-		}
-
-
-		/// <summary>
-		/// Evaluates a temporary value for a field of a row, basing on AutoIncrement 
-		///  properties of the column, without reading from DB.
-		/// </summary>
-		/// <param name="T"></param>
-		/// <param name="R"></param>
-		/// <param name="C"></param>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "<Pending>")]
-		public static void CalcTemporaryID(DataTable T, DataRow R, DataColumn C){
-            var QHC = new CQueryHelper();
-			string Prefix="";
-            if((C.ExtendedProperties[PrefixField] != null) &&
+        internal static void calcTemporaryID(DataRow R, DataColumn C) {
+            string Prefix = "";
+            if ((C.ExtendedProperties[PrefixField] != null) &&
                 (C.ExtendedProperties[PrefixField] != DBNull.Value)) {
                 Prefix += R[C.ExtendedProperties[PrefixField].ToString()].ToString();
             }
-            if ((C.ExtendedProperties[MiddleConst]!=null)&&
-				(C.ExtendedProperties[MiddleConst]!=DBNull.Value))  {
-				Prefix+= C.ExtendedProperties[MiddleConst].ToString();
-			}
-			int idSize=7;//default
+            if ((C.ExtendedProperties[MiddleConst] != null) &&
+                (C.ExtendedProperties[MiddleConst] != DBNull.Value)) {
+                Prefix += C.ExtendedProperties[MiddleConst].ToString();
+            }
+            int idSize = 7;//default
             int totPrefsize = Prefix.Length;
-            
 
-            if ((C.ExtendedProperties[IDLength]!=null) &&
-				(C.ExtendedProperties[IDLength]!=DBNull.Value)){
-				idSize= Convert.ToInt32(C.ExtendedProperties[IDLength].ToString());
-			}
 
-            if ((C.DataType == typeof(int)) || (C.DataType == typeof(short)) || (C.DataType == typeof(long))) {
-                if (totPrefsize == 0) idSize = 0;
+            if ((C.ExtendedProperties[IDLength] != null) &&
+                (C.ExtendedProperties[IDLength] != DBNull.Value)) {
+                idSize = Convert.ToInt32(C.ExtendedProperties[IDLength].ToString());
             }
 
-            string Selection = GetSelector(R,C,QHC);
-			string newIdvalue="1";
+            if ((C.DataType == typeof(int)) || (C.DataType == typeof(short)) || (C.DataType == typeof(long))) {
+                if (totPrefsize == 0)
+                    idSize = 0;
+            }
 
-			if (C.ExtendedProperties[LinearField]!=null){
-				string filter=null;
-				if (Selection!="") {
-					filter = Selection;
-				}
+            var Selection = getSelector(R, C).toADO();
+            string newIdvalue = "1";
 
-				string MAX = MAX_SUBSTRING(R, C.ColumnName,totPrefsize,idSize, filter);
+            if (C.ExtendedProperties[LinearField] != null) {
+                string MAX = maxSubstring(R, C.ColumnName, totPrefsize, idSize, Selection);
 
-				if (MAX!=null){
-					int intFOUND2 = 0;
-					try {
-						intFOUND2 = Convert.ToInt32(MAX);
-					}
-				    catch {
-				        // ignored
-				    }
+                if (MAX != null) {
+                    int intFOUND2 = 0;
+                    try {
+                        intFOUND2 = Convert.ToInt32(MAX);
+                    }
+                    catch {
+                        // ignored
+                    }
 
-				    intFOUND2 += 1;
-					newIdvalue = intFOUND2.ToString();
-				}
-			}
-			else {
-				string SelCmd = $"MAX(CONVERT({C.ColumnName},'System.Int32'))";
-				string filter2="";
-				if (Prefix!="") filter2 = $"(CONVERT({C.ColumnName},'System.String') LIKE '{Prefix}%') ";
-				if (Selection!="") {
-					if (filter2!="") filter2 += " AND ";
-					filter2 += Selection;
-				}
+                    intFOUND2 += 1;
+                    newIdvalue = intFOUND2.ToString();
+                }
+            }
+            else {
+                //string SelCmd = $"MAX(CONVERT({C.ColumnName},'System.Int32'))";
+                string filter2 = "";
+                if (Prefix != "")
+                    filter2 = $"(CONVERT({C.ColumnName},'System.String') LIKE '{Prefix}%') ";
+                if (Selection != "") {
+                    if (filter2 != "")
+                        filter2 += " AND ";
+                    filter2 += Selection;
+                }
 
-				object MAXv2 =  MAX_SUBSTRING(R,C.ColumnName,Prefix.Length,idSize,filter2);
-						//T.Compute(SelCmd, filter2);
-				string MAX2=null;
-				if ((MAXv2!=null)&&(MAXv2!=DBNull.Value)) MAX2 = MAXv2.ToString();
+                object MAXv2 = maxSubstring(R, C.ColumnName, Prefix.Length, idSize, filter2); //T.Compute(SelCmd, filter2);
+                string MAX2 = null;
+                if ((MAXv2 != null) && (MAXv2 != DBNull.Value))
+                    MAX2 = MAXv2.ToString();
 
-				if (MAX2!=null){
-					string foundSubstr=MAXv2.ToString();
+                if (MAX2 != null) {
+                    string foundSubstr = MAXv2.ToString();
 
-					int intFound=0;
-					if (foundSubstr!=""){
-						try {
-							intFound = Convert.ToInt32(foundSubstr);
-						}
-					    catch {
-					        // ignored
-					    }
-					}
-					intFound += 1;
-					newIdvalue = intFound.ToString();
-				}
-			}
+                    int intFound = 0;
+                    if (foundSubstr != "") {
+                        try {
+                            intFound = Convert.ToInt32(foundSubstr);
+                        }
+                        catch {
+                            // ignored
+                        }
+                    }
+                    intFound += 1;
+                    newIdvalue = intFound.ToString();
+                }
+            }
 
             string NEWID;
-            if(idSize != 0) {
+            if (idSize != 0) {
                 NEWID = Prefix + newIdvalue.PadLeft(idSize, '0');
             }
             else {
@@ -1107,118 +984,127 @@ namespace mdl {
             }
 
             object oo = NEWID;
-			if (C.DataType== typeof(int)) oo = Convert.ToInt32(oo);
+            if (C.DataType == typeof(int))
+                oo = Convert.ToInt32(oo);
 
-			//Applies changes to CHILD rows of R (only necessary while resolving conflicts in POST)
-			if (!oo.Equals(R[C.ColumnName])) {
+            //Applies changes to CHILD rows of R (only necessary while resolving conflicts in POST)
+            if (!oo.Equals(R[C.ColumnName])) {
                 //Non cerca di riassegnare i figli quando il vecchio valore era stringa vuota, altrimenti capita che 
                 // quelli senza parent (ossia il root) gli vengano assegnati come figli
                 //if (R[C.ColumnName].ToString()!="") 
-	                Cascade_Change_Field(R, C, oo);
-				R[C.ColumnName]=oo;
-			}
-			
-		}
+                cascadeChangeField(R, C, oo);
+                R[C.ColumnName] = oo;
+            }
+
+        }
+
+
 
 
         /// <summary>
-        /// Evaluates all temporary columns of a row
+        /// Evaluates temporary values for autoincrement columns  (reading from memory)
         /// </summary>
         /// <param name="r"></param>
-		public static void CalcTemporaryID(DataRow r){
-			CalcTemporaryID(r.Table, r);
-		}
+        /// <param name="T">Table to consider for autoincrement properties</param>
+        /// <remarks>This function should be called when a row is added to a table, 
+        ///   between DataTable.NewRow() and DataTable.Rows.Add()
+        ///  </remarks>
+        public static void CalcTemporaryID(DataRow r, DataTable T = null) {
+            if (T == null) {
+                T = r.Table;
+            }
+            r.BeginEdit();
+            foreach (DataColumn c in T.Columns) {
+                if (c.IsAutoIncrement()) {
+                    calcTemporaryID(r, c);
+                }
+            }
+            r.EndEdit();
+        }
 
-		/// <summary>
-		/// Evaluates temporary values for autoincrement columns  (reading from memory)
-		/// </summary>
-        /// <param name="T"></param>
-		/// <param name="r"></param>
-		/// <remarks>This function should be called when a row is added to a table, 
-		///   between DataTable.NewRow() and DataTable.Rows.Add()
-		///  </remarks>
-		public static void CalcTemporaryID(DataTable T,  DataRow r){
-			r.BeginEdit();
-			foreach (DataColumn c in T.Columns){
-				if (IsAutoIncrement(c)){
-					CalcTemporaryID(T, r, c);
-				}
-			}            
-			r.EndEdit();
-		}
-
-		/// <summary>
-		/// Evaluates a value for a specified key field of a row (reading from db)
-		/// </summary>
-		/// <param name="conn"></param>
-		/// <param name="dr">DataRow to insert</param>
-		/// <param name="c">Column to evaluate ID</param>
-		/// <remarks>The function takes some parameter from DataColumn ExtendedProperties:
-		/// PrefixField = Row Field to consider as a prefix for the ID value
-		/// MiddleConst = Constant to append to PrefixField 
-		/// IDLength    = Length of automatic calculated ID
-		/// </remarks>
-		protected void CalcAutoID(DataRow dr, DataColumn c, IDataAccess conn){
-			var prefix="";
-			object newid="";
+        /// <summary>
+        /// Evaluates a value for a specified key field of a row (reading from db)
+        /// </summary>
+        /// <param name="conn"></param>
+        /// <param name="dr">DataRow to insert</param>
+        /// <param name="c">Column to evaluate ID</param>
+        /// <remarks>The function takes some parameter from DataColumn ExtendedProperties:
+        /// PrefixField = Row Field to consider as a prefix for the ID value
+        /// MiddleConst = Constant to append to PrefixField 
+        /// IDLength    = Length of automatic calculated ID
+        /// </remarks>
+        protected async Task calcAutoID(DataRow dr, DataColumn c, IDataAccess conn) {
+            var prefix = "";
+            object newid = "";
             var qhs = conn.GetQueryHelper();
 
-			if (!IsCustomAutoIncrement(c)){
-				if ((c.ExtendedProperties[PrefixField]!=null)&&
-					(c.ExtendedProperties[PrefixField]!=DBNull.Value)){
-					prefix+= dr[c.ExtendedProperties[PrefixField].ToString()].ToString();
-				}
-				if ((c.ExtendedProperties[MiddleConst]!=null)&&
-					(c.ExtendedProperties[MiddleConst]!=DBNull.Value))  {
-					prefix+= c.ExtendedProperties[MiddleConst].ToString();
-				}
-				int idSize=0;
-				if ((c.ExtendedProperties[IDLength]!=null) &&
-					(c.ExtendedProperties[IDLength]!=DBNull.Value)){
-					idSize= Convert.ToInt32(c.ExtendedProperties[IDLength].ToString());
-				}
-				int totPrefsize=prefix.Length;
+            if (c.IsCustomAutoIncrement()) {
+                if (c.ExtendedProperties[CustomAutoIncrement] is CustomCalcAutoId fun) {
+                    newid = await fun(dr, c, conn);
+                    HasCustomAutoFields = true;
+                }
+            }
+            else {
+                if ((c.ExtendedProperties[PrefixField] != null) &&
+                    (c.ExtendedProperties[PrefixField] != DBNull.Value)) {
+                    prefix += dr[c.ExtendedProperties[PrefixField].ToString()].ToString();
+                }
+                if ((c.ExtendedProperties[MiddleConst] != null) &&
+                    (c.ExtendedProperties[MiddleConst] != DBNull.Value)) {
+                    prefix += c.ExtendedProperties[MiddleConst].ToString();
+                }
+                int idSize = 0;
+                if ((c.ExtendedProperties[IDLength] != null) &&
+                    (c.ExtendedProperties[IDLength] != DBNull.Value)) {
+                    idSize = Convert.ToInt32(c.ExtendedProperties[IDLength].ToString());
+                }
+                int totPrefsize = prefix.Length;
 
-				string Selection =GetSelector(dr,c,qhs);
+                var Selection = getSelector(dr, c); //.toSql(qhs);
 
 
-                if((c.DataType == typeof(int)) || (c.DataType == typeof(short)) || (c.DataType == typeof(long))) {
-                    if(totPrefsize == 0)
+                if ((c.DataType == typeof(int)) || (c.DataType == typeof(short)) || (c.DataType == typeof(long))) {
+                    if (totPrefsize == 0)
                         idSize = 0;
                 }
 
 
                 string expr2;
-                if((c.DataType == typeof(int)) || (c.DataType == typeof(short)) || (c.DataType == typeof(long))) {
-                    expr2 = $"MAX({c.ColumnName})";
+                if ((c.DataType == typeof(int)) || (c.DataType == typeof(short)) || (c.DataType == typeof(long))) {
+                    expr2 = qhs.Max(c.ColumnName); //$"MAX({c.ColumnName})";
                 }
                 else
-                    expr2 = $"MAX(CONVERT(int,{c.ColumnName}))";
+                    expr2 = qhs.Max(qhs.ConvertToInt(c.ColumnName));  //$"MAX(CONVERT(int,{c.ColumnName}))";
 
-                if ((totPrefsize>0)||(idSize>0)){ //C'è da fare il substring
-					int idToextr= idSize;
-					if (idToextr==0) idToextr=12;
-					string colnametoconsider=c.ColumnName;
-					if (c.DataType!=typeof(String)) 
-						colnametoconsider= $"CONVERT(VARCHAR(300),{c.ColumnName})";
-					expr2	  = $"MAX(CONVERT(int,SUBSTRING({colnametoconsider},{(totPrefsize+1)},{idToextr})))";
-				}
-				if (c.ExtendedProperties[LinearField]==null){
-					string filter2="";
-					if (prefix!="") filter2 = $"({c.ColumnName} LIKE '{prefix}%') ";
-					Selection= GetData.MergeFilters(Selection,filter2);
-				}
-                string unaliased = DataAccess.GetTableForReading(dr.Table);
+                if ((totPrefsize > 0) || (idSize > 0)) { //C'è da fare il substring
+                    int idToextr = idSize;
+                    if (idToextr == 0)
+                        idToextr = 12;
+                    string colnametoconsider = c.ColumnName;
+                    if (c.DataType != typeof(String)) {
+                        colnametoconsider = qhs.ConvertToVarchar(c.ColumnName, 300);
+                        //colnametoconsider = $"CONVERT(VARCHAR(300),{c.ColumnName})";
+                    }
+                    expr2 = qhs.Max(qhs.ConvertToInt(qhs.Sustring(colnametoconsider, totPrefsize + 1, idToextr)));
+                    //$"MAX(CONVERT(int,SUBSTRING({colnametoconsider},{(totPrefsize + 1)},{idToextr})))";
+                }
+                if (c.ExtendedProperties[LinearField] == null) {
+                    if (prefix != "") {
+                        Selection &= q.like(c.ColumnName, prefix + "%"); //qhs.DoPar(qhs.Like(c.ColumnName,prefix+"%"));
+                        //filter2 = $"({c.ColumnName} LIKE '{prefix}%') ";
+                    }
+                }
+                string unaliased = dr.Table.tableForReading();
 
                 object result2;
-                if (myCollection != null) 
-                    result2 = myCollection.getMax(dr,c, conn, unaliased, Selection, expr2);
+                if (myCollection != null)
+                    result2 = myCollection.getMax(dr, c, conn, unaliased, Selection.toADO(), expr2);
                 else
-                    result2 = conn.DO_READ_VALUE(unaliased, Selection, expr2);
+                    result2 = await conn.ReadValue(table: unaliased, filter: Selection, expr: expr2);
 
 
                 string newIDVALUE;
-                if((result2 == null) || (result2 == DBNull.Value)) {
+                if ((result2 == null) || (result2 == DBNull.Value)) {
                     newIDVALUE = "1";
                 }
                 else {
@@ -1235,36 +1121,22 @@ namespace mdl {
                     newIDVALUE = intFound2.ToString();
                 }
 
-                myCollection?.SetMax(unaliased, Selection, expr2, newIDVALUE);
+                myCollection?.SetMax(unaliased, Selection.toADO(), expr2, newIDVALUE);
 
-			    if (idSize!=0){
-					newid = prefix+newIDVALUE.PadLeft(idSize, '0');
-				}
-				else {
-					newid = prefix+newIDVALUE;
-				}
-                
-
-			}
-			else {
-#pragma warning disable 612
-                if(c.ExtendedProperties[CustomAutoIncrement] is CustomCalcAutoID fun) {
-#pragma warning restore 612
-                    newid = fun(dr, c, conn as DataAccess);
-                    HasCustomAutoFields = true;
+                if (idSize != 0) {
+                    newid = prefix + newIDVALUE.PadLeft(idSize, '0');
                 }
                 else {
-                    if(c.ExtendedProperties[CustomAutoIncrement] is CustomCalcAutoId funNew) {
-                        newid = funNew(dr, c, conn);
-                        HasCustomAutoFields = true;
-                    }
+                    newid = prefix + newIDVALUE;
                 }
+
 
             }
 
 
-			var temp = dr.Table.NewRow();
-			foreach (DataColumn CC in dr.Table.Columns) temp[CC]= dr[CC];
+            var temp = dr.Table.NewRow();
+            foreach (DataColumn CC in dr.Table.Columns)
+                temp[CC] = dr[CC];
             //if(C.AllowDBNull && NEWID == "") {
             //    Temp[C] = DBNull.Value;
             //}
@@ -1274,255 +1146,190 @@ namespace mdl {
             temp[c] = newid;
 
             if (!IsOptimized(dr.Table)) {
-	            var keyfilter = q.keyCmp(temp);
-								//QueryCreator.WHERE_KEY_CLAUSE(temp, DataRowVersion.Default, false);
-                var found = dr.Table._Filter(keyfilter);	//.Select(keyfilter);
+                var keyfilter = q.keyCmp(temp);
+                //QueryCreator.WHERE_KEY_CLAUSE(temp, DataRowVersion.Default, false);
+                var found = dr.Table.filter(keyfilter);	//.Select(keyfilter);
                 foreach (var rfound in found) {
-                    if (rfound == dr) continue;
+                    if (rfound == dr)
+                        continue;
                     CalcTemporaryID(rfound);
                 }
             }
 
-			object oo = newid;
-			if (c.DataType== typeof(int)&& (oo!=DBNull.Value)) oo = Convert.ToInt32(oo);
+            object oo = newid;
+            if (c.DataType == typeof(int) && (oo != DBNull.Value))
+                oo = Convert.ToInt32(oo);
 
 
-			//Applies changes to CHILD rows of R
-			if (!oo.Equals(dr[c])) {
-				Cascade_Change_Field(dr, c, oo);
-				dr[c]=oo;
-			}
-			
-
-		}
-
-
-
-		#endregion
-
-		#region Recursive operations (field change / row delete) 
-
-
-		/// <summary>
-		/// Changes R's child rows to reflect variation of R[ColumnToChange]= newvalue
-		/// </summary>
-		/// <param name="R"></param>
-		/// <param name="ColumnToChange"></param>
-		/// <param name="newvalue"></param>
-		public static void Cascade_Change_Field(DataRow R, DataColumn ColumnToChange, object newvalue){
-			foreach(DataRelation Rel in R.Table.ChildRelations){
-				//checks if Rel includes "ColumnToChange" column of R
-				for (int i=0; i< Rel.ChildColumns.Length; i++){
-					DataColumn C = Rel.ParentColumns[i];
-					if (C.ColumnName==ColumnToChange.ColumnName){
-						DataColumn ChildColumnToChange = Rel.ChildColumns[i];
-						foreach(DataRow ChildRow in R.iGetChildRows(Rel)) {
-							if (R.RowState == DataRowState.Deleted) continue;
-							Cascade_Change_Field(ChildRow, ChildColumnToChange, newvalue);
-							ChildRow[ChildColumnToChange.ColumnName]= newvalue;
-						}
-					}
-				}
-			}
-		}
-        
-
-		/// <summary>
-		/// Deletes DataRow R and all it's sub-entities
-		/// </summary>
-		/// <param name="toDelete"></param>
-		public  static void ApplyCascadeDelete(List <DataRow> toDelete) {
-			if (toDelete.Count == 0) return;
-			var childForTables = new Dictionary<string, List<DataRow>>();
-			
-	        //return iManager?.getChildRows(rParent, rel)
-			//
-
-			DataTable Parent = toDelete[0].Table;
-			var iManager = Parent.DataSet?.getIndexManager();
-			var rowForTable = new Dictionary<string, int>();
-			foreach (DataRelation Rel in Parent.ChildRelations) {
-				DataTable Child = Rel.ChildTable;
-				if (!rowForTable.TryGetValue(Child.TableName, out int nRow)) {
-					nRow = Child.Select().Length;
-					rowForTable[Child.TableName] = nRow;
-				}
-
-				if (nRow == 0) continue;
-                //Cancella le figlie nella tabella Child
-                var isSubRel = model.isSubEntityRelation(Rel);
-				foreach (DataRow R in toDelete) {
-					DataRow[] ChildRows = iManager?.getChildRows(R, Rel) ?? R.GetChildRows(Rel);
-					int nChilds = ChildRows.Length;
-					if (nChilds == 0) continue;
-					if (isSubRel) {
-						if (!childForTables.TryGetValue(Child.TableName, out var list)){
-							list = new List<DataRow>();
-							childForTables[Child.TableName] = list;
-						}
-
-						list.AddRange(ChildRows);
-						nRow -= nChilds;
-						rowForTable[Child.TableName] = nRow;
-						if (nRow == 0) break;
-					}
-					else {
-						foreach (DataRow RChild in ChildRows) {
-							//if (RChild.RowState== DataRowState.Deleted) continue;
-							for (int i = 0; i < Rel.ChildColumns.Length; i++) {
-								DataColumn CChild = Rel.ChildColumns[i];
-								DataColumn CParent = Rel.ParentColumns[i];
-								if (!CChild.AllowDBNull) continue;
-								if (QueryCreator.IsPrimaryKey(RChild.Table, CChild.ColumnName)) continue;
-								if (!QueryCreator.IsPrimaryKey(Parent, CParent.ColumnName)) continue;
-								RChild[CChild.ColumnName] = DBNull.Value;
-							}
-						}
-					}
-				}
-
-			}
-
-			foreach (var list in childForTables.Values) {
-				ApplyCascadeDelete(list);
-			}
-
-			staticModel.invokeActions(Parent,TableAction.beginLoad);
-
-			//if (toDelete.Count > 2000) {
-			//	int blockSize = 1000;
-			//	int nBlocks = toDelete.Count / blockSize;
-			//	var task = new Task[nBlocks];
-			//	int last = 0;
-			//	for (int i = 0; i < nBlocks; i++) {
-			//		int min = last;
-			//		int max = last + blockSize-1;
-			//		if (i == nBlocks - 1) max = toDelete.Count - 1;
-			//		task[i] =  Task.Run(() => deleteAsync(toDelete,min,max));
-			//		last = max + 1;
-                    
-			//	}
-
-			//	Task.WaitAll(task);
-			//}
-			//else {
-				foreach (DataRow R in toDelete) {
-					R.Delete();
-				}
-			//}
-
-			staticModel.invokeActions(Parent,TableAction.endLoad);
-
-		}
-		private static IMetaModel staticModel = MetaFactory.factory.getSingleton<IMetaModel>();
-
-		static void deleteAsync(List<DataRow> l, int start, int stop) {
-			for (int j = start; j <= stop; j++) l[j].Delete();
-		}
-		static IMetaModel model = MetaFactory.factory.getSingleton<IMetaModel>();
-
-		/// <summary>
-		/// Deletes DataRow R and all it's sub-entities
-		/// </summary>
-		/// <param name="r"></param>
-		public static void ApplyCascadeDelete (DataRow r) {
-			int handle = mdl_utils.metaprofiler.StartTimer("ApplyCascadeDelete");
-			ApplyCascadeDelete(new List<DataRow>(){r});
-
-            mdl_utils.metaprofiler.StopTimer(handle);
-            
-		}
-
-
-		///// <summary>
-		///// Undo a stack of deletions
-		///// </summary>
-		///// <param name="RollBack"></param>
-		//public static void RollBackDeletes (Stack RollBack){
-		//	while (RollBack.Count>0){
-		//		DataRow R = (DataRow) RollBack.Pop();
-		//		R.RejectChanges(); //if it was added-deleted---> ??
-		//	}
-		//}
-
-		#endregion
-
-        /// <summary>
-        /// Change the Child Row fields in order to make it child of Parent. All parent-child relations between the two tables are taken into account.
-        /// </summary>
-        /// <param name="parent">Parent row</param>
-        /// <param name="parentTable"></param>
-        /// <param name="child"></param>
-        /// <returns></returns>
-        public static bool MakeChild(DataRow parent,
-        DataTable parentTable,
-        DataRow child
-        ) {
-            var madechild = false;
-            foreach(DataRelation rel in child.Table.ParentRelations) {
-                if(MakeChild(parent, parentTable, child, rel.RelationName)) madechild = true;
+            //Applies changes to CHILD rows of R
+            if (!oo.Equals(dr[c])) {
+                cascadeChangeField(dr, c, oo);
+                dr[c] = oo;
             }
-            return madechild;            
+
+
         }
 
+
+
+        #endregion
+
+        #region Recursive operations (field change / row delete) 
+
+
         /// <summary>
-        /// Makes a "Child" DataRow related as child with a Parent Row. 
-        ///     This function should be called after calling DataTable.NewRow and
-        /// before calling CalcTemporaryID and DataTable.Add()
+        /// Changes R's child rows to reflect variation of R[ColumnToChange]= newvalue
         /// </summary>
-        /// <param name="parent">Parent Row (Can be null)</param>
-        /// <param name="parentTable">Parent Table (to which Parent Row belongs)</param>
-        /// <param name="child">Row that must become child of Parent (can't be null)</param>
-        /// <param name="relname">eventually name of relation to use</param>
-        /// <remarks>This function should be called after calling DataTable.NewRow and
-        ///         before calling CalcTemporaryID and DataTable.Add()
-        /// </remarks>
-        public static bool MakeChild(DataRow parent, 
-				DataTable parentTable, 
-				DataRow child, 
-				string relname){
-            if(relname == null) return MakeChild(parent, parentTable, child);
-			var rel = ChildRelation(parentTable, child.Table, relname);
-			if (rel==null) return false;
-			for (var i=0; i< rel.ParentColumns.Length; i++){
-				var childCol = rel.ChildColumns[i];
-				if (parent!=null){
-					child[childCol.ColumnName]= parent[rel.ParentColumns[i].ColumnName];					
-				}
-				else {
-                    child[childCol] = QueryCreator.clearValue(childCol);
-				}
-			}
-			return true;
-		}
+        /// <param name="R"></param>
+        /// <param name="ColumnToChange"></param>
+        /// <param name="newvalue"></param>
+        private static void cascadeChangeField(DataRow R, DataColumn ColumnToChange, object newvalue) {
+            foreach (DataRelation Rel in R.Table.ChildRelations) {
+                //checks if Rel includes "ColumnToChange" column of R
+                for (int i = 0; i < Rel.ChildColumns.Length; i++) {
+                    DataColumn C = Rel.ParentColumns[i];
+                    if (C.ColumnName == ColumnToChange.ColumnName) {
+                        DataColumn ChildColumnToChange = Rel.ChildColumns[i];
+                        foreach (DataRow ChildRow in R.getChildRows(Rel)) {
+                            if (R.RowState == DataRowState.Deleted)
+                                continue;
+                            cascadeChangeField(ChildRow, ChildColumnToChange, newvalue);
+                            ChildRow[ChildColumnToChange.ColumnName] = newvalue;
+                        }
+                    }
+                }
+            }
+        }
 
-		/// <summary>
-		/// Search a Relation in Child's Parent Relations that connect Child to Parent, 
-		///		named relname. If it is not found, it is also searched in Parent's
-		///		child relations.
-		/// </summary>
-		/// <param name="parent">Parent table</param>
-		/// <param name="child">Child table</param>
-		/// <param name="relname">Relation Name, null if it does not matter</param>
-		/// <returns>a Relation from Child Parent Relations, or null if not found</returns>
-		public static DataRelation ChildRelation(DataTable parent, 
-					DataTable child, 
-					string relname){
-			foreach (DataRelation rel in child.ParentRelations){
-				if ((relname!=null)&&(rel.RelationName!=relname))continue;
-				if (rel.ParentTable.TableName== parent.TableName){
-					return rel;
-				}
-			}
-			foreach (DataRelation rel2 in parent.ChildRelations){
-				if ((relname!=null)&&(rel2.RelationName!=relname))continue;
-				if (rel2.ChildTable.TableName== child.TableName){
-					return rel2;
-				}
-			}
 
-			return null;
-		}
+        /// <summary>
+        /// Deletes DataRow R and all it's sub-entities
+        /// </summary>
+        /// <param name="toDelete"></param>
+        public static void ApplyCascadeDelete(List<DataRow> toDelete) {
+            if (toDelete.Count == 0)
+                return;
+            var childForTables = new Dictionary<string, List<DataRow>>();
+
+            //return iManager?.getChildRows(rParent, rel)
+            //
+
+            DataTable Parent = toDelete[0].Table;
+            var iManager = Parent.DataSet?.getIndexManager();
+            var rowForTable = new Dictionary<string, int>();
+            foreach (DataRelation Rel in Parent.ChildRelations) {
+                DataTable Child = Rel.ChildTable;
+                if (!rowForTable.TryGetValue(Child.TableName, out int nRow)) {
+                    nRow = Child.Select().Length;
+                    rowForTable[Child.TableName] = nRow;
+                }
+
+                if (nRow == 0)
+                    continue;
+                //Cancella le figlie nella tabella Child
+                var isSubRel = MetaModel.IsSubEntityRelation(Rel);
+                foreach (DataRow R in toDelete) {
+                    DataRow[] ChildRows = iManager?.getChildRows(R, Rel) ?? R.GetChildRows(Rel);
+                    int nChilds = ChildRows.Length;
+                    if (nChilds == 0)
+                        continue;
+                    if (isSubRel) {
+                        if (!childForTables.TryGetValue(Child.TableName, out var list)) {
+                            list = new List<DataRow>();
+                            childForTables[Child.TableName] = list;
+                        }
+
+                        list.AddRange(ChildRows);
+                        nRow -= nChilds;
+                        rowForTable[Child.TableName] = nRow;
+                        if (nRow == 0)
+                            break;
+                    }
+                    else {
+                        foreach (DataRow RChild in ChildRows) {
+                            //if (RChild.RowState== DataRowState.Deleted) continue;
+                            for (int i = 0; i < Rel.ChildColumns.Length; i++) {
+                                DataColumn CChild = Rel.ChildColumns[i];
+                                DataColumn CParent = Rel.ParentColumns[i];
+                                if (!CChild.AllowDBNull)
+                                    continue;
+                                if (QueryCreator.IsPrimaryKey(RChild.Table, CChild.ColumnName))
+                                    continue;
+                                if (!QueryCreator.IsPrimaryKey(Parent, CParent.ColumnName))
+                                    continue;
+                                RChild[CChild.ColumnName] = DBNull.Value;
+                            }
+                        }
+                    }
+                }
+
+            }
+
+            foreach (var list in childForTables.Values) {
+                ApplyCascadeDelete(list);
+            }
+
+            staticModel.InvokeActions(Parent, TableAction.beginLoad);
+
+            //if (toDelete.Count > 2000) {
+            //	int blockSize = 1000;
+            //	int nBlocks = toDelete.Count / blockSize;
+            //	var task = new Task[nBlocks];
+            //	int last = 0;
+            //	for (int i = 0; i < nBlocks; i++) {
+            //		int min = last;
+            //		int max = last + blockSize-1;
+            //		if (i == nBlocks - 1) max = toDelete.Count - 1;
+            //		task[i] =  Task.Run(() => deleteAsync(toDelete,min,max));
+            //		last = max + 1;
+
+            //	}
+
+            //	Task.WaitAll(task);
+            //}
+            //else {
+            foreach (DataRow R in toDelete) {
+                R.Delete();
+            }
+            //}
+
+            staticModel.InvokeActions(Parent, TableAction.endLoad);
+
+        }
+        private static IMetaModel staticModel = MetaFactory.factory.getSingleton<IMetaModel>();
+
+
+
+
+        /// <summary>
+        /// Deletes DataRow R and all it's sub-entities
+        /// </summary>
+        /// <param name="r"></param>
+        public static void ApplyCascadeDelete(DataRow r) {
+            int handle = StartTimer("ApplyCascadeDelete");
+            ApplyCascadeDelete(new List<DataRow>() { r });
+
+            StopTimer(handle);
+
+        }
+
+
+        ///// <summary>
+        ///// Undo a stack of deletions
+        ///// </summary>
+        ///// <param name="RollBack"></param>
+        //public static void RollBackDeletes (Stack RollBack){
+        //	while (RollBack.Count>0){
+        //		DataRow R = (DataRow) RollBack.Pop();
+        //		R.RejectChanges(); //if it was added-deleted---> ??
+        //	}
+        //}
+
+        #endregion
+
+
+
+
 
 
         /// <summary>
@@ -1550,6 +1357,8 @@ namespace mdl {
             return relList;
         }
 
+
+
         /// <summary>
         /// Evaluates autoincrement values, completes the row to be changed with createuser,createtimestamp,
         /// lastmoduser, lastmodtimestamp fields, depending on the operation type
@@ -1559,86 +1368,48 @@ namespace mdl {
         /// <param name="user">User who is posting</param>
         /// <param name="acc"></param>
         /// <param name="doCalcAutoId"></param>
-        [Obsolete]
-        public virtual void PrepareForPosting(string user,DataAccess acc,bool doCalcAutoId){
-			//SqlDateTime Stamp = new SqlDateTime(System.DateTime.Now);
-			var stamp = DateTime.Now;
+        public virtual async Task PrepareForPosting(string user, IDataAccess acc, bool doCalcAutoId) {
+            //SqlDateTime Stamp = new SqlDateTime(System.DateTime.Now);
+            var stamp = DateTime.Now;
 
-			switch (ShortStatus()){
-				case short_insert_descr:
-					if (doCalcAutoId) CalcAutoID(DR, acc);
-					if (DR.Table.Columns["createuser"]!=null) DR["createuser"] =user;                    
-					if (DR.Table.Columns["createtimestamp"]!=null) DR["createtimestamp"] = stamp;
-					if (DR.Table.Columns["lastmoduser"]!=null) DR["lastmoduser"] = $"\'{user}\'";
-					if (DR.Table.Columns["lastmodtimestamp"]!=null) DR["lastmodtimestamp"] = stamp;
-					break;
-				case short_update_descr:
-					if (DR.Table.Columns["lastmoduser"]!=null){
-						DR["lastmoduser"] = $"\'{user}\'";
-					}
-					if (DR.Table.Columns["lastmodtimestamp"]!=null){
-						DR["lastmodtimestamp"] = stamp;
-					}
-					break;
-				case short_delete_descr:
-					//nothing to do!
-					break;
-			}                        
-			try {
-				GetData.CalculateRow(DR);
-			}
-			catch (Exception E) {
-			    acc.LogError($"PrepareForPosting({DR.Table.TableName})", E);
-			}
-		}
+            switch (ShortStatus()) {
+                case short_insert_descr:
+                    if (doCalcAutoId)
+                        await calcAutoID(DR, acc);
+                    if (CreateUserField != null && DR.Table.Columns[CreateUserField] != null)
+                        DR[CreateUserField] = user;
+                    if (CreateTimeStampField != null && DR.Table.Columns[CreateTimeStampField] != null)
+                        DR[CreateTimeStampField] = stamp;
 
-	    /// <summary>
-	    /// Evaluates autoincrement values, completes the row to be changed with createuser,createtimestamp,
-	    /// lastmoduser, lastmodtimestamp fields, depending on the operation type
-	    ///  and calls CalculateFields for each DataRow involved.
-	    ///  This must be done INSIDE the transaction.
-	    /// </summary>
-	    /// <param name="user">User who is posting</param>
-	    /// <param name="acc"></param>
-	    /// <param name="doCalcAutoId"></param>
-	    public virtual void prepareForPosting(string user, IDataAccess acc, bool doCalcAutoId) {
-	        //SqlDateTime Stamp = new SqlDateTime(System.DateTime.Now);
-	        var stamp = DateTime.Now;
-
-	        switch (ShortStatus()) {
-	            case short_insert_descr:
-	                if (doCalcAutoId) CalcAutoID(DR, acc);
-	                if (DR.Table.Columns["createuser"] != null) DR["createuser"] = user;
-	                if (DR.Table.Columns["createtimestamp"] != null) DR["createtimestamp"] = stamp;
-	                if (DR.Table.Columns["lastmoduser"] != null) DR["lastmoduser"] = $"\'{user}\'";
-	                if (DR.Table.Columns["lastmodtimestamp"] != null) DR["lastmodtimestamp"] = stamp;
-	                break;
-	            case short_update_descr:
-	                if (DR.Table.Columns["lastmoduser"] != null) {
-	                    DR["lastmoduser"] = $"\'{user}\'";
-	                }
-	                if (DR.Table.Columns["lastmodtimestamp"] != null) {
-	                    DR["lastmodtimestamp"] = stamp;
-	                }
-	                break;
-	            case short_delete_descr:
-	                //nothing to do!
-	                break;
-	        }
-	        try {
-	            GetData.CalculateRow(DR);
-	        }
-	        catch (Exception e) {
-	            acc.LogError($"PrepareForPosting({DR.Table.TableName})", e);
-	        }
-	    }
+                    if (LastModifyUserField != null && DR.Table.Columns[LastModifyUserField] != null)
+                        DR[LastModifyUserField] = user;
+                    if (LastModifyStampField != null && DR.Table.Columns[LastModifyStampField] != null)
+                        DR[LastModifyStampField] = stamp;
+                    break;
+                case short_update_descr:
+                    if (LastModifyUserField != null && DR.Table.Columns[LastModifyUserField] != null)
+                        DR[LastModifyUserField] = user;
+                    if (LastModifyStampField != null && DR.Table.Columns[LastModifyStampField] != null)
+                        DR[LastModifyStampField] = stamp;
+                    break;
+                case short_delete_descr:
+                    //nothing to do!
+                    break;
+            }
+            try {
+                staticModel.CalculateRow(DR);
+            }
+            catch (Exception e) {
+                ErrorLogger.logException($"PrepareForPosting({DR.Table.TableName})", e);
+            }
+        }
 
     }
 
-	/// <summary>
-	/// Collection of RowChange
-	/// </summary>
-	public class RowChangeCollection : System.Collections.ArrayList {
+    /// <summary>
+    /// Collection of RowChange
+    /// </summary>
+    public class RowChangeCollection :System.Collections.ArrayList {
         /// <summary>
         /// Connection to use, used in derived classes
         /// </summary>
@@ -1658,7 +1429,7 @@ namespace mdl {
         /// </summary>
 	    public int nAdded = 0;
 
-        private  Dictionary<string, string> AllMax = new Dictionary<string, string>();
+        private Dictionary<string, string> AllMax = new Dictionary<string, string>();
         internal bool is_temporaryCollection = false;
 
         /// <summary>
@@ -1668,10 +1439,10 @@ namespace mdl {
             AllMax.Clear();
         }
 
-    
 
-        private string getHash(string table, string filter, string expr){
-            return table+"§"+filter+"§"+expr;
+
+        private string getHash(string table, string filter, string expr) {
+            return table + "§" + filter + "§" + expr;
         }
 
         /// <summary>
@@ -1684,24 +1455,28 @@ namespace mdl {
         /// <param name="filter">Filter for evaluating the expression</param>
         /// <param name="expr">expression to evaluate</param>
         /// <returns></returns>
-        internal string getMax(DataRow R, DataColumn C, IDataAccess conn, string table, string filter, string expr){
-            string k = getHash(table,filter,expr).ToUpper();
-            if (AllMax.ContainsKey(k)) return AllMax[k];
-            
+        internal string getMax(DataRow R, DataColumn C, IDataAccess conn, string table, string filter, string expr) {
+            string k = getHash(table, filter, expr).ToUpper();
+            if (AllMax.ContainsKey(k))
+                return AllMax[k];
+
             DataTable T = C.Table;
             //Vede tutte le parent relation in cui sia contenuta una colonna chiave di R e che sia pure in selectors.
             // se trova una parent relation del genere, in cui il parent row sia uno, e in cui la colonna parent 
             //  sia un campo ad autoincremento per il parent, ed il parent è in stato di ADDED
             //  ALLORA
             //  PUO' EVITARSI LA SELECT e restituire direttamente null
-            List<DataColumn> selectors = RowChange.GetSelectors(C);
+            List<DataColumn> selectors = RowChange.getSelectors(C);
             foreach (DataColumn sel in selectors) {
-                if (!QueryCreator.IsPrimaryKey(T, sel.ColumnName)) continue;
+                if (!QueryCreator.IsPrimaryKey(T, sel.ColumnName))
+                    continue;
                 foreach (DataRelation parRel in R.Table.ParentRelations) {
-                    DataRow[] parRow = R.iGetParentRows(parRel);
-                    if (parRow.Length != 1) continue;
+                    DataRow[] parRow = R.getParentRows(parRel);
+                    if (parRow.Length != 1)
+                        continue;
                     DataRow parent = parRow[0];
-                    if (parent.RowState != DataRowState.Added) continue;
+                    if (parent.RowState != DataRowState.Added)
+                        continue;
                     //vede il nome della colonna corrispondente al selettore sel, nel parent
                     DataColumn parentCol = null;
                     for (int i = 0; i < parRel.ChildColumns.Length; i++) {
@@ -1709,17 +1484,20 @@ namespace mdl {
                             parentCol = parRel.ParentColumns[i];
                         }
                     }
-                    if (parentCol == null) continue;
-                    if (!RowChange.IsAutoIncrement(parentCol)) continue;
+                    if (parentCol == null)
+                        continue;
+                    if (!parentCol.IsAutoIncrement())
+                        continue;
                     return null; //THIS IS THE CASE!!!!!
                 }
             }
-           
-                
 
 
-            object res = conn.DO_READ_VALUE(table, filter, expr);
-            if (res == null || res == DBNull.Value) return null;
+
+
+            object res = conn.ReadValue(table, filter: filter, expr: expr);
+            if (res == null || res == DBNull.Value)
+                return null;
             AllMax[k] = res.ToString();
             return res.ToString();
         }
@@ -1731,69 +1509,76 @@ namespace mdl {
         /// <param name="filter">filter connected (usually a bunch of selector and static filters)</param>
         /// <param name="expr">expression that the max value refers to</param>
         /// <param name="value">value to set as new maximum</param>
-        public void SetMax(string table, string filter, string expr, string value){
-             string k = getHash(table,filter,expr).ToUpper();
-            AllMax[k]=value;
+        public void SetMax(string table, string filter, string expr, string value) {
+            string k = getHash(table, filter, expr).ToUpper();
+            AllMax[k] = value;
         }
 
-		internal void Add(RowChange C) {
-			base.Add(C);
-		    if (C.DR.RowState == DataRowState.Deleted) nDeletes++;
-		    if (C.DR.RowState == DataRowState.Modified) nUpdates++;
-		    if (C.DR.RowState == DataRowState.Added) nAdded++;
+        internal void add(RowChange C) {
+            base.Add(C);
+            if (C.DR.RowState == DataRowState.Deleted)
+                nDeletes++;
+            if (C.DR.RowState == DataRowState.Modified)
+                nUpdates++;
+            if (C.DR.RowState == DataRowState.Added)
+                nAdded++;
 
-            if (!is_temporaryCollection) C.SetCollection(this);
-		}
-        
-		/// <summary>
-		/// Gets the RowChange in the specified Table
-		/// </summary>
-		/// <param name="TableName">Name of the DataTable where the related row is to be found</param>
-		/// <returns>The table-related row in the collection</returns>
+            if (!is_temporaryCollection)
+                C.SetCollection(this);
+        }
+
+        /// <summary>
+        /// Gets the RowChange in the specified Table
+        /// </summary>
+        /// <param name="TableName">Name of the DataTable where the related row is to be found</param>
+        /// <returns>The table-related row in the collection</returns>
         public RowChange GetByName(string TableName) {
             foreach (RowChange R in this) {
-                if (R.TableName == TableName) return R;
+                if (R.TableName == TableName)
+                    return R;
             }
 
             foreach (RowChange R in this) {
-                if (R.Table.tableForPosting() == TableName) return R;
+                if (R.Table.tableForPosting() == TableName)
+                    return R;
             }
             foreach (RowChange R in this) {
-                if (R.Table.tableForReading() == TableName) return R;
+                if (R.Table.tableForReading() == TableName)
+                    return R;
             }
 
             //Tablename was not found. Try searching in tablename+view			
             foreach (RowChange R in this) {
-                if (R.TableName == TableName + "view") return R;
+                if (R.TableName == TableName + "view")
+                    return R;
             }
 
             return null;
         }
     }
 
-	/// <summary>
-	/// Class that manages log
-	/// </summary>
-	public class DataJournaling{
-		/// <summary>
-		/// Should return the log rows to add to db 
-		/// for a given set of changes that have been made to DB
-		/// </summary>
-		/// <param name="Changes"></param>
-		/// <returns></returns>
-		virtual public DataRowCollection DO_Journaling(RowChangeCollection Changes){
-			return null;
-		}
-	}
+    /// <summary>
+    /// Class that manages log
+    /// </summary>
+    public class DataJournaling {
+        /// <summary>
+        /// Should return the log rows to add to db 
+        /// for a given set of changes that have been made to DB
+        /// </summary>
+        /// <param name="Changes"></param>
+        /// <returns></returns>
+        virtual public DataRowCollection DO_Journaling(RowChangeCollection Changes) {
+            return null;
+        }
+    }
 
 
-
-	/// <summary>
-	/// Configurable String Parser: 
-	/// It is able to find occurencies of strings with predefined delimiters,
-	///  giving the string found and the string type (referring to the delimiters)
-	/// </summary>
-	public class MsgParser {
+    /// <summary>
+    /// Configurable String Parser: 
+    /// It is able to find occurencies of strings with predefined delimiters,
+    ///  giving the string found and the string type (referring to the delimiters)
+    /// </summary>
+    public class MsgParser {
 		String Message;
 		int next_position;
 		String[] StartString;
@@ -2048,29 +1833,33 @@ namespace mdl {
             }
         }
 
-		/// <summary>
+		
+        /// <summary>
 		/// Remove from this list every message in MsgToIgnore
 		/// </summary>
 		/// <param name="MsgToIgnore"></param>
-		public void SkipMessages(Hashtable MsgToIgnore){
-			ArrayList list = new ArrayList();
-			foreach(ProcedureMessage PP in this){
-				if (!PP.CanIgnore)continue;
-				if (MsgToIgnore[PP.LongMess]!=null) list.Add(PP);
-			}
-			foreach (ProcedureMessage PP in list){
-				Remove(PP);
-			}
-		}
+		public void SkipMessages(HashSet<string> MsgToIgnore) {
+            ArrayList list = new ArrayList();
+            foreach (ProcedureMessage PP in this) {
+                if (!PP.CanIgnore)
+                    continue;
+                if (MsgToIgnore.Contains(PP.LongMess))
+                    list.Add(PP);
+            }
+            foreach (ProcedureMessage PP in list) {
+                Remove(PP);
+            }
+        }
+
 
         /// <summary>
         /// Sets an Hashtables with Messages to ignore with all messages contained in this collection
         /// </summary>
         /// <param name="MsgToIgnore">Hashtable containg all messages to ignore</param>
-		public void AddMessagesToIgnore(Hashtable MsgToIgnore){
-			foreach(ProcedureMessage PP in this){
-				MsgToIgnore[PP.LongMess]=1;
-			}
+		public void AddMessagesToIgnore(HashSet<string> MsgToIgnore) {
+            foreach (ProcedureMessage PP in this){
+                MsgToIgnore.Add(PP.LongMess);
+            }
 		}
 
 
@@ -2079,87 +1868,76 @@ namespace mdl {
     /// <summary>
     /// Class used to nest posting of different datasets
     /// </summary>
-    public interface InnerPosting {
+    public interface IInnerPosting {
         /// <summary>
         /// inner PostData class
         /// </summary>
         //PostData innerPostClass { get; }
-        Hashtable hashMessagesToIgnore();
+        HashSet<string> HashMessagesToIgnore();
 
         /// <summary>
         /// Called to initialize the class, inside the transaction
         /// </summary>
         /// <param name="ds"></param>
         /// <param name="conn"></param>
-        void  initClass(DataSet ds, IDataAccess conn);
+        Task InitClass(DataSet ds, IDataAccess conn);
 
 
         /// <summary>
         /// Unisce i messaggi dati a quelli finali
         /// </summary>
         /// <param name="messages"></param>
-        void mergeMessages(ProcedureMessageCollection messages);
+        void MergeMessages(ProcedureMessageCollection messages);
 
         /// <summary>
         /// Called after data has been committed or rolled back
         /// </summary>
         /// <param name="committed"></param>
-        void afterPost(bool committed);
-        
+        Task AfterPost(bool committed);
+
         /// <summary>
         /// Reads all data about views (also in inner posting classes)
         /// </summary>
-        void reselectAllViewsAndAcceptChanges();
+        Task ReselectAllViewsAndAcceptChanges();
 
         /// <summary>
         /// Get innerPosting class 
         /// </summary>
         /// <returns></returns>
-        InnerPosting getInnerPosting();
+        IInnerPosting GetInnerPosting();
 
         /// <summary>
         /// Set innerPosting mode with a set of already raised messages
         /// </summary>
         /// <param name="ignoredMessages"></param>
-        void setInnerPosting(Hashtable ignoredMessages);
+        void SetInnerPosting(HashSet<string> ignoredMessages);
 
         /// <summary>
         /// Post inner data to db
         /// </summary>
         /// <returns></returns>
-        ProcedureMessageCollection DO_POST_SERVICE();
-    }
-
-	//[Transaction(TransactionOption.Required)]
-	/// <summary> 
-	/// PostData manages updates to DB Tables
-	/// Necessary pre-conditions are that:
-	/// - DataBase Tables name are the same as DataSet DataTable names
-	/// - Temporary (not belonging to DataBase) table are "marked" with the ExtendedProperty[IsTempTable]!=null
-	/// </summary>	
-	/// <remarks>
-	/// If rows are added to datatable contains ID that have to be evaluated as max+1 from
-	///  the database, additional information have to be put in the ID datacolumn:
-	///  IsAutoIncrement = "s"    -   REQUIRED 
-	///  PrefixField              -   optional 
-	///  MiddleConst              -   optional 
-	///  IDLength                 -   optional
-	///  see RowChange for additional info
-	/// </remarks>
-	public class PostData {   //: ServicedComponent {
+        Task<ProcedureMessageCollection> SaveData();
 
         
+    }
 
-	    /// <summary>
-	    /// Called to  invoke posting data. The assumption is that if it returns empty collection, data should be committed
-	    /// </summary>
-	    /// <param name="IgnoredMessages"></param>
-	    /// <returns></returns>
-	    public virtual ProcedureMessageCollection innerDoPostService(Hashtable IgnoredMessages) {
-	        this.IgnoredMessages = IgnoredMessages;
-	        return DO_POST_SERVICE();
-	    }
-
+    //[Transaction(TransactionOption.Required)]
+    /// <summary> 
+    /// PostData manages updates to DB Tables
+    /// Necessary pre-conditions are that:
+    /// - DataBase Tables name are the same as DataSet DataTable names
+    /// - Temporary (not belonging to DataBase) table are "marked" with the ExtendedProperty[IsTempTable]!=null
+    /// </summary>	
+    /// <remarks>
+    /// If rows are added to datatable contains ID that have to be evaluated as max+1 from
+    ///  the database, additional information have to be put in the ID datacolumn:
+    ///  IsAutoIncrement = "s"    -   REQUIRED 
+    ///  PrefixField              -   optional 
+    ///  MiddleConst              -   optional 
+    ///  IDLength                 -   optional
+    ///  see RowChange for additional info
+    /// </remarks>
+    public class PostData {   //: ServicedComponent {
 
         /// <summary>
         /// Returns an empty list of error messages
@@ -2169,11 +1947,8 @@ namespace mdl {
 			return new ProcedureMessageCollection();
 		}
 
-        /// <summary>
-        /// Connection of the main posting process
-        /// </summary>
-        [Obsolete]
-        public DataAccess Conn;
+        protected IDataAccess conn;
+        protected QueryHelper qhs;
 
 
         /// <summary>
@@ -2195,11 +1970,6 @@ namespace mdl {
         /// </summary>
         public bool autoIgnore = false;
 
-		// <summary>
-		// true if Object is valid
-		// </summary>
-		//        public bool WellObject;
-
 		
 
 		string lasterror;
@@ -2218,11 +1988,7 @@ namespace mdl {
         /// <summary>
         /// Manage the posting of a singleDataSet
         /// </summary>
-        protected class singleDatasetPost {
-            /// <summary>
-            /// MetaModel used by the metadata
-            /// </summary>
-            public IMetaModel model = MetaFactory.factory.getSingleton<IMetaModel>();
+        protected class SingleDatasetPost {
 
 	        IDataAccess privateConn;
             /// <summary>
@@ -2238,9 +2004,11 @@ namespace mdl {
             /// <summary>
             /// Last error occurred in this posting class
             /// </summary>
-            public string lasterror;
+            public string LastError { get; set; }
 
 
+
+            QueryHelper qhs;
 
             #region Row Changes Sorting And Classifying
 
@@ -2258,7 +2026,7 @@ namespace mdl {
             /// </summary>
             /// <param name="Original">DataBase to be scanned for changes</param>
             /// <returns>List of changes to be done, in a reasonably good order</returns>
-            RowChangeCollection ChangeList(DataSet Original) {
+            RowChangeCollection changeList(DataSet Original) {
                 var ParentFirst = new ArrayList(3);
                 var ChildFirst = new ArrayList(3);
                 var Result = new RowChangeCollection {
@@ -2472,28 +2240,33 @@ namespace mdl {
             /// Rules that must be applied for the current set of changes
             /// </summary>
             public MetaDataRules Rules;
-           
+
             /// <summary>
             /// Posting class that saves a single DataSet with a specified DataAccess
             /// </summary>
             /// <param name="DS"></param>
             /// <param name="Conn"></param>
             /// <param name="p">main Posting class</param>
-            public singleDatasetPost(DataSet DS, IDataAccess Conn, PostData p) {
-	            this.DS = DS;
-	            privateConn = Conn;       //every   singleDatasetPost has his connection
-                user = Conn.externalUser;
+            public SingleDatasetPost(DataSet DS, IDataAccess Conn) {
+                this.DS = DS;
+                privateConn = Conn;       //every   singleDatasetPost has his connection
+                qhs = Conn.GetQueryHelper();
+                user = Conn.Security.User;
+            }
+
+            public async Task Init(PostData p) {
                 mainPost = p;
                 ClearDataSet.RemoveConstraints(DS);
-	            RemoveFalseUpdates(DS);
-	            RowChanges = ChangeList(DS);
+                DS.RemoveFalseUpdates();
+                RowChanges = changeList(DS);
                 if (RowChanges.nDeletes > 10000) {
-                    ErrorLogger.Logger.markEvent($"Deleting {RowChanges.nDeletes} rows ");
+                    ErrorLogger.Logger.MarkEvent($"Deleting {RowChanges.nDeletes} rows ");
                 }
-	            if (!DS.HasChanges()) return;
-	            this.Rules = p.GetRules(RowChanges);
-
+                if (!DS.HasChanges())
+                    return;
+                this.Rules = await mainPost.getRules(RowChanges);
             }
+
 
             /// <summary>
             /// get ID of current posting process
@@ -2528,17 +2301,17 @@ namespace mdl {
             }
 
             /// <summary>
-            /// Evalueates autoincrement values, completes the row to be changed with createuser,createtimestamp,
+            /// Evaluates autoincrement values, completes the row to be changed with createuser,createtimestamp,
             /// lastmoduser, lastmodtimestamp fields, depending on the operation type
             ///  and eventually calls CalculateFields for each DataRow involved.
             ///  This must be done OUTSIDE the transaction.
             /// </summary>
-            public void prepareForPosting() {
-	            foreach (RowChange RToPreSet in RowChanges) {
-	                //Adjust lastmoduser etc. in order to be able of properly calling checks                
-	                RToPreSet.prepareForPosting(user, privateConn, false);
-	            }
-	        }
+            public async Task PrepareForPosting() {
+                foreach (RowChange RToPreSet in RowChanges) {
+                    //Adjust lastmoduser etc. in order to be able of properly calling checks                
+                    await RToPreSet.PrepareForPosting(user, privateConn, false);
+                }
+            }
 
             /// <summary>
             /// Collection of PRE- checks
@@ -2549,81 +2322,23 @@ namespace mdl {
             #region CALL PRE/POST CHECKS
 
             /// <summary>
-            /// Call pre- checks and fill precheck_msg
-            /// </summary>
-            /// <returns>true if the changes on the DataSet are possible</returns>              
-            /// <remarks>Related Row must have been already filled</remarks>
-            public bool DO_PRE_CHECK(Hashtable ignoredMessages) {
-                precheck_msg = null;
-                ProcedureMessageCollection result;
-                try {
-                    privateConn.Open();
-
-                    //Call all necessary stored procedures for checking changement
-                    result = mainPost.DO_CALL_CHECKS(false, RowChanges);
-                    result.PostMsgs = false;
-                    //if (RowChanges.nDeletes > 10000) {
-                    //    result.AddWarning($"Si stanno cancellando {RowChanges.nDeletes} righe. ");                        
-                    //}
-
-                    privateConn.Close();
-                    result.SkipMessages(ignoredMessages);
-                }
-                catch (Exception e) {
-	                Trace.Write($"Error :{QueryCreator.GetErrorString(e)}\n", "PostData.DO_PRECHECK\n");
-                    privateConn.LogError("PostData.DO_PRECHECK", e);
-                    lasterror = QueryCreator.GetErrorString(e);
-                    result = mainPost.GetEmptyMessageCollection();
-                    result.AddDBSystemError($"Errore nella chiamata delle regole pre:\n{lasterror}");
-                    privateConn.Close();
-                    return false;
-                }
-                precheck_msg = result;
-                return true;
-            }
-
-            private DataJournaling Journal;
-
-            /// <summary>
-            /// Gets the Journaling class connected for the posting operation
-            /// </summary>
-            public void getJournal() {
-                Journal = mainPost.getJournal(privateConn, RowChanges);
-            }
-
-
-            /// <summary>
-            /// Save all change log (journal) to database
-            /// </summary>
-            /// <returns></returns>
-            public bool DoJournal() {
-                DataRowCollection RCs = Journal.DO_Journaling(RowChanges);
-                if (RCs == null) return true;
-                foreach (DataRow R in RCs) {
-                    if (DO_PHYSICAL_POST_ROW(R) != 1) return false;
-                }
-                return true;
-            }
-            
-
-            /// <summary>
             /// As above, but returns the error collection. Also sets precheck_msg
             /// </summary>
-            public ProcedureMessageCollection SILENT_DO_PRE_CHECK(Hashtable IgnoredMessages) {
+            public async Task<ProcedureMessageCollection> GetPreChecks(HashSet<string> IgnoredMessages) {
                 ProcedureMessageCollection result;
                 try {
                     privateConn.Open();
 
                     //Call all necessary stored procedures for checking changement
-                    result = mainPost.DO_CALL_CHECKS(false, RowChanges);
+                    result = await mainPost.callChecks(false, RowChanges);
                     result.PostMsgs = false;
                     result.SkipMessages(IgnoredMessages);
                 }
                 catch (Exception e) {
                     result = mainPost.GetEmptyMessageCollection();
-                    result.AddDBSystemError(QueryCreator.GetErrorString(e));
-                    Trace.Write("Error :" + QueryCreator.GetErrorString(e) + "\r", "PostData.SILENT_DO_PRE_CHECK\r");
-                    lasterror = QueryCreator.GetErrorString(e);
+                    result.AddDBSystemError(ErrorLogger.GetErrorString(e));
+                    Trace.Write("Error :" + ErrorLogger.GetErrorString(e) + "\r", "PostData.GetPreChecks\r");
+                    LastError = ErrorLogger.GetErrorString(e);
                     result.CanIgnore = false;
                     result.PostMsgs = false;
                 }
@@ -2634,6 +2349,30 @@ namespace mdl {
                 return result;
             }
 
+            private DataJournaling Journal;
+
+            /// <summary>
+            /// Gets the Journaling class connected for the posting operation
+            /// </summary>
+            public async Task GetJournal() {
+                Journal = await mainPost.getJournal(privateConn, RowChanges);
+            }
+
+
+            /// <summary>
+            /// Save all change log (journal) to database
+            /// </summary>
+            /// <returns></returns>
+            public async Task<bool> DoJournal() {
+                DataRowCollection RCs = Journal.DO_Journaling(RowChanges);
+                if (RCs == null)
+                    return true;
+                foreach (DataRow R in RCs) {
+                    if (await dbSaveRow(R) != 1)
+                        return false;
+                }
+                return true;
+            }
 
             /// <summary>
             /// Query the Business logic to establish whether the operation 
@@ -2641,21 +2380,22 @@ namespace mdl {
             /// </summary>
             /// <returns>true if the changes on the DataSet are possible</returns>              
             /// <remarks>Related rows must have been already filled</remarks>
-            public ProcedureMessageCollection DO_POST_CHECK(Hashtable IgnoredMessages) {
+            public async Task<ProcedureMessageCollection> GetPostChecks(HashSet<string> IgnoredMessages) {
 
                 //Evaluates every error message & attach them to RowChanges elements
-                ProcedureMessageCollection Res=null;
+                ProcedureMessageCollection Res = null;
                 try {
                     //Call all necessary stored procedures for checking changement
-                    Res = mainPost.DO_CALL_CHECKS(true, RowChanges);
+                    Res = await mainPost.callChecks(true, RowChanges);
                     Res.SkipMessages(IgnoredMessages);
                     Res.PostMsgs = true;
                 }
                 catch (Exception e) {
-                    if (Res==null) Res = mainPost.GetEmptyMessageCollection();
-                    Res.AddDBSystemError(QueryCreator.GetErrorString(e));
-                    Trace.Write("Error :" + QueryCreator.GetErrorString(e) + "\r", "PostData.DO_POSTCHECK\r");
-                    lasterror = QueryCreator.GetErrorString(e);
+                    if (Res == null)
+                        Res = mainPost.GetEmptyMessageCollection();
+                    Res.AddDBSystemError(ErrorLogger.GetErrorString(e));
+                    Trace.Write("Error :" + ErrorLogger.GetErrorString(e) + "\r", "PostData.DO_POSTCHECK\r");
+                    LastError = ErrorLogger.GetErrorString(e);
                     Res.CanIgnore = false;
                     Res.PostMsgs = true;
                 }
@@ -2664,75 +2404,43 @@ namespace mdl {
             }
 
 
+
             #endregion
 
 
             #region DO PHYSICAL OPERATION
 
-            ///// <summary>
-            ///// Do the phisical changes of the underneath DataBase.
-            ///// In this phase, Rows are completed with lastmoduser/lastmodtimestamp fields
-            ///// </summary>
-            ///// <remarks>On fail, all changes should be rolled-back by the CALLER!!!</remarks>
-            ///// <returns>true when successfull </returns>
-            //bool DO_PHYSICAL_POST() {
-
-            //    foreach (RowChange R in RowChanges) {
-            //        //post the change
-
-            //        R.prepareForPosting(user, privateConn, true);
-            //        if (!privateConn.Security.CanPost(R.DR)) {
-            //            lasterror =
-            //                $"L\'operazione richiesta sulla tabella {R.TableName} è vietata dalle regole di sicurezza.";
-            //            return false;
-            //        }
-            //        int nrowupdated;
-            //        try {
-            //            nrowupdated = DO_PHYSICAL_POST_ROW(R.DR);
-            //        }
-            //        catch (Exception E) {
-            //            lasterror = "From " + E.Source + ": " + QueryCreator.GetErrorString(E);
-            //            privateConn.LogError("DO_PHYSICAL_POST" + lasterror, E);
-            //            nrowupdated = 0;
-            //        }
-            //        if (nrowupdated != 1) {
-            //            return false;
-            //        }
-            //    }
-
-            //    return true;
-            //}
-
             /// <summary>
             /// Write all changed rows to db, returns true if succeeds
             /// </summary>
             /// <returns></returns>
-            public bool DO_PHYSICAL_POST_BATCH() {
-                var nn = mdl_utils.metaprofiler.StartTimer("DO_PHYSICAL_POST_BATCH()");
+            internal async Task<bool> writeToDatabase() {
+                var nn = StartTimer("writeToDatabase()");
                 RowChanges.EmptyCache();
                 var sb = new StringBuilder();
                 var batchedRows = new List<RowChange>();
                 var rowindex = 0;
                 foreach (RowChange r in RowChanges) {
                     //post the change                
-                    r.prepareForPosting(user, privateConn, true); //calls calcAutoID and eventually set R.HasCustomAutoFields to true
-                    if (!model.isSkipSecurity(r.Table)) {
+                    await r.PrepareForPosting(user, privateConn, true); //calls calcAutoID and eventually set R.HasCustomAutoFields to true
+                    if (!privateConn.model.IsSkipSecurity(r.Table)) {
                         if (!privateConn.Security.CanPost(r.DR)) {
-                            lasterror =
+                            LastError =
                                 $"L\'operazione richiesta sulla tabella {r.TableName} è vietata dalle regole di sicurezza.";
-                            mdl_utils.metaprofiler.StopTimer(nn);
+                            StopTimer(nn);
                             return false;
                         }
                     }
 
                     string cmd = getPhysicalPostCommand(r.DR);
-                    sb.AppendLine(cmd+";");
-                    sb.AppendLine($"if (@@ROWCOUNT=0) BEGIN select {rowindex}; RETURN; END;");
+                    sb.AppendLine(cmd + ";");
+                    sb.AppendLine(qhs.ReturnValueIfNoRowAffected(rowindex));//$"if (@@ROWCOUNT=0) BEGIN select {rowindex}; RETURN; END;"); ;;
                     batchedRows.Add(r);
 
                     if (sb.Length > 40000 || r.HasCustomAutoFields) {
-                        var res = executeBatch(sb, batchedRows);
-                        if (!res) return false;
+                        var res = await executeBatch(sb, batchedRows);
+                        if (!res)
+                            return false;
                         sb = new StringBuilder();
                         batchedRows = new List<RowChange>();
                         rowindex = 0;
@@ -2744,27 +2452,30 @@ namespace mdl {
                 }
                 bool result;
                 if (rowindex > 0) {
-                    result = executeBatch( sb, batchedRows);
+                    result = await executeBatch(sb, batchedRows);
                 }
                 else {
                     result = true;
                 }
-                mdl_utils.metaprofiler.StopTimer(nn);
+                StopTimer(nn);
                 return result;
             }
 
 
-            bool executeBatch( StringBuilder batch, List<RowChange> rows) {
+            async Task<bool> executeBatch( StringBuilder batch, List<RowChange> rows) {
                 batch.Append("SELECT -1");
                 //DataTable T = Conn.SQLRunner(Batch.ToString(), 60, out errmess);
-                object res = privateConn.DO_SYS_CMD_LASTRESULT(batch.ToString(), out var errmess);
-
-
-                if (errmess != null) {
-                    ErrorLogger.Logger.markEvent($"Errore su db:{errmess}");
-                    lasterror = errmess;
+                object res;
+                try {
+                    res = await privateConn.ExecuteScalarLastResult(batch.ToString());
+                }
+                catch (Exception ex) {
+                    ErrorLogger.Logger.markException(ex, $"Errore su db:{ex.Message}");
+                    LastError = ex.Message;
                     return false;
                 }
+
+
 
                 //Get Bad Row
                 int n = Convert.ToInt32(res);
@@ -2773,28 +2484,28 @@ namespace mdl {
                     return true;
                 }
                 if (n < 0 || n >= rows.Count) {
-                    lasterror = $"Errore interno eseguendo:{batch}";
-                    ErrorLogger.Logger.markEvent(lasterror);
+                    LastError = $"Errore interno eseguendo:{batch}";
+                    ErrorLogger.Logger.MarkEvent(LastError);
                     return false;
                 }
 
                 RowChange R = rows[n];
                 if (R.DR.RowState == DataRowState.Added) {
-                    lasterror = $"Error running command:{getPhysicalInsertCmd(R.DR)}";
-                    ErrorLogger.Logger.markEvent(lasterror);
+                    LastError = $"Error running command:{privateConn.GetInsertCommand(R.DR)}";
+                    ErrorLogger.Logger.MarkEvent(LastError);
                     return false;
                 }
                 if (R.DR.RowState == DataRowState.Deleted) {
-                    lasterror = $"Error running command:{getPhysicalDeleteCmd(R.DR)}";
-                    ErrorLogger.Logger.markEvent(lasterror);
+                    LastError = $"Error running command:{privateConn.GetDeleteCommand(R.DR, mainPost.GetOptimisticClause(R.DR))}";
+                    ErrorLogger.Logger.MarkEvent(LastError);
                     return false;
                 }
                 if (R.DR.RowState == DataRowState.Modified) {
-                    string err = $"Error running command:{getPhysicalUpdateCmd(R.DR)}";
-                    ErrorLogger.Logger.markEvent(err);
+                    string err = $"Error running command:{privateConn.GetUpdateCommand(R.DR, mainPost.GetOptimisticClause(R.DR))}";
+                    ErrorLogger.Logger.MarkEvent(err);
                     R.DR.RejectChanges();
-                    RESELECT(R.DR, DataRowVersion.Default);
-                    lasterror = err;
+                    await reselect(R.DR, DataRowVersion.Default);
+                    LastError = err;
                     return false;
                 }
                 return false;
@@ -2806,139 +2517,110 @@ namespace mdl {
             string getPhysicalPostCommand(DataRow R) {
                 switch (R.RowState) {
                     case DataRowState.Added:
-                        return getPhysicalInsertCmd(R);
+                        return this.privateConn.GetInsertCommand(R);
                     case DataRowState.Modified:
-                        return getPhysicalUpdateCmd(R);
+                        return this.privateConn.GetUpdateCommand(R, mainPost.GetOptimisticClause(R));
                     case DataRowState.Deleted:
-                        return getPhysicalDeleteCmd(R);
+                        return this.privateConn.GetDeleteCommand(R, mainPost.GetOptimisticClause(R));
                 }
                 return "";
             }
 
-            int DO_PHYSICAL_POST_ROW(DataRow R) {
+            async Task<int> dbSaveRow(DataRow R) {
 
                 switch (R.RowState) {
                     case DataRowState.Added:
-                        return DO_PHYSICAL_INSERT(R);
+                        return await dbInsert(R);
                     case DataRowState.Modified:
-                        return DO_PHYSICAL_UPDATE(R);
+                        return await dbUpdate(R);
                     case DataRowState.Deleted:
-                        return DO_PHYSICAL_DELETE(R);
+                        return await dbDelete(R);
                 }
                 return 0;
             }
 
 
-            string getPhysicalDeleteCmd(DataRow R) {
-                var T = R.Table;
-                string tablename = T.tableForPosting();
-                string condition = mainPost.GetOptimisticClause(R);
-                return privateConn.GetDeleteCommand(tablename, condition);
-            }
 
-            int DO_PHYSICAL_DELETE( DataRow r) {
+            async Task<int> dbDelete(DataRow r) {
                 var T = r.Table;
                 var tablename = T.tableForPosting();
                 var condition = mainPost.GetOptimisticClause(r);
-                var msg = privateConn.DO_DELETE(tablename, condition);
-                if (msg == null) return 1;
-                lasterror = msg;
-                r.RejectChanges();
-                RESELECT(r, DataRowVersion.Default);
-                return 0;
+                try {
+                    return await privateConn.DoDelete(tablename, condition);
+                }
+                catch (Exception e) {
+                    LastError = e.ToString();
+                    r.RejectChanges();
+                    await reselect(r, DataRowVersion.Default);
+                    return 0;
+                }
+
             }
 
 
-            string getPhysicalInsertCmd(DataRow R) {
+
+            async Task<int> dbInsert(DataRow R) {
                 DataTable T = R.Table;
                 string tablename = T.tableForPosting();
-                int npar = 0;
-                string[] names = new string[T.Columns.Count];
-                string[] values = new string[T.Columns.Count];
+                List<string> names = new List<string>();
+                List<object> values = new List<object>();
 
                 foreach (DataColumn C in T.Columns) {
-                    if (!QueryCreator.IsRealColumn(C)) continue;
-                    if (R[C, DataRowVersion.Default] == DBNull.Value) continue; //non inserisce valori null
-                    string postcolname = QueryCreator.PostingColumnName(C); // C.ColumnName;
-                    if (postcolname == null) continue;
-                    names[npar] = postcolname;
-                    values[npar] = mdl_utils.Quoting.quotedstrvalue(R[C, DataRowVersion.Default], C.DataType, true);
-                    npar++;
+                    if (C.IsTemporary())
+                        continue;
+                    if (R[C, DataRowVersion.Default] == DBNull.Value)
+                        continue; //non inserisce valori null
+                    string postcolname = C.PostingColumnName(); // C.ColumnName;
+                    if (postcolname == null)
+                        continue;
+                    names.Add(postcolname);
+                    values.Add(R[C, DataRowVersion.Default]);
                 }
-
-                return privateConn.getInsertCommand(tablename, names, values, npar);
-            }
-
-            int DO_PHYSICAL_INSERT(DataRow R) {
-                DataTable T = R.Table;
-                string tablename =T.tableForPosting();
-                int npar = 0;
-                string[] names = new string[T.Columns.Count];
-                string[] values = new string[T.Columns.Count];
-
-                foreach (DataColumn C in T.Columns) {
-                    if (!QueryCreator.IsRealColumn(C)) continue;
-                    if (R[C, DataRowVersion.Default] == DBNull.Value) continue; //non inserisce valori null
-                    string postcolname = QueryCreator.PostingColumnName(C); // C.ColumnName;
-                    if (postcolname == null) continue;
-                    names[npar] = postcolname;
-                    values[npar] = mdl_utils.Quoting.quotedstrvalue(R[C, DataRowVersion.Default], C.DataType, true);
-                    npar++;
+                try {
+                    await privateConn.DoInsert(tablename, names, values);
+                    return 1;
                 }
-
-                string msg = privateConn.DO_INSERT(tablename, names, values, npar);
-                if (msg == null) return 1;
-                lasterror = msg;
-                return 0;
+                catch (Exception e) {
+                    LastError = e.ToString();
+                    return 0;
+                }
             }
-
-           
-
-            string getPhysicalUpdateCmd(DataRow R) {
+            async Task<int> dbUpdate(DataRow R) {
                 DataTable T = R.Table;
                 string tablename = T.tableForPosting();
                 int npar = 0;
 
-                string[] names = new string[T.Columns.Count];
-                string[] values = new string[T.Columns.Count];
+                List<string> names = new List<string>();
+                List<object> values = new List<object>();
 
                 foreach (DataColumn C in T.Columns) {
-                    if (!QueryCreator.IsRealColumn(C)) continue;
-                    if (R[C, DataRowVersion.Original].Equals(R[C, DataRowVersion.Current])) continue;
-                    string postcolname = QueryCreator.PostingColumnName(C); // C.ColumnName;
-                    if (postcolname == null) continue;
-                    names[npar] = postcolname;
-                    values[npar] = mdl_utils.Quoting.quotedstrvalue(R[C, DataRowVersion.Current], C.DataType, true);
+                    if (C.IsTemporary())
+                        continue;
+                    if (R[C, DataRowVersion.Original].Equals(R[C, DataRowVersion.Current]))
+                        continue;
+                    string postcolname = C.PostingColumnName(); // C.ColumnName;
+                    if (postcolname == null)
+                        continue;
+                    names.Add(postcolname);
+                    values.Add(R[C, DataRowVersion.Current]);
+
                     npar++;
                 }
-                return privateConn.getUpdateCommand(tablename, mainPost.GetOptimisticClause(R), names, values, npar);
-            }
-
-            int DO_PHYSICAL_UPDATE(DataRow R) {
-                DataTable T = R.Table;
-                string tablename = T.tableForPosting();
-                int npar = 0;
-
-                string[] names = new string[T.Columns.Count];
-                string[] values = new string[T.Columns.Count];
-
-                foreach (DataColumn C in T.Columns) {
-                    if (!QueryCreator.IsRealColumn(C)) continue;
-                    if (R[C, DataRowVersion.Original].Equals(R[C, DataRowVersion.Current])) continue;
-                    string postcolname = QueryCreator.PostingColumnName(C); // C.ColumnName;
-                    if (postcolname == null) continue;
-                    names[npar] = postcolname;
-                    values[npar] = mdl_utils.Quoting.quotedstrvalue(R[C, DataRowVersion.Current], C.DataType, true);
-                    npar++;
+                if (npar == 0)
+                    return 1;
+                try {
+                    var res = await privateConn.DoUpdate(tablename, filter: mainPost.GetOptimisticClause(R),
+                                            fieldValues: privateConn.GetDictFrom(names, values));
+                    if (res != 0)
+                        return 1;
+                    return 0;
                 }
-                if (npar == 0) return 1;
-
-                string msg = privateConn.DO_UPDATE(tablename, mainPost.GetOptimisticClause(R), names, values, npar);
-                if (msg == null) return 1;
-                lasterror = msg;
-                R.RejectChanges();
-                RESELECT(R, DataRowVersion.Default);
-                return 0;
+                catch (Exception e) {
+                    LastError = e.Message;
+                    R.RejectChanges();
+                    await reselect(R, DataRowVersion.Default);
+                    return 0;
+                }
             }
 
 
@@ -2947,31 +2629,37 @@ namespace mdl {
             /// </summary>
             /// <param name="R"></param>
             /// <param name="ver"></param>
-            void RESELECT(DataRow R, DataRowVersion ver) {
-                privateConn.RUN_SELECT_INTO_TABLE(R.Table, null,
-                    QueryCreator.WHERE_KEY_CLAUSE(R, ver, true), null, true);
+            async Task reselect(DataRow R, DataRowVersion ver) {
+                await privateConn.SelectIntoTable(R.Table, filter: QueryCreator.FilterKey(R, ver, forPosting: false));
             }
+
+
+
+
+
 
             /// <summary>
             /// Reads from DB all views that contains data from other tables than 
             ///  primary table of the view 
             /// </summary>
-            public void ReselectAllViews() {
+            public async Task ReselectAllViews() {
                 foreach (DataTable T in DS.Tables) {
-                    if (T.TableName == T.tableForPosting()) continue;
+                    if (T.TableName == T.tableForPosting())
+                        continue;
                     bool HasExtraColumns = false;
                     foreach (DataColumn C in T.Columns) {
-                        if (QueryCreator.PostingColumnName(C) == null) {
+                        if (C.PostingColumnName() == null) {
                             HasExtraColumns = true;
                             break;
                         }
                     }
-                    if (!HasExtraColumns) continue;
+                    if (!HasExtraColumns)
+                        continue;
                     foreach (DataRow R in T.Rows) {
                         if ((R.RowState == DataRowState.Added) ||
                             (R.RowState == DataRowState.Modified)) {
                             R.AcceptChanges();
-                            RESELECT(R, DataRowVersion.Default);
+                            await reselect(R, DataRowVersion.Default);
                         }
                     }
                 }
@@ -3023,8 +2711,7 @@ namespace mdl {
         /// <param name="R"></param>
         /// <returns></returns>
         virtual public string GetOptimisticClause(DataRow R) {
-            return QueryCreator.WHERE_CLAUSE(R, DataRowVersion.Original,
-                true, true);
+            return QueryCreator.CompareAllFields(R, DataRowVersion.Original, true, qhs);
         }
 
         /// <summary>
@@ -3033,28 +2720,26 @@ namespace mdl {
         /// <param name="resultList"></param>
         /// <param name="ignoredMessages">Messages to ignore</param>
         /// <returns></returns>
-	    ProcedureMessageCollection silentDoAllPrecheck(ProcedureMessageCollection resultList, Hashtable ignoredMessages) {
+	    async Task<ProcedureMessageCollection> getPreChecks(ProcedureMessageCollection resultList, HashSet<string> ignoredMessages) {
             if ((resultList != null) && (!resultList.CanIgnore)) return resultList;
 
 	        resultList = GetEmptyMessageCollection();
-	        foreach (singleDatasetPost p in allPost) {
-	            var curr = p.SILENT_DO_PRE_CHECK(ignoredMessages);
-	            //if (p.RowChanges.nDeletes > 10000) {
-	            //    curr.AddWarning($"Si stanno cancellando {p.RowChanges.nDeletes} righe. ");                  
-	            //}
-	            resultList.Add(curr);
+	        foreach (SingleDatasetPost p in allPost) {
+                var curr = await p.GetPreChecks(ignoredMessages);
+                resultList.Add(curr);
 	        }
 	        return resultList;
 
 	    }
+
         /// <summary>
         /// Should return true if it is allowed to Post a DataRow to DB
         /// As Default returns Conn.CanPost(R)
         /// </summary>
         /// <param name="r"></param>
         /// <returns></returns>
-        protected virtual bool Can_Post(DataRow r) {
-            return dbConn.Security.CanPost(r);
+        protected virtual bool canPost(DataRow r) {
+            return conn.Security.CanPost(r);
         }
 
         /// <summary>
@@ -3068,35 +2753,37 @@ namespace mdl {
 			lasterror="";
 		}
 
-		/// <summary>
-		/// Gets the set of business rule for a given set of changes
-		/// </summary>
-		/// <param name="Cs"></param>
-		/// <returns></returns>
-		virtual protected MetaDataRules GetRules(RowChangeCollection Cs){
-			return new MetaDataRules();
-		}
+        /// <summary>
+        /// Gets the set of business rule for a given set of changes
+        /// </summary>
+        /// <param name="Cs"></param>
+        /// <returns></returns>
+        virtual protected async Task<MetaDataRules> getRules(RowChangeCollection Cs) {
+            return new MetaDataRules();
+        }
 
-		/// <summary>
-		/// Tells MDE that a table is temporary and should 
-		///  not be used for calling stored procedure, messages, logs, or updates.
-		/// Temporary tables are never read or written to db by the library
-		/// </summary>
-		/// <param name="T">Table to mark</param>
-		/// <param name="createblankrow">true if a row has to be added to table</param>
-		public static void MarkAsTemporaryTable(DataTable T, bool createblankrow){
+        /// <summary>
+        /// Tells MDE that a table is temporary and should 
+        ///  not be used for calling stored procedure, messages, logs, or updates.
+        /// Temporary tables are never read or written to db by the library
+        /// </summary>
+        /// <param name="T">Table to mark</param>
+        /// <param name="createblankrow">true if a row has to be added to table</param>
+        public static void MarkAsTemporaryTable(DataTable T, bool createblankrow){
 			T.ExtendedProperties[IsTempTable]="y";
-			if (createblankrow){
-				GetData.Add_Blank_Row(T);
+			if (createblankrow){                
+				model.CheckBlankRow(T);
 			}
 		}
+        static IMetaModel model = MetaFactory.factory.getSingleton<IMetaModel>();
 
-		/// <summary>
-		/// Returns true if a DataTable has been marked as Temporary
-		/// </summary>
-		/// <param name="T"></param>
-		/// <returns></returns>
-		public static bool IsTemporaryTable(DataTable T){
+
+        /// <summary>
+        /// Returns true if a DataTable has been marked as Temporary
+        /// </summary>
+        /// <param name="T"></param>
+        /// <returns></returns>
+        public static bool IsTemporaryTable(DataTable T){
 			if (T.ExtendedProperties[IsTempTable]==null) return false;
 			return true;
 		}
@@ -3111,19 +2798,13 @@ namespace mdl {
 
 	    private IDataAccess _dbConn;
 
-        /// <summary>
-        /// Connection to database
-        /// </summary>
-	    public IDataAccess dbConn {
-#pragma warning disable 612
-	        get { return _dbConn ?? Conn; }
-            set { _dbConn = value; Conn=value as DataAccess; }
-#pragma warning restore 612
-	    }
+      
         /// <summary>
         /// List of PostData classes that concurr in the transaction
         /// </summary>
-	    protected List<singleDatasetPost> allPost = new List<singleDatasetPost>();
+	    protected List<SingleDatasetPost> allPost = new List<SingleDatasetPost>();
+
+
 
         /// <summary>
         /// Initialize PostData. Must be called before DO_POST
@@ -3132,119 +2813,36 @@ namespace mdl {
         /// <param name="conn">Connection to the DataBase</param>
         /// <remarks>This function must be called AFTER the changes have
         ///  been applied to DS.</remarks>
-        /// <returns>error string if errors, null otherwise</returns>        
-        [Obsolete]
-        public virtual string InitClass(DataSet ds, DataAccess conn ) {
-		    if (this.Conn == null) {
-		        this.Conn = conn;
-		    }
-		    if (this.DS == null) {
-                this.DS = ds;
-		    }
-		    allPost.Add(new singleDatasetPost(ds, conn, this));
-            return null;
-		}
+        /// <returns>error string if errors, null otherwise</returns>   
+        public virtual async Task<string> InitClass(DataSet ds, IDataAccess conn) {
+            if (this.conn == null) {
+                this.conn = conn;
+            }
 
-	    /// <summary>
-	    /// Initialize PostData. Must be called before DO_POST
-	    /// </summary>
-	    /// <param name="ds">DataSet to handle</param>
-	    /// <param name="conn">Connection to the DataBase</param>
-	    /// <remarks>This function must be called AFTER the changes have
-	    ///  been applied to DS.</remarks>
-	    /// <returns>error string if errors, null otherwise</returns>   
-	    public virtual string initClass(DataSet ds, IDataAccess conn) {
-	        if (_dbConn == null) {
-	            _dbConn = conn;
-	        }
-	        if (DS == null) {
-	            DS = ds;
-	        }
-	        allPost.Add(new singleDatasetPost(ds, conn, this));
-	        return null;
+            this.qhs = conn.GetQueryHelper();
+
+            if (DS == null) {
+                DS = ds;
+            }
+            var single = new SingleDatasetPost(ds, conn);
+            await single.Init(this);
+
+            allPost.Add(single);
+            return null;
         }
 
-        /// <summary>
+       /// <summary>
         /// Calls business logic and return error messages
         /// </summary>
         /// <param name="post">if true, it is a "AFTER-POST" check</param>
         /// <param name="RC">Collection of changes posted to the DB</param>
         /// <returns>Collection of Error/warings</returns>
-        protected virtual ProcedureMessageCollection DO_CALL_CHECKS(bool post, RowChangeCollection RC){
-			return new ProcedureMessageCollection();
-		}
-
-    
-
-        #region CHECKS FOR TRUE/FALSE UPDATES
-        /// <summary>
-        /// returns true if row (modified) is an improperly set modified row
-        /// </summary>
-        /// <param name="R"></param>
-        /// <returns></returns>
-        public static bool CheckForFalseUpdate(DataRow R){
-            if (R.RowState != DataRowState.Modified) return false;
-			foreach (DataColumn C in R.Table.Columns){
-				if (QueryCreator.IsTemporary(C))continue;
-				if (!R[C,DataRowVersion.Original].Equals(R[C,DataRowVersion.Current])) return false;
-			}
-			return true;
-		}
-
-		/// <summary>
-		/// Remove false update from a DataSet, i.e. calls AcceptChanges
-		///  for any DataRow set erroneously as modified
-		/// </summary>
-		/// <param name="DS"></param>
-		public static void RemoveFalseUpdates(DataSet DS){
-			foreach(DataTable T in DS.Tables){
-				if (IsTemporaryTable(T))continue;
-				foreach (DataRow R in T.Rows) {
-					if (R.RowState != DataRowState.Modified) continue;
-					if (CheckForFalseUpdate(R))	R.AcceptChanges();
-				}
-			}
-		}
-
-        /// <summary>
-        /// Check if table contains any row not in Unchanged state
-        /// </summary>
-        /// <param name="t"></param>
-        /// <returns></returns>
-	    public static bool hasChanges(DataTable t) {
-            if (t == null) return false;
-            foreach (DataRow R in t.Rows) {
-                if (R.RowState == DataRowState.Unchanged) continue;
-                if (R.RowState != DataRowState.Modified) return true;
-                if (CheckForFalseUpdate(R)) {
-                    R.AcceptChanges();
-                    continue;
-                }
-                return true;
-            }
-            return false;
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        protected virtual async Task<ProcedureMessageCollection> callChecks(bool post, RowChangeCollection RC) {
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+            return new ProcedureMessageCollection();
         }
 
-		/// <summary>
-		/// return true if row has really been modified
-		/// </summary>
-		/// <param name="R"></param>
-		public static bool CheckRowForUpdates(DataRow R){
-			if (R.RowState == DataRowState.Detached) return false;
-			if (R.RowState == DataRowState.Unchanged) return false;
-			if (R.RowState == DataRowState.Added) return true;
-			if (R.RowState == DataRowState.Deleted) return true;
-			if (CheckForFalseUpdate(R)){
-				R.AcceptChanges();
-				return false;
-			}
-			else {
-				return true;
-			}
-		}
-
-
-		#endregion
 
 
 		/// <summary>
@@ -3257,30 +2855,30 @@ namespace mdl {
 			return new DataJournaling();
 		}
 
-	    /// <summary>
-	    /// Gets a new DataJournaling object 
-	    /// </summary>
-	    /// <param name="Conn"></param>
-	    /// <param name="Cs"></param>
-	    /// <returns></returns>
-	    protected virtual DataJournaling getJournal(IDataAccess Conn, RowChangeCollection Cs) {
-	        return new DataJournaling();
-	    }
+        /// <summary>
+        /// Gets a new DataJournaling object 
+        /// </summary>
+        /// <param name="Conn"></param>
+        /// <param name="Cs"></param>
+        /// <returns></returns>
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        protected virtual async Task<DataJournaling> getJournal(IDataAccess Conn, RowChangeCollection Cs) {
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+            return new DataJournaling();
+        }
 
         /// <summary>
         /// Checks if there is any rowchange in all dataset
         /// </summary>
         /// <returns></returns>
         bool someChange() {
-	        foreach (singleDatasetPost p in allPost) {
-	            if (p.RowChanges.Count > 0) return true;
-	        }
-	        return false;
-	    }
+            foreach (SingleDatasetPost p in allPost) {
+                if (p.RowChanges.Count > 0)
+                    return true;
+            }
+            return false;
+        }
 
-	    string lastError() {
-	        return dbConn.LastError;
-	    }
 
         /// <summary>
         /// Completes the row to be changed with createuser,createtimestamp,
@@ -3288,13 +2886,14 @@ namespace mdl {
         ///  and calls CalculateFields for each DataRow involved.
         ///  This CAN be done OUTSIDE the transaction.
         /// </summary>
-        void prepareForPosting() {
+        async Task prepareForPosting() {
             foreach (var p in allPost) {
-                p.prepareForPosting();
+                await p.PrepareForPosting();
             }
         }
 
-	    void emptyCache() {
+       
+        void emptyCache() {
             foreach (var p in allPost) {
                 p.RowChanges.EmptyCache();
             }
@@ -3306,63 +2905,58 @@ namespace mdl {
             }
         }
 
-	    bool do_all_precheck() {
-		    var handle = mdl_utils.metaprofiler.StartTimer("do_all_precheck");
-            bool res = true;
+	    async Task<ProcedureMessageCollection> getPrechecks() {
+            var m  = GetEmptyMessageCollection();
+
+            var handle = mdl_utils.MetaProfiler.StartTimer("do_all_precheck");
             foreach (var p in allPost) {
-                bool thisRes = p.DO_PRE_CHECK( IgnoredMessages);
-                res &= thisRes;
+                await p.GetPreChecks(ignoredMessages);
+                if (p.precheck_msg is null) continue;
+                m.Add(p.precheck_msg);
+                p.precheck_msg = null;
             }
-            mdl_utils.metaprofiler.StopTimer(handle);
-            return res;
+            mdl_utils.MetaProfiler.StopTimer(handle);
+            return m;
         }
-        ProcedureMessageCollection do_all_postcheck() {
-	        var handle = mdl_utils.metaprofiler.StartTimer("do_all_postcheck");
+
+        async Task<ProcedureMessageCollection> getPostchecks() {
             var res = GetEmptyMessageCollection();
             foreach (var p in allPost) {
-                var thisRes = p.DO_POST_CHECK(IgnoredMessages);
+                var thisRes = await p.GetPostChecks(ignoredMessages);
                 res.Add(thisRes);
             }
-            mdl_utils.metaprofiler.StopTimer(handle);
             return res;
         }
 
-	    void merge_all_precheck(ProcedureMessageCollection m) {
-            foreach (var p in allPost) {
-                var thisPre= p.precheck_msg;            
-                if (thisPre == null) continue;
-                p.precheck_msg = null;
-                m.Add(thisPre);
-            }
-        }
-        
 
 
-        void getAllJournal() {
+
+
+        async Task getAllJournal() {
             foreach (var p in allPost) {
-                p.getJournal();
+                await p.GetJournal();
             }
         }
 
-	    bool doAllPhisicalPostBatch() {
-		    var handle = mdl_utils.metaprofiler.StartTimer("doAllPhisicalPostBatch");
+        async Task<bool> doAllPhisicalPostBatch() {
+            var handle = StartTimer("doAllPhisicalPostBatch");
 
             foreach (var p in allPost) {
-                bool thisRes = p.DO_PHYSICAL_POST_BATCH();
+                bool thisRes = await p.writeToDatabase();
                 if (!thisRes) { //Mette in lasterror l'errore verificatosi nel singleDatasetPost
                     if (lasterror == null) lasterror = "";
-                    lasterror += p.lasterror+"\r\n";
-                    mdl_utils.metaprofiler.StopTimer(handle);
+                    lasterror += p.LastError + "\r\n";
+                    mdl_utils.MetaProfiler.StopTimer(handle);
                     return false;                    
                 }                
             }
-            mdl_utils.metaprofiler.StopTimer(handle);
+            StopTimer(handle);
             return true;            
         }
 
-	    bool doAllJournaling() {
+        async Task<bool> doAllJournaling() {
             foreach (var p in allPost) {
-                if (!p.DoJournal()) return false;
+                 if (!await p.DoJournal()) return false;
             }
             return true;
             
@@ -3379,31 +2973,31 @@ namespace mdl {
         /// <summary>
         /// Reads all data about views (also in inner posting classes)
         /// </summary>
-	    public void reselectAllViewsAndAcceptChanges() {
-	        var handle = mdl_utils.metaprofiler.StartTimer("reselectAllViewsAndAcceptChanges");
-	        foreach (var p in allPost) {
-	            p.ReselectAllViews();
-	            var h = mdl_utils.metaprofiler.StartTimer("reselectAllViewsAndAcceptChanges - AcceptChanges");
-	            p.DS.AcceptChanges();
-                mdl_utils.metaprofiler.StopTimer(h);
-	        }
+        public async Task ReselectAllViewsAndAcceptChanges() {
+            var handle = StartTimer("reselectAllViewsAndAcceptChanges");
+            foreach (var p in allPost) {
+                await p.ReselectAllViews();
+                var h = StartTimer("reselectAllViewsAndAcceptChanges - AcceptChanges");
+                p.DS.AcceptChanges();
+                StopTimer(h);
+            }
 
-	        var inner = getInnerPosting(DS);
-	        if (inner != null) {
-		        inner.reselectAllViewsAndAcceptChanges();
-	        }
-            mdl_utils.metaprofiler.StopTimer(handle);
-	    }
+            var inner = GetInnerPosting(DS);
+            if (inner != null) {
+                await inner.ReselectAllViewsAndAcceptChanges();
+            }
+            StopTimer(handle);
+        }
 
-	    void startPosting() {
+        void startPosting() {
 	        foreach (var p in allPost) {
-	            p.startPosting(dbConn);
+	            p.startPosting(conn);
 	        }
 	    }
 
 	    void stopPosting() {
                 foreach (var p in allPost) {
-                    p.stopPosting(dbConn);
+                    p.stopPosting(conn);
                 }
             }
         #region DO POST 
@@ -3412,13 +3006,13 @@ namespace mdl {
         /// Instruct to successively ignore a set of messages
         /// </summary>
         /// <param name="msgs"></param>
-	    public void addMessagesToIgnore(Hashtable msgs) {
-	        foreach (string s in msgs.Keys) {
-	            IgnoredMessages[s] = msgs[s];
+	    public void addMessagesToIgnore(HashSet<string> msgs) {
+	        foreach (string s in msgs) {
+                ignoredMessages.Add(s);
 	        }
 	    }
 
-	    Hashtable IgnoredMessages = new Hashtable();
+        HashSet<string> ignoredMessages = new HashSet<string>();
 
         /// <summary>
         /// Fills the list of ignored messages with the collection specified
@@ -3460,28 +3054,28 @@ namespace mdl {
 
 	        return nDel;
 	    }
-	    private bool internalDoPost() {
+        private bool internalInteractiveSaveData() {
             if (!someChange()) return true;
             if (innerPosting)throw new Exception("internalDoPost called with innerPosting=true");
 
-	        InnerPosting innerPostingClass = getInnerPosting(DS);
+	        var innerPostingClass = GetInnerPosting(DS);
 
 	        var postMsgs = GetEmptyMessageCollection();
 	        
 
-            string ignoredError = lastError();
+            string ignoredError = conn.LastError;
             if (!string.IsNullOrEmpty(ignoredError)) {
-                ErrorLogger.Logger.markEvent("Error: " + ignoredError + " has been IGNORED before starting POST!");
+                ErrorLogger.Logger.MarkEvent("Error: " + ignoredError + " has been IGNORED before starting POST!");
             }
 
-            prepareForPosting();
+            prepareForPosting().GetAwaiter().GetResult();
 
             //EVALUATE PRE - CONDITIONS
             lasterror = "";           
             bool result = false;
             bool tryAgain = true;
             clear_precheck_msg();
-            getAllJournal();
+            getAllJournal().GetAwaiter().GetResult();
             int nDeletes = totalDeletes(out var logDel);
             while (tryAgain) {
                 tryAgain = false;
@@ -3489,32 +3083,32 @@ namespace mdl {
                 if (postMsgs.Count>0) {
                     //Visualizza le regole post scattate nell'iterazione precedente.
                     if (postMsgs.ShowMessages()) {
-                        postMsgs.AddMessagesToIgnore(IgnoredMessages);
+                        postMsgs.AddMessagesToIgnore(ignoredMessages);
                     }
                     else {
                         return false; //L'utente ha scelto di non ignorare le regole
                     }
                 }
 
-                dbConn.Open();      //Connection must been opened before setting isolation level
-                string msg = dbConn.BeginTransaction(IsolationLevel.ReadCommitted);
-                if (msg != null) {
-                    dbConn.Close();
-                    MetaFactory.factory.getSingleton<IMessageShower>().Show(msg);
+                try {
+                    conn.Open(); //if inner, connection is already opened
+                    conn.BeginTransaction(IsolationLevel.ReadCommitted).GetAwaiter().GetResult();
+                }
+                catch (Exception e) {
+                    postMsgs.AddDBSystemError($"Errore creando la transazione.\n{e.Message}");
+                    MetaFactory.factory.getSingleton<IMessageShower>().Show(e.Message);
                     return false;
                 }
+                finally {
+                    conn.Close();
+                }
+
+                
 
                 try {
                     clear_precheck_msg();
-
-                    result = do_all_precheck(); //fills precheck_msg, already cleared by IgnoredMessages
-                    var allPreCheck = GetEmptyMessageCollection();
-
-                    if (!result) {
-                        var err = dbConn.LastError ?? "Nessun dettaglio disponibile";
-                        allPreCheck.AddDBSystemError("Errore durante l'interrogazione della logica business. (Precheck)\nDettaglio: " + err);
-                    }
-                    merge_all_precheck(allPreCheck);
+                    var allPreCheck = getPrechecks().GetAwaiter().GetResult(); 
+                   
                     if (allPreCheck.CanIgnore && autoIgnore) {
                         allPreCheck.Clear();
                     }
@@ -3527,7 +3121,7 @@ namespace mdl {
                     if (result) {
                         emptyCache();
                         foreach(DataTable t in DS.Tables)RowChange.ClearMaxCache(t);
-                        result = doAllPhisicalPostBatch();
+                        result = doAllPhisicalPostBatch().GetAwaiter().GetResult();
                         if (!result) {
                             allPreCheck.AddDBSystemError(!string.IsNullOrEmpty(lasterror)
                                 ? lasterror
@@ -3536,19 +3130,19 @@ namespace mdl {
                     }
                     
                     if (result) {
-                        result = doAllJournaling();
+                        result = doAllJournaling().GetAwaiter().GetResult();
                         if (!result)allPreCheck.AddDBSystemError("Si sono verificati errori durante la scrittura nel log");
                     }
                   
                     if (result) {
                         //DB WRITE SUCCEEDED
                         //EVALUATE POST - CONDITION					
-                        postMsgs = do_all_postcheck();
+                        postMsgs = getPostchecks().GetAwaiter().GetResult();
                         postMsgs.Add(allPreCheck);
-                        postMsgs.SkipMessages(IgnoredMessages);
+                        postMsgs.SkipMessages(ignoredMessages);
 
-                        if (!dbConn.validTransaction()) {
-                            string err = dbConn.LastError ?? "Nessun dettaglio disponibile";
+                        if (!conn.HasValidTransaction()) {
+                            string err = conn.LastError ?? "Nessun dettaglio disponibile";
                             postMsgs.AddDBSystemError(
                                 "Errore durante l'interrogazione della logica business. (Postcheck).\nDettaglio: " + err);
                         }
@@ -3564,9 +3158,9 @@ namespace mdl {
                                 result = all_externalUpdate(out lasterror);
                                 if (result) {
                                     if (innerPostingClass != null) {
-                                        innerPostingClass.initClass(DS,dbConn);
-                                        innerPostingClass.setInnerPosting(IgnoredMessages);
-                                        var innerRules = innerPostingClass.DO_POST_SERVICE();
+                                        innerPostingClass.InitClass(DS,conn).GetAwaiter().GetResult();
+                                        innerPostingClass.SetInnerPosting(ignoredMessages);
+                                        var innerRules = innerPostingClass.SaveData().GetAwaiter().GetResult();
                                         if (innerRules.CanIgnore && autoIgnore) {
                                             innerRules.Clear();
                                         }
@@ -3578,17 +3172,17 @@ namespace mdl {
                                     }
 
                                     if (result) {
-                                        msg = dbConn.Commit();
-                                        if (msg != null) {
-                                            postMsgs.AddDBSystemError("Errore nella commit:" + msg);
-                                            lasterror = msg;
-                                            result = false;
-                                        }
-                                        else {
+                                        try {
+                                            conn.Commit().GetAwaiter().GetResult();
                                             if (nDeletes > 10000) {
                                                 ErrorLogger.Logger.logException(logDel);
                                             }
                                         }
+                                        catch (Exception ex) {
+                                            postMsgs.AddDBSystemError("Errore nella commit:" + ex.Message);
+                                            lasterror = ex.Message;
+                                            result = false;
+                                        }                                       
                                     }
                                 }
                                 else {                                    
@@ -3602,19 +3196,19 @@ namespace mdl {
                     }
                 }
                 catch (Exception e) {
-                    lasterror = QueryCreator.GetErrorString(e);
+                    lasterror = ErrorLogger.GetErrorString(e);
                     postMsgs.AddDBSystemError("Eccezione nel salvataggio (internalDoPost)."+lasterror);
-                    dbConn.LogError("internalDoPost", e);
+                    ErrorLogger.Logger.logException("internalDoPost", e);
                     result = false;
                 }
 
                 if ((result == false) || tryAgain) {
                     var nretry = 0;
 
-                    string msg2= dbConn.RollBack();
+                    string msg2= getException(conn.Rollback)().GetAwaiter().GetResult();
                     while (msg2 != null && nretry<3) {
                         nretry++;
-                        msg2 = dbConn.RollBack();
+                        msg2 = getException(conn.Rollback)().GetAwaiter().GetResult();
                     }
                     if (msg2 != null) {
                         result = false;
@@ -3624,22 +3218,22 @@ namespace mdl {
                     }
                 }
                 
-                dbConn.Close();
+                conn.Close();
                 
                 //cicla sin quando ci sono nuovi errori
-                if (result==false) recursiveCallAfterPost(false);
+                if (result==false) recursiveCallAfterPost(false).GetAwaiter().GetResult();
                 ResultList = null; //inutile, non l'ha usata qui
             }
 
 
             if (result) {
-                reselectAllViewsAndAcceptChanges();
+                ReselectAllViewsAndAcceptChanges().GetAwaiter().GetResult();
                 if (innerPostingClass != null) {
-                    recursiveCallAfterPost(true);
+                    recursiveCallAfterPost(true).GetAwaiter().GetResult();
                 }
                 return true;
             }
-            postMsgs.SkipMessages(IgnoredMessages);
+            postMsgs.SkipMessages(ignoredMessages);
 
             if (postMsgs.Count>0) {
                 //Visualizza le regole post o gli errori di db che hanno bloccato il salvataggio                
@@ -3647,25 +3241,45 @@ namespace mdl {
                 return false;
             }
 
-	        recursiveCallAfterPost(false);
+	        recursiveCallAfterPost(false).GetAwaiter().GetResult();
             postMsgs.AddDBSystemError("Impossibile scrivere le modifiche. Probabilmente il contenuto del database è cambiato durante le modifiche." +
                 lasterror);
             return false;
                         
 
         }
+
+        delegate Task TaskFun();
+        delegate Task<string> StringFun();
+
+        StringFun getException(TaskFun f) {
+            return async () => {
+                try {
+                    await f();
+                    return null;
+                }
+                catch (Exception e) {
+                    return e.Message;
+                }
+            };
+
+        }
+
+
         /// <summary>
         /// Call afterPost on all inner posting classes
         /// </summary>
-        /// <param name="committed"></param>
-	    void recursiveCallAfterPost(bool committed) {
-	        var inner = getInnerPosting(DS);
-	        while (inner!=null) {
-	            inner.afterPost(committed);
-	            inner = inner.getInnerPosting();	          
-	        }
-	        
-	    }
+        /// <param name="committed"></param>	   
+        async Task recursiveCallAfterPost(bool committed) {
+            var inner = GetInnerPosting(DS);
+            while (inner != null) {
+                await inner.AfterPost(committed);
+                inner = inner.GetInnerPosting();
+            }
+
+        }
+
+
         /// <summary>
         /// Do ALL the necessary operation about posting data to DataBase. 
         /// If fails, rolles back all (eventually) changes made.
@@ -3673,9 +3287,9 @@ namespace mdl {
         /// </summary>
         /// <returns>true if success</returns>
         /// <remarks>If it succeeds, DataSet.AcceptChanges should be called</remarks>
-        public virtual bool DO_POST() {
+        public virtual bool InteractiveSaveData() {
             startPosting();
-            bool res = internalDoPost();
+            var res = internalInteractiveSaveData();
             stopPosting();
             return res;
         }
@@ -3685,7 +3299,7 @@ namespace mdl {
         /// </summary>
         /// <param name="d"></param>
         /// <param name="post"></param>
-	    public static void setInnerPosting(DataSet d, InnerPosting post) {
+	    public static void SetInnerPosting(DataSet d, IInnerPosting post) {
 	        d.ExtendedProperties["MDL_innerDoPostService"] = post;
 	    }
 
@@ -3694,8 +3308,8 @@ namespace mdl {
         /// </summary>
         /// <param name="d"></param>
         /// <returns></returns>
-	    public static InnerPosting getInnerPosting(DataSet d) {
-	        return  d.ExtendedProperties["MDL_innerDoPostService"] as InnerPosting;
+	    public static IInnerPosting GetInnerPosting(DataSet d) {
+	        return  d.ExtendedProperties["MDL_innerDoPostService"] as IInnerPosting;
 	    }
 
 
@@ -3703,38 +3317,38 @@ namespace mdl {
         /// Do the post as a service, same as doPost except for output data kind
         /// </summary>
         /// <returns></returns>
-        private ProcedureMessageCollection internalDoPostService() {
+        private async Task<ProcedureMessageCollection> internalSaveData() {
             if (!someChange()) return GetEmptyMessageCollection();
 
-            var innerPostingClass = getInnerPosting(DS);
+            var innerPostingClass = GetInnerPosting(DS);
 
             
 
 
-            string IgnoredError = dbConn.LastError;
+            string IgnoredError = conn.LastError;
             if (!string.IsNullOrEmpty(IgnoredError)) {
-                ErrorLogger.Logger.markEvent($"Error: {IgnoredError} has been IGNORED before starting POST!");
+                ErrorLogger.Logger.MarkEvent($"Error: {IgnoredError} has been IGNORED before starting POST!");
             }
 
             //Calc rows related to changes & attach them to RowChanges elements
             //This is a necessary step to call DO_PRE_CHECK & DO_POST_CHECK
             //DO_CALC_RELATED();
             //If resultList already exists, add them to Ignored Messages
-            ResultList?.AddMessagesToIgnore(IgnoredMessages);
+            ResultList?.AddMessagesToIgnore(ignoredMessages);
 
             ResultList = GetEmptyMessageCollection();
-            getAllJournal();
+            await getAllJournal();
 
-            prepareForPosting();
+            await prepareForPosting();
           
             var result=true; //se false ci sono errori bloccanti
             try {
                 clear_precheck_msg();
 
-                if (!innerPosting) dbConn.Open(); //if inner, connection is already opened
-                string msg = innerPosting? null:dbConn.BeginTransaction(IsolationLevel.ReadCommitted);
+                if (!innerPosting) conn.Open(); //if inner, connection is already opened
+                string msg = innerPosting? null:await getException(async ()=> { await conn.BeginTransaction(IsolationLevel.ReadCommitted); })();
                 if (msg != null) {
-                    dbConn.Close();
+                    conn.Close();
                     ResultList.AddDBSystemError($"Errore creando la transazione.\n{msg}");
                     return ResultList;
                 }
@@ -3742,11 +3356,11 @@ namespace mdl {
                 int nDeletes = totalDeletes(out var logDel);
 
                 //Ricalcola le regole PRE e ignora eventuali regole già ignorate, ma se le regole sono non ignorabili non fa nulla
-                ResultList = silentDoAllPrecheck(ResultList, IgnoredMessages);
+                ResultList = await getPreChecks(ResultList, ignoredMessages);
                 //ResultList.SkipMessages(IgnoredMessages);//lo fa già silentDoAllPrecheck                
 
-                if (!dbConn.validTransaction()) {
-                    var err = dbConn.LastError ?? "Nessun dettaglio disponibile";
+                if (!conn.HasValidTransaction()) {
+                    var err = conn.LastError ?? "Nessun dettaglio disponibile";
                     ResultList.AddDBSystemError($"Errore durante l\'interrogazione della logica business. (Precheck).\nDettaglio: {err}");
                 }
                 if (ResultList.CanIgnore && autoIgnore) {
@@ -3761,23 +3375,23 @@ namespace mdl {
                 if (result) {
                     emptyCache();
                     foreach(DataTable t in DS.Tables)RowChange.ClearMaxCache(t);
-                    result = doAllPhisicalPostBatch();
+                    result = await doAllPhisicalPostBatch();
                     if (!result) ResultList.AddDBSystemError($"Errore nella scrittura sul database:{lasterror}");
                 }                
 
                 if (result) {
-                    result = doAllJournaling();
+                    result = await doAllJournaling();
                     if (!result) ResultList.AddDBSystemError("Si sono verificati errori durante la scrittura nel log");
                 }
 
                 if (result) {  //DB WRITE SUCCEEDED
                                //EVALUATE POST - CONDITION
-                    ProcedureMessageCollection postResultList = do_all_postcheck();
+                    ProcedureMessageCollection postResultList = await getPostchecks();
                     ResultList.Add(postResultList);
-                    ResultList.SkipMessages(IgnoredMessages);
+                    ResultList.SkipMessages(ignoredMessages);
 
-                    if (!dbConn.validTransaction()) {
-                        var err = dbConn.LastError ?? "Nessun dettaglio disponibile";
+                    if (!conn.HasValidTransaction()) {
+                        var err = conn.LastError ?? "Nessun dettaglio disponibile";
                         ResultList.AddDBSystemError("Errore durante l'interrogazione della logica business. (Postcheck).\nDettaglio: " + err);
                     }
 
@@ -3796,11 +3410,11 @@ namespace mdl {
 
                     if (result && innerPostingClass != null) {
                         //Effettua il post interno
-                        innerPostingClass.initClass(DS,dbConn);
-                        innerPostingClass.setInnerPosting(IgnoredMessages);
+                        await innerPostingClass.InitClass(DS,conn);
+                        innerPostingClass.SetInnerPosting(ignoredMessages);
 
-                        var innerRules = innerPostingClass.DO_POST_SERVICE();
-                        innerRules.SkipMessages(IgnoredMessages);
+                        var innerRules = await innerPostingClass.SaveData();
+                        innerRules.SkipMessages(ignoredMessages);
 
                         if (innerRules.CanIgnore && autoIgnore) {
                             innerRules.Clear();
@@ -3812,7 +3426,7 @@ namespace mdl {
                     }
 
                     if (result) {
-                        msg = innerPosting? null:dbConn.Commit();
+                        msg = innerPosting? null: await getException(conn.Commit)();
                         if (msg != null) {
                             ResultList.AddDBSystemError("Errore nella commit:" + msg);
                             lasterror = msg;
@@ -3829,35 +3443,35 @@ namespace mdl {
             }
             catch (Exception E) {
                 if (ResultList == null) ResultList = GetEmptyMessageCollection();
-                ResultList.AddDBSystemError(QueryCreator.GetErrorString(E));
+                ResultList.AddDBSystemError(ErrorLogger.GetErrorString(E));
                 ResultList.CanIgnore = false;
                 ResultList.PostMsgs = true;
-                Trace.Write("Error:" + QueryCreator.GetErrorString(E) + "\r", "PostData.DO_POST_SERVICE\r");
+                Trace.Write("Error:" + ErrorLogger.GetErrorString(E) + "\r", "PostData.DO_POST_SERVICE\r");
                 lasterror = E.Message;
                 result = false;
             }
 
             if ((result==false) || ResultList.Count > 0) {
                 //rolls back transaction
-                string msg2= innerPosting? null:dbConn.RollBack();
+                string msg2= innerPosting? null: await getException(conn.Rollback)();
                 if (msg2 != null) {
                     //result = false; unused
                     lasterror += msg2;
                     ResultList.AddDBSystemError("Errore nella scrittura su DB. Rollback fallito.");
                 }
-                if (!innerPosting) dbConn.Close();
+                if (!innerPosting) conn.Close();
                 ResultList.PostMsgs = true; //necessario se DO_POST_CHECK non è stata chiamata
-                if (!innerPosting) recursiveCallAfterPost(false);
+                if (!innerPosting) await recursiveCallAfterPost(false);
                 return ResultList;
             }
 
             if (!innerPosting) {
-                dbConn.Close();
-                reselectAllViewsAndAcceptChanges();
+                conn.Close();
+                await ReselectAllViewsAndAcceptChanges();
             }
 
             if (innerPostingClass != null && !innerPosting) {
-                recursiveCallAfterPost(true);
+                await recursiveCallAfterPost(true);
             }
             return ResultList; //è una lista vuota se tutto è andato bene
 
@@ -3877,11 +3491,11 @@ namespace mdl {
         /// </summary>
         /// <returns>An empty Message Collection if success, Null if severe errors</returns>
         /// <remarks>If it succeeds, DataSet.AcceptChanges should be called</remarks>
-        public virtual ProcedureMessageCollection DO_POST_SERVICE(){
+        public virtual async Task<ProcedureMessageCollection> SaveData() {
             startPosting();
             
 
-            ProcedureMessageCollection res = internalDoPostService();
+            ProcedureMessageCollection res = await internalSaveData();
             stopPosting();
             return res;
         }
@@ -3910,7 +3524,7 @@ namespace mdl {
                 return DoExternalUpdate(d, out errMsg);
             }
             catch (Exception E) {
-                errMsg = QueryCreator.GetErrorString(E);
+                errMsg = ErrorLogger.GetErrorString(E);
                 return false;
             }
         }
@@ -3921,7 +3535,7 @@ namespace mdl {
     /// <summary>
     /// Default inner posting class, implements InnerPosting interface
     /// </summary>
-    public class Base_InnerPoster : InnerPosting {
+    public class Base_InnerPoster : IInnerPosting {
         /// <summary>
         /// 
         /// </summary>
@@ -3929,13 +3543,13 @@ namespace mdl {
 
 
         //private IDataAccess conn;
-        Hashtable msgsToIgnore= new Hashtable();
+        HashSet<string> msgsToIgnore = new HashSet<string>();
 
         /// <summary>
         /// inner PostData class
         /// </summary>
         //PostData innerPostClass { get; }
-        public Hashtable hashMessagesToIgnore() {
+        public HashSet<string> HashMessagesToIgnore() {
             return msgsToIgnore;
         }
 
@@ -3944,7 +3558,7 @@ namespace mdl {
         /// </summary>
         /// <param name="ds"></param>
         /// <param name="conn"></param>
-        public virtual void initClass(DataSet ds, IDataAccess conn) {
+        public virtual async Task InitClass(DataSet ds, IDataAccess conn) {
             //this.conn = conn;
             msgsToIgnore.Clear();
         }
@@ -3954,42 +3568,47 @@ namespace mdl {
         /// Unisce i messaggi dati a quelli finali
         /// </summary>
         /// <param name="messages"></param>
-        public void mergeMessages(ProcedureMessageCollection messages) {
+        public void MergeMessages(ProcedureMessageCollection messages) {
             messages.SkipMessages(msgsToIgnore);
 
         }
 
+       
         /// <summary>
         /// Called after data has been committed or rolled back
         /// </summary>
         /// <param name="committed"></param>
-        public virtual void afterPost(bool committed) {
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        public virtual async Task AfterPost(bool committed) {
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
 
         }
 
         /// <summary>
         /// Reads all data in dataset views 
         /// </summary>
-        public virtual void reselectAllViewsAndAcceptChanges() {
-            p.reselectAllViewsAndAcceptChanges();
+        public virtual async Task ReselectAllViewsAndAcceptChanges() {
+            await p.ReselectAllViewsAndAcceptChanges();
         }
 
+       
         /// <summary>
         /// Get inner posting class that will be used during posting 
         /// </summary>
         /// <returns></returns>
-        public virtual InnerPosting getInnerPosting() {
-            if (p == null) return null;
-            return PostData.getInnerPosting(p.DS);
+        public virtual IInnerPosting GetInnerPosting() {
+            if (p == null)
+                return null;
+            return PostData.GetInnerPosting(p.DS);
         }
 
         /// <summary>
         /// Set inner posting messages that have already been raisen
         /// </summary>
         /// <param name="ignoredMessages"></param>
-        public virtual void setInnerPosting(Hashtable ignoredMessages) {
-            foreach (var s in ignoredMessages.Keys) {
-                msgsToIgnore[s] = 1;
+        public virtual void SetInnerPosting(HashSet<string> ignoredMessages) {
+            foreach (var s in ignoredMessages) {
+                msgsToIgnore.Add(s);
             }
         }
 
@@ -3997,11 +3616,11 @@ namespace mdl {
         /// Proxy to inner DO_POST_SERVICE
         /// </summary>
         /// <returns></returns>
-        public virtual ProcedureMessageCollection DO_POST_SERVICE() {
+        public virtual async Task<ProcedureMessageCollection> SaveData() {
             //effettua tutte le operazioni che avrebbe fatto
             // Il beforePost è già stato invocato correttamente
-            var msg = p.DO_POST_SERVICE();
-            mergeMessages(msg);
+            var msg = await p.SaveData();
+            MergeMessages(msg);
             return msg;
         }
     }

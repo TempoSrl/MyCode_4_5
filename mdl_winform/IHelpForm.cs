@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
+using q = mdl.MetaExpression;
 
 namespace mdl_winform {
 
@@ -272,7 +273,7 @@ namespace mdl_winform {
         /// <param name="rootfilterSql"></param>
         /// <param name="clear"></param>
         /// <returns></returns>
-        bool StartTreeView(TreeView treeView, string rootfilterSql, bool clear);
+        bool StartTreeView(TreeView treeView, q rootfilterSql, bool clear);
 
         /// <summary>
         /// Fills a tree given a start condition. Also Accepts FilterTree
@@ -282,7 +283,7 @@ namespace mdl_winform {
         /// <param name="startValueWanted"></param>
         /// <param name="startFieldWanted"></param>
         /// <returns></returns>
-        bool SetTreeByStart(TreeView c, string startCondition,
+        bool SetTreeByStart(TreeView c, q startCondition,
             string startValueWanted,
             string startFieldWanted);
 
@@ -321,7 +322,7 @@ namespace mdl_winform {
         /// <param name="filter">filter to apply when getting root nodes</param>
         /// <param name="skipPrimary">if true, no action is done if tree-table is 
         ///		primary table</param>
-        void FilteredPreFillTree(TreeView C, string filter, bool skipPrimary);
+        void FilteredPreFillTree(TreeView C, q filter, bool skipPrimary);
 
         /// <summary>
         /// Prefill a control, with an optional select list to compile
@@ -357,9 +358,9 @@ namespace mdl_winform {
         void PreFillControlsTable(Control Co, string tablewanted, List<SelectBuilder> selList);
 
 
-        void FilteredPreFillCombo(ComboBox C, string filter, bool freshvalue);
+        void FilteredPreFillCombo(ComboBox C, q filter, bool freshvalue);
 
-        void FilteredPreFillCombo(ComboBox C, string filter, bool freshvalue, List<SelectBuilder> selList,
+        void FilteredPreFillCombo(ComboBox C, q filter, bool freshvalue, List<SelectBuilder> selList,
             HelpForm.drawmode dmode);
 
         void FillComboBoxTable(ComboBox C, bool freshvalue);
@@ -431,7 +432,7 @@ namespace mdl_winform {
         /// </summary>
         /// <param name="F"></param>
         /// <returns></returns>
-        string GetSearchCondition(Form F);
+        q GetSearchCondition(Form F);
 
         /// <summary>
         /// Gets the mainsearch condition scanning a specified set of controls (and childs)
@@ -439,7 +440,7 @@ namespace mdl_winform {
         /// <param name="Cs"></param>
         /// <param name="table"></param>
         /// <returns></returns>
-        string GetSpecificCondition(Control.ControlCollection Cs, string table);
+        q GetSpecificCondition(Control.ControlCollection Cs, string table);
 
         /// <summary>
         /// Fills a collection of controls (and childs) to reflect a new row selected
@@ -462,7 +463,7 @@ namespace mdl_winform {
         /// <param name="filter"></param>
         /// <param name="freshvalue"></param>
         /// <param name="dmode"></param>
-        void FilteredPreFillCombo(ComboBox C, string filter, bool freshvalue, HelpForm.drawmode dmode);
+        void FilteredPreFillCombo(ComboBox C, q filter, bool freshvalue, HelpForm.drawmode dmode);
 
         /// <summary>
         /// Fills a control in order to display a specified row. 

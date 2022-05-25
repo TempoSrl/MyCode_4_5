@@ -72,14 +72,14 @@ namespace mdl_winform {
         /// Esercizio environment variable
         /// </summary>
         public virtual int esercizio {
-            get { return security.GetEsercizio(); }
+            get { return (int) security.GetSys("esercizio"); }
         }
 
         /// <summary>
         /// dataContabile environment variable
         /// </summary>
         public virtual DateTime dataContabile {
-            get { return security.GetDataContabile(); }
+            get { return (DateTime) security.GetSys("datacontabile"); }
         }
 
         /// <summary>
@@ -159,7 +159,7 @@ namespace mdl_winform {
         /// <param name="filter"></param>
         public virtual void setStaticFilter(DataTable T, object filter) {
 	        if (filter is MetaExpression) filter = toString(filter as MetaExpression);
-            model.setStaticFilter(T, filter);
+            model.SetStaticFilter(T, filter);
         }
 
         /// <summary>
@@ -170,7 +170,7 @@ namespace mdl_winform {
         /// <param name="sort"></param>
         /// <param name="addBlankRow">when true, a blank row is added as first row of T</param>
         public virtual void cacheTable(DataTable T, object filter, string sort=null, bool addBlankRow=true) {
-            model.cacheTable(T, filter, sort, addBlankRow);
+            model.CacheTable(T, filter, sort, addBlankRow);
         }
 
 
@@ -196,8 +196,8 @@ namespace mdl_winform {
         /// </summary>
         /// <param name="child"></param>
         public virtual void addNotEntityChild( DataTable child) {
-            child.setDenyClear();
-            model.addNotEntityChildFilter(controller.primaryTable, child);
+            child.SetDenyClear();
+            model.AddNotEntityChildFilter(controller.primaryTable, child);
         }
 
 
@@ -218,14 +218,9 @@ namespace mdl_winform {
         /// <param name="expr"></param>
         /// <returns></returns>
         public virtual object readValue(string table, object filter, string expr) {
-            if (filter is MetaExpression) {
-                return conn.readValue(table, (MetaExpression) filter, expr, orderby:null);
-            }
-            if (filter is string || filter ==null) {
-                return conn.DO_READ_VALUE(table, (string) filter, expr);
-            }
-           
-            return null;
+            
+            return conn.ReadValue(table, (MetaExpression) filter, expr, orderBy:null);
+            
         }
 
 
@@ -234,19 +229,10 @@ namespace mdl_winform {
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public virtual object doSysCmd(string cmd) {
-            return conn.DO_SYS_CMD(cmd, true);
+        public virtual object ExecuteScalar(string cmd) {
+            return conn.ExecuteScalar(cmd).GetAwaiter().GetResult();
         }
 
-        /// <summary>
-        /// Returns a value executing a generic sql command 
-        /// </summary>
-        /// <param name="cmd"></param>
-        /// <param name="ErrMsg">eventual error message</param>
-        /// <returns></returns>
-        public virtual object doSysCmd(string cmd, out string ErrMsg) {
-            return conn.DO_SYS_CMD(cmd, out  ErrMsg);
-        }
 
 
 
@@ -257,10 +243,16 @@ namespace mdl_winform {
         /// <param name="silent">set true non visualizza messaggi di errore</param>
         /// <param name="timeout">Timeout in seconds, 0 means no timeout, -1 means default timeout</param>
         /// <returns></returns>
-        public virtual DataTable readTable(string sqlCommand, bool silent=true, int timeout=-1) {
-            var T = conn.SQLRunner(sqlCommand, out string errmsg,timeout);
-            if ((errmsg != null) && (!silent)) shower.ShowError(null, LM.errorRunningCommand(sqlCommand), errmsg);
-            return T;
+        public virtual DataTable ExecuteQuery(string sqlCommand, bool silent=true, int timeout=-1) {
+            try {
+                return conn.ExecuteQuery(sqlCommand, timeout: timeout).GetAwaiter().GetResult();
+            }
+            catch (Exception e) {
+                var errmsg = e.ToString();
+                if (!silent)shower.ShowError(null, LM.errorRunningCommand(sqlCommand), errmsg);
+            }
+            
+            return null;
         }
 
       
@@ -274,14 +266,7 @@ namespace mdl_winform {
         /// <param name="filter">condition to apply</param>
         /// <param name="top"></param>
         public virtual void selectIntoTable(DataTable T, object filter, string sortBy=null, string top=null) {
-            if (filter is MetaExpression me) {
-                conn.RUN_SELECT_INTO_TABLE(T, sortBy, me.toSql(qhs, conn), top,prepare:false);
-            }
-
-            if (filter is string || filter == null) {
-                conn.RUN_SELECT_INTO_TABLE(T, null, (string) filter, top, prepare:false);
-            }
-
+            conn.SelectIntoTable(T, orderBy:sortBy,filter:filter, top:top).GetAwaiter().GetResult();          
         }
 
         /// <summary>
@@ -289,8 +274,8 @@ namespace mdl_winform {
         /// </summary>
         /// <param name="T"></param>
         /// <param name="sql">sorting for db reading</param>
-        public virtual DataRow[] sqlRunIntoTable(DataTable T, string sql) {
-            return conn.SQLRUN_INTO_TABLE(T, sql);
+        public virtual void ExecuteQueryIntoTable(DataTable T, string sql) {
+            conn.ExecuteQueryIntoTable(T, sql).GetAwaiter().GetResult();
         }
 
        
@@ -308,15 +293,7 @@ namespace mdl_winform {
             string columnlist=null,
             string sortBy=null,
             string top=null) {
-
-            if (filter is MetaExpression me) {
-                return conn.RUN_SELECT(tablename,columnlist, sortBy, me.toSql(qhs, conn), top,prepare:false);
-            }
-
-            if (filter is string || filter == null) {
-                return conn.RUN_SELECT(tablename,columnlist, sortBy, (string) filter, top,prepare:false);
-            }
-            return null;
+            return conn.Select(tablename, columnlist:columnlist,order_by: sortBy, filter: filter, top:top).GetAwaiter().GetResult();           
         }
 
 
@@ -327,16 +304,8 @@ namespace mdl_winform {
         /// <param name="tablename"></param>
         /// <param name="filter"></param>
         /// <returns></returns>
-        public virtual int selectCount(string tablename, object filter) {
-            if (filter is MetaExpression me) {
-                return conn.RUN_SELECT_COUNT(tablename, me.toSql(qhs, conn),prepare:false);
-            }
-
-            if (filter is string || filter == null) {
-                return conn.RUN_SELECT_COUNT(tablename, (string) filter, prepare:false);
-            }
-
-            throw new Exception("parameter filter is of bad type");
+        public virtual int selectCount(string tablename, MetaExpression filter) {
+            return conn.Count(tablename, filter:filter).GetAwaiter().GetResult() ;            
         }
 
 
@@ -350,22 +319,13 @@ namespace mdl_winform {
         }
 
 
-        /// <summary>
-        /// Substitute environment variables in the string
-        /// </summary>
-        /// <param name="s"></param>
-        /// <param name="sql"></param>
-        /// <returns></returns>
-        public virtual string compile(string s, bool sql) {
-            return security.Compile(s, sql);
-        }
-
+        
         /// <summary>
         /// Check if current user has system administration privileges
         /// </summary>
         /// <returns></returns>
         public virtual bool isSystemAdmin() {
-            return security.isSystemAdmin();
+            return security.IsSystemAdmin();
         }
 
         /// <summary>
@@ -374,11 +334,11 @@ namespace mdl_winform {
         /// <param name="r"></param>
         /// <returns></returns>
         public virtual bool canPost( DataRow r) {
-            if (model.isSkipSecurity(r.Table)) return true;
+            if (model.IsSkipSecurity(r.Table)) return true;
             var T = DataAccess.SimplifiedTableClone(r.Table);
             T.TableName = r.Table.tableForPosting();
-            DataAccess.safeImportRow(T, r);
-            return security.CanPostSingleRowInTable(T);
+            DataSetUtils.SafeImportRow(T, r);
+            return security.CanPost(T.Rows[0]);
         }
 
 
@@ -429,10 +389,10 @@ namespace mdl_winform {
         /// <param name="r"></param>
         /// <returns></returns>
         public virtual bool canSelect(DataRow r) {
-            if (model.isSkipSecurity(r.Table)) return true;
+            if (model.IsSkipSecurity(r.Table)) return true;
             var T = DataAccess.SimplifiedTableClone(r.Table);
-            DataAccess.safeImportRow(T, r);
-            return security.CanSelectSingleRowInTable(T);
+            DataSetUtils.SafeImportRow(T, r);
+            return security.CanSelect(T.Rows[0]);
         }
 
 
@@ -443,7 +403,7 @@ namespace mdl_winform {
         /// <param name="columnList">list of columns to include in the table</param>
         /// <returns></returns>
         public virtual DataTable createTable(string tablename, string columnList=null) {
-            return conn.CreateTableByName(tablename, columnList);
+            return conn.CreateTable(tablename, columnList).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -685,7 +645,7 @@ namespace mdl_winform {
         /// </summary>
         /// <param name="filter"></param>
         public virtual string toString(MetaExpression filter) {
-            return filter?.toSql(qhs, conn);
+            return filter?.toSql(qhs, conn.Security);
         }
         /// <summary>
         /// Message shower

@@ -86,7 +86,7 @@ namespace mdl {
         /// <param name="q"></param>
         /// <param name="env"></param>
         /// <returns></returns>
-        public static string[] toSql(this MetaExpression[] fn, QueryHelper q, object env = null) {
+        public static string[] toSql(this MetaExpression[] fn, QueryHelper q, ISecurity env = null) {
             if (fn.Length == 0) return new string[0];
             return (from f in fn select f.toSql(q, env)).ToArray();
         }
@@ -117,10 +117,23 @@ namespace mdl {
         /// <param name="q">QueryHelper to use</param>
         /// <param name="env">environment for the evaluation</param>
         /// <returns></returns>
-        public static string toCommaSeparated(this MetaExpression[] fn, QueryHelper q, object env = null) {
+        public static string toCommaSeparated(this MetaExpression[] fn, QueryHelper q, ISecurity env = null) {
             return string.Join(",", (from f in fn select f.toSql(q, env)));
         }
 
+        public static CQueryHelper qhc = MetaFactory.factory.getSingleton<CQueryHelper>();
+
+
+        /// <summary>
+        /// Convert MetaExpression into a Ado.net compatible expression string, suitable for DataTable querying
+        /// </summary>
+        /// <param name="M"></param>
+        /// <param name="env"></param>
+        /// <returns></returns>
+        public static string toADO(this MetaExpression M, dynamic env = null) {
+            return M.toSql(qhc, env);
+
+        }
 
     }
 
@@ -354,7 +367,7 @@ namespace mdl {
                 //,"metadatalibrary.dll"
                 //,"Microsoft.CSharp.dll"
             };
-            compiled = c.compile("metadatalibrary."+newClassName, outBody,usingList, linkedDll);
+            compiled = c.compile("mdl." + newClassName, outBody,usingList, linkedDll);
             return this;        
         }
 
@@ -400,13 +413,16 @@ namespace mdl {
         /// <param name="o"></param>
         /// <param name="env"></param>
         /// <returns></returns>
-        public bool getBooleanResult(object o, dynamic env = null) {
-            
-            object res = compiled !=null? compiled.Invoke(null, new object[] { o, env }): apply(o, env);
-            if (res == null) return false;
-            if (res is Boolean) return (Boolean)res;
+        public bool getBoolean(object o, ISecurity env = null) {
+
+            object res = compiled != null ? compiled.Invoke(null, new object[] { o, env }) : apply(o, env);
+            if (res == null)
+                return false;
+            if (res is Boolean boolean)
+                return boolean;
             return false;
-        }        
+        }
+
 
         /// <summary>
         /// Combines two MetaExpression with a logical AND
@@ -456,14 +472,31 @@ namespace mdl {
             return MetaExpression.not(m1);
         }
 
+        /// <summary>
+        /// Gives the Predicate implicitely associated to a MetaExpression
+        /// </summary>
+        /// <param name="m"></param>
+        public static implicit operator Func<object, bool>(MetaExpression m) {
+            return (o) => m.getBoolean(o);
+        }
+
 
         /// <summary>
         /// Gives the Predicate implicitely associated to a MetaExpression
         /// </summary>
         /// <param name="m"></param>
         public static implicit operator Predicate<object> (MetaExpression m) {
-            return  o => m.getBooleanResult(o) ;
+            return  o => m.getBoolean(o) ;
         }
+
+        /// <summary>
+        /// Gives the Predicate implicitely associated to a MetaExpression
+        /// </summary>
+        /// <param name="m"></param>
+        public virtual Predicate<object> applyWith(dynamic env = null) {
+            return (o) => { return this.getBoolean(o, env); };
+        }
+
 
         /// <summary>
         /// Evaluates an expression on an object in a given environment
@@ -472,7 +505,7 @@ namespace mdl {
         /// <param name="o"></param>
         /// <param name="env"></param>
         /// <returns></returns>
-        public static object calc(object expr, object o, dynamic env = null) {
+        public static object calc(object expr, object o, ISecurity env = null) {
             if (expr == null) return null;
             if (DBNull.Value.Equals(expr)) return DBNull.Value;
             if (expr is MetaExpression) return ((MetaExpression)expr).apply(o, env);
@@ -551,6 +584,12 @@ namespace mdl {
         /// Field Name to which this expression means to be assigned if queryed  
         /// </summary>
         public string Alias;
+
+
+        public MetaExpression withEnv(ISecurity env) {
+            return new MetaExpressionWithEnv(this, env);
+        }
+
 
         /// <summary>
         /// Sets the Alias for this Expression
@@ -696,7 +735,7 @@ namespace mdl {
         /// <param name="o"></param>
         /// <param name="env"></param>
         /// <returns></returns>
-        public abstract object apply(object o = null, dynamic env = null);
+        public abstract object apply(object o = null, ISecurity env = null);
 
         /// <summary>
         /// Get the sql representation for the expression
@@ -704,7 +743,7 @@ namespace mdl {
         /// <param name="q"></param>
         /// <param name="env"></param>
         /// <returns></returns>
-        public abstract string toSql(QueryHelper q, dynamic env = null);
+        public abstract string toSql(QueryHelper q, ISecurity env = null);
 
         /// <summary>
         /// Friendly string representation of the expression
@@ -882,14 +921,7 @@ namespace mdl {
             return new MetaExpressionUsr(envVariableName);
         }
 
-        /// <summary>
-        /// Generic environment variable name
-        /// </summary>
-        /// <param name="envVariableName"></param>
-        /// <returns></returns>
-        public static MetaExpression context(string envVariableName) {
-            return new MetaExpressionContext(envVariableName);
-        }
+      
 
         /// <summary>
         /// Constant MetaExpression
@@ -1026,6 +1058,13 @@ namespace mdl {
         /// <returns></returns>
         public static MetaExpression bitNot(object par) {
             var r = new MetaExpressionBitwiseNot(par);
+            return r;
+        }
+
+        
+        
+        public static MetaExpression GetDatePart(object par, DatePart part) {
+            var r = new MetaExpressionGetDatePart(par,part);
             return r;
         }
 
@@ -1268,7 +1307,7 @@ namespace mdl {
 	        }
 	        return new MetaExpressionMCmp(childVal);
         }
-
+        
         /// <summary>
         /// Get filter to retrieve parents
         //// </summary>
@@ -1452,6 +1491,18 @@ namespace mdl {
         }
 
 
+
+        /// <summary>
+        /// Returns the expression (o1 like o2)
+        /// </summary>
+        /// <param name="o1"></param>
+        /// <param name="o2"></param>
+        /// <returns></returns>
+        public static MetaExpression likeOrEqual(object o1, object o2) {
+            if (o2 is String && ((String)o2).IndexOf("%") == 0) return tryEval(new MetaExpressionEq(o1, o2));
+            return tryEval(new MetaExpressionLike(o1, o2));
+        }
+
         /// <summary>
         /// Returns the expression (o1 like o2)
         /// </summary>
@@ -1612,32 +1663,7 @@ namespace mdl {
     }
 
     
-    class MetaExpressionContext : MetaExpression {
-        private readonly string _envName;
-        public string EnvName => _envName; //for serialization pourposes
-
-        public MetaExpressionContext(string envVariableName) {
-            _envName = envVariableName;
-            Name = "context";
-        }
-
-        public override object apply(object o = null, dynamic env = null) {
-            return getField(_envName, env);
-        }
-        
-        public override string toSql(QueryHelper q, dynamic env = null) {
-            return q.quote(getField(_envName, env));
-        }
-
-        public override string getCCode(Compiler c, string varName,Type T) {
-            return $"env.{_envName}";
-        }
-
-        public override string toString() {
-            return $"context({_envName})";
-        }
-    }
-
+    
     class MetaExpressionSys : MetaExpression {
         private readonly string _envName;
         public string EnvName => _envName; //for serialization pourposes
@@ -1647,13 +1673,13 @@ namespace mdl {
             Name = "context.sys";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
-            if (env == null) return null;
-            if (env.sys == null) return null;
-            return env.sys[_envName];
+        public override object apply(object o = null, ISecurity env = null) {
+            if (env == null)
+                return null;
+            return env.GetSys(_envName);
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             return q.quote(apply(null, env));
         }
 
@@ -1675,13 +1701,13 @@ namespace mdl {
 
         }
 
-        public override object apply(object o = null, dynamic env = null) {
-            if (env == null) return null;
-            if (env.usr == null) return null;
-            return env.usr[_envName];
+        public override object apply(object o = null, ISecurity env = null) {
+            if (env == null)
+                return null;
+            return env.GetUsr(_envName);
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             return q.quote(apply(null, env));
         }
         public override string getCCode(Compiler c, string varName, Type T) {
@@ -1720,7 +1746,7 @@ namespace mdl {
             }
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             return value;
         }
         public override string getCCode(Compiler c, string varName, Type T) {
@@ -1741,7 +1767,7 @@ namespace mdl {
         }
 
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             if (isUndefined()) return "(undefined)";
             //if (value is String) return value.ToString();
             return q.quote(value);
@@ -1774,14 +1800,14 @@ namespace mdl {
             Name = "isNull";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             var result = calc(Parameters[0], o, env);
             if (result == null) return null;
             return result.Equals(DBNull.Value);
         }
 
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             return q.IsNull(Parameters[0].toSql(q, env));
         }
 
@@ -1800,13 +1826,13 @@ namespace mdl {
             Name = "isNotNull";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             var result = calc(Parameters[0], o, env);
             if (result == null) return null;
             return !result.Equals(DBNull.Value);
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             return q.IsNotNull(Parameters[0].toSql(q, env));
         }
         public override string getCCode(Compiler c, string varName, Type T) {
@@ -1843,7 +1869,7 @@ namespace mdl {
             return this;
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             if (fieldIndex >= 0) {
                 if (o == null) return null;
                 if (o is DataRow) {
@@ -1865,7 +1891,7 @@ namespace mdl {
             return null;
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             if (TableName == null) return FieldName;
             return $"{TableName}.{FieldName}";
         }
@@ -1905,7 +1931,7 @@ namespace mdl {
         }
 
         /// <inheritdoc />
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             if (isUndefined()) return null;
             var resultList = new List<object>();
             foreach (MetaExpression m in Parameters) {
@@ -1919,7 +1945,7 @@ namespace mdl {
         }
 
         /// <inheritdoc />
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             return "("+string.Join(", ", MetaExpressionHelper.toSql(Parameters, q, env))+")";
         }
 
@@ -1943,7 +1969,7 @@ namespace mdl {
             Name = "add";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             dynamic result = null;
             if (isNull()) return DBNull.Value;
             if (isUndefined()) return null;
@@ -1969,7 +1995,7 @@ namespace mdl {
             return result;
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             return string.Join(" + ", MetaExpressionHelper.toSql(Parameters, q, env));
         }
 
@@ -1991,18 +2017,18 @@ namespace mdl {
             Name = "modulus";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             if (isNull()) return DBNull.Value;
             if (isUndefined()) return null;
 
-            var arr = upgradeTypes(calc(Parameters[0], o, env), calc(Parameters[1], o, env));
+            dynamic arr = upgradeTypes(calc(Parameters[0], o, env), calc(Parameters[1], o, env));
             if (DBNull.Value.Equals(arr[0])) return DBNull.Value;
             if (DBNull.Value.Equals(arr[1])) return DBNull.Value;
             if (arr[0]==null||arr[1]==null) return null;
             return arr[0] % arr[1];
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             return string.Join(" % ", MetaExpressionHelper.toSql(Parameters, q, env));
         }
 
@@ -2025,18 +2051,18 @@ namespace mdl {
             Name = "sub";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             if (isNull()) return DBNull.Value;
             if (isUndefined()) return null;
 
-            var arr = upgradeTypes(calc(Parameters[0], o, env), calc(Parameters[1], o, env));
+            dynamic arr = upgradeTypes(calc(Parameters[0], o, env), calc(Parameters[1], o, env));
             if (DBNull.Value.Equals(arr[0])) return DBNull.Value;
             if (DBNull.Value.Equals(arr[1])) return DBNull.Value;
             if (arr[0]==null||arr[1]==null)return null;
             return arr[0] - arr[1];
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             return string.Join(" - ", MetaExpressionHelper.toSql(Parameters, q, env));
         }
 
@@ -2057,18 +2083,18 @@ namespace mdl {
             Name = "div";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             if (isNull()) return DBNull.Value;
             if (isUndefined()) return null;
 
-            var arr = upgradeTypes(calc(Parameters[0], o, env), calc(Parameters[1], o, env));
+            dynamic arr = upgradeTypes(calc(Parameters[0], o, env), calc(Parameters[1], o, env));
             if (DBNull.Value.Equals(arr[0])) return DBNull.Value;
             if (DBNull.Value.Equals(arr[1])) return DBNull.Value;
             if (arr[0]==null||arr[1]==null) return null;
             return arr[0] / arr[1];
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             return string.Join(" / ", MetaExpressionHelper.toSql(Parameters, q, env));
         }
 
@@ -2098,7 +2124,7 @@ namespace mdl {
             Name = "mul";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             dynamic result = null;
             if (isNull()) return DBNull.Value;
             if (isUndefined()) return null;
@@ -2123,7 +2149,7 @@ namespace mdl {
            
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             return string.Join(" * ", MetaExpressionHelper.toSql(Parameters, q, env));
         }
         public override string getCCode(Compiler c, string varName,Type T) {
@@ -2198,7 +2224,7 @@ namespace mdl {
         /// <param name="o"></param>
         /// <param name="env"></param>
         /// <returns></returns>
-        public override object apply(object o = null, dynamic env = null) {            
+        public override object apply(object o = null, ISecurity env = null) {            
             if (isUndefined()) return null;
             if(!(o is object[] arr)) return null;
             var m = Parameters[0];
@@ -2223,7 +2249,7 @@ namespace mdl {
             return result;
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             //string[] allPar = (from par in Parameters select q.IsNullFn(par.toSql(q, env), 0) as string).ToArray();
             return $"SUM({Parameters[0].toSql(q,env)})";
         }
@@ -2256,7 +2282,7 @@ namespace mdl {
         /// <param name="o"></param>
         /// <param name="env"></param>
         /// <returns></returns>
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             if (isUndefined()) return null;
             if (o == null) return null;
             //MetaExpression m = Parameters[0];
@@ -2270,7 +2296,7 @@ namespace mdl {
             return arr.Length;
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             //string[] allPar = (from par in Parameters select q.IsNullFn(par.toSql(q, env), 0) as string).ToArray();
             return $"COUNT({Parameters[0].toSql(q, env)})";
         }
@@ -2293,7 +2319,7 @@ namespace mdl {
             Name = "isNullFn";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             dynamic par1 = Parameters[0].apply(o, env);
             if (par1 == null) return null;
             if (!DBNull.Value.Equals(par1)) return par1;
@@ -2302,7 +2328,7 @@ namespace mdl {
 
 
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             var par1 = Parameters[0];
             var par2 = Parameters[1];
             if (par2.isNull()) return q.IsNull(par1.toSql(q, env));
@@ -2326,7 +2352,7 @@ namespace mdl {
             Name = "not";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             var result = calc(Parameters[0], o, env);
             if (result == null) return null;
             if (DBNull.Value.Equals(result)) return DBNull.Value;
@@ -2334,7 +2360,7 @@ namespace mdl {
             return false;
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             return q.Not(Parameters[0].toSql(q, env));
         }
         public override string getCCode(Compiler c, string varName, Type T) {
@@ -2355,7 +2381,7 @@ namespace mdl {
             Name = "~";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             var result = calc(Parameters[0], o, env);
             if (result == null) return null;
             if (result.Equals(DBNull.Value)) return DBNull.Value;
@@ -2365,7 +2391,7 @@ namespace mdl {
             return ~ii;
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             return q.BitwiseNot(Parameters[0].toSql(q, env));
         }
         public override string getCCode(Compiler c, string varName, Type T) {
@@ -2386,7 +2412,7 @@ namespace mdl {
             Name = "year";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             dynamic result = calc(Parameters[0], o, env);
             if (result == null) return null;
             if (result.Equals(DBNull.Value)) return DBNull.Value;
@@ -2394,7 +2420,7 @@ namespace mdl {
             return ((DateTime) result).Year;
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             return "year(" + Parameters[0].toSql(q, env)+")";
         }
         public override string getCCode(Compiler c, string varName, Type T) {
@@ -2409,6 +2435,70 @@ namespace mdl {
     }
 
 
+    class MetaExpressionGetDatePart :MetaExpression {
+
+
+        public MetaExpressionGetDatePart(object par, DatePart part) {
+            Parameters = getParams(new[] { par }, true);
+            Name = "GetDatePart";
+            this.part = part;
+        }
+        public DatePart part;
+
+        public override object apply(object o = null, ISecurity env = null) {
+            dynamic result = calc(Parameters[0], o, env);
+            if (result == null)
+                return null;
+            if (result.Equals(DBNull.Value))
+                return DBNull.Value;
+            if (result.GetType() != typeof(DateTime))
+                return DBNull.Value;
+            switch (part) {
+                case DatePart.day:
+                    return ((DateTime)o).Day;
+                case DatePart.month:
+                    return ((DateTime)o).Month;
+                case DatePart.year:
+                    return ((DateTime)o).Year;
+                case DatePart.hour:
+                    return ((DateTime)o).Hour;
+                case DatePart.minute:
+                    return ((DateTime)o).Minute;
+                case DatePart.second:
+                    return ((DateTime)o).Second;
+                case DatePart.millisecond:
+                    return ((DateTime)o).Millisecond;
+            }
+            return ((DateTime)result).Year;
+        }
+
+        public override string toSql(QueryHelper q, ISecurity env = null) {
+            return q.GetDatePart(Parameters[0].toSql(q, env), part);            
+        }
+        public override string getCCode(Compiler c, string varName, Type T) {
+            return $"({Parameters[0].getCCode(c, varName, T)}).{CSharpPart[part]}";
+        }
+
+        static Dictionary<DatePart, string> CSharpPart = new Dictionary<DatePart, string>() {
+            { DatePart.millisecond , "Millisecond" },
+            { DatePart.second, "Second" },
+            { DatePart.minute , "Minute" },
+            { DatePart.hour , "Hour" },
+            { DatePart.day , "Day" },
+            { DatePart.month , "Month" },
+            { DatePart.year , "Year" },
+            };
+
+
+        public override string toString() {
+            return $"{CSharpPart[part]}({Parameters[0].toString()})";
+        }
+
+
+    }
+
+
+
     class MetaExpressionMinus : MetaExpression {
 
 
@@ -2417,14 +2507,14 @@ namespace mdl {
             Name = "minus";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             dynamic result = calc(Parameters[0], o, env);
             if (result == null) return null;
             if (result.Equals(DBNull.Value)) return DBNull.Value;
             return -result;
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             return "-" + Parameters[0].toSql(q, env);
         }
         public override string getCCode(Compiler c, string varName, Type T) {
@@ -2444,7 +2534,7 @@ namespace mdl {
             Name = "bitSet";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             dynamic operand = calc(Parameters[0], o, env);
             dynamic nBit = calc(Parameters[1], o, env);
             if (operand == null) return null;
@@ -2455,7 +2545,7 @@ namespace mdl {
             return (operand & (1 << nBit)) != 0;
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             return q.BitSet(Parameters[0].toSql(q, env), Convert.ToInt32(Parameters[1].apply()));
         }
         public override string getCCode(Compiler c, string varName, Type T) {
@@ -2474,7 +2564,7 @@ namespace mdl {
             Name = "bitClear";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             dynamic operand = calc(Parameters[0], o, env);
             dynamic nBit = calc(Parameters[1], o, env);
             if (operand == null) return null;
@@ -2485,7 +2575,7 @@ namespace mdl {
             return (operand & (1 << nBit)) == 0;
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             return q.BitClear(Parameters[0].toSql(q, env), Convert.ToInt32(Parameters[1].apply()));
         }
 
@@ -2515,7 +2605,7 @@ namespace mdl {
             Name = "or";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             if (isTrue()) return true;
             if (isFalse()) return false;
             bool nullFound = false;
@@ -2538,7 +2628,7 @@ namespace mdl {
             return false;
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             //if (Parameters.Length == 1) {
             //    return new MetaExpressionDoPar(Parameters[0]).toSql(q,env);
             //}
@@ -2591,7 +2681,7 @@ namespace mdl {
             Name = "and";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             if (isFalse()) return false;
             if (isTrue()) return true;
             var nullFound = false;
@@ -2613,7 +2703,7 @@ namespace mdl {
             return true;
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             if (isTrue())return MetaExpression.constant(true).toSql(q,env);
             if (isFalse())return MetaExpression.constant(false).toSql(q,env);
             if (Parameters.Length == 1) {
@@ -2663,7 +2753,7 @@ namespace mdl {
                 _fields = dict.Keys.ToArray();
             }
             else {
-                _fields = sample.GetType().GetMembers().Where(f => f.MemberType == MemberTypes.Property)._Pick("Name").Cast<string>().ToArray();
+                _fields = sample.GetType().GetMembers().Where(f => f.MemberType == MemberTypes.Property).Pick("Name").Cast<string>().ToArray();
             }
 
             //TupleElementNames MyAttribute = (TupleElementNames) Attribute.GetCustomAttribute(sample.GetType(), typeof (TupleElementNames));
@@ -2683,7 +2773,7 @@ namespace mdl {
             Name = "mcmp";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             foreach (string s in _fields) {
                 object o1 = getField(s, o);
                 object o2 = _sampleFields[s];
@@ -2694,7 +2784,7 @@ namespace mdl {
             return true;
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             return q.AppAnd((from f in _fields select q.CmpEq(f, _sampleFields[f])).ToArray());
         }
 
@@ -2722,7 +2812,7 @@ namespace mdl {
 
 
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
 
             object o1 = getField(_dest, o);
             object o2 = _sourceVal;
@@ -2733,7 +2823,7 @@ namespace mdl {
             return true;
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             return q.CmpEq(q.Field(_dest), _sourceVal);
         }
 
@@ -2763,8 +2853,8 @@ namespace mdl {
 	        return new Dictionary<string, object>(){{eqFun.FieldName , valueFun.value}};
         }
 
-        public override object apply(object o = null, dynamic env = null) {
-            var oo = upgradeTypes(Parameters[0].apply(o, env), Parameters[1].apply(o, env));
+        public override object apply(object o = null, ISecurity env = null) {
+            dynamic oo = upgradeTypes(Parameters[0].apply(o, env), Parameters[1].apply(o, env));
             if (oo[0] == null || oo[1] == null) return null;
             var par1 = oo[0];
             var par2 = oo[1];
@@ -2778,7 +2868,7 @@ namespace mdl {
         public override string getCCode(Compiler c, string varName, Type T) {
             return $"({Parameters[0].getCCode(c,varName,T)}.Equals({Parameters[1].getCCode(c,varName,T)}))";
         }
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             var par1 = Parameters[0];
             var par2 = Parameters[1];
             if (par2.isNull()) return q.IsNull(par1.toSql(q, env));
@@ -2797,8 +2887,8 @@ namespace mdl {
             Name = "ne";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
-            var oo = upgradeTypes(Parameters[0].apply(o, env), Parameters[1].apply(o, env));
+        public override object apply(object o = null, ISecurity env = null) {
+            dynamic oo = upgradeTypes(Parameters[0].apply(o, env), Parameters[1].apply(o, env));
             if (oo[0] == null || oo[1] == null) return null;
             var par1 = oo[0];
             var par2 = oo[1];
@@ -2812,7 +2902,7 @@ namespace mdl {
         public override string getCCode(Compiler c, string varName, Type T) {
             return $"(!{Parameters[0].getCCode(c, varName, T)}.Equals({Parameters[1].getCCode(c, varName, T)}))";
         }
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             var par1 = Parameters[0];
             var par2 = Parameters[1];
             if (par2.isNull()) return q.IsNotNull(par1.toSql(q, env));
@@ -2830,8 +2920,8 @@ namespace mdl {
             Name = "le";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
-            var oo = upgradeTypes(Parameters[0].apply(o, env), Parameters[1].apply(o, env));
+        public override object apply(object o = null, ISecurity env = null) {
+            dynamic oo = upgradeTypes(Parameters[0].apply(o, env), Parameters[1].apply(o, env));
             if (oo[0] == null || oo[1] == null) return null;
             if (DBNull.Value.Equals(oo[0])) return false;
             if (DBNull.Value.Equals(oo[1])) return false;
@@ -2842,7 +2932,7 @@ namespace mdl {
             //return ((t)par1).CompareTo((t)par2)<=0;
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             var par1 = Parameters[0];
             var par2 = Parameters[1];
             return q.UnquotedCmpLe(par1.toSql(q, env), par2.toSql(q, env));
@@ -2866,8 +2956,8 @@ namespace mdl {
             Name = "lt";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
-            var oo = upgradeTypes(Parameters[0].apply(o, env), Parameters[1].apply(o, env));
+        public override object apply(object o = null, ISecurity env = null) {
+            dynamic oo = upgradeTypes(Parameters[0].apply(o, env), Parameters[1].apply(o, env));
             if (oo[0] == null || oo[1] == null) return null;
             if (DBNull.Value.Equals(oo[0])) return false;
             if (DBNull.Value.Equals(oo[1])) return false;
@@ -2878,7 +2968,7 @@ namespace mdl {
             return par1 < par2;
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             var par1 = Parameters[0];
             var par2 = Parameters[1];
             return q.UnquotedCmpLt(par1.toSql(q, env), par2.toSql(q, env));
@@ -2903,8 +2993,8 @@ namespace mdl {
             Name = "ge";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
-            var oo = upgradeTypes(Parameters[0].apply(o, env), Parameters[1].apply(o, env));
+        public override object apply(object o = null, ISecurity env = null) {
+            dynamic oo = upgradeTypes(Parameters[0].apply(o, env), Parameters[1].apply(o, env));
             if (oo[0] == null || oo[1] == null) return null;
             if (DBNull.Value.Equals(oo[0])) return false;
             if (DBNull.Value.Equals(oo[1])) return false;
@@ -2916,7 +3006,7 @@ namespace mdl {
         }
 
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             var par1 = Parameters[0];
             var par2 = Parameters[1];
             return q.UnquotedCmpGe(par1.toSql(q, env), par2.toSql(q, env));
@@ -2960,8 +3050,8 @@ namespace mdl {
             Name = "gt";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
-            var oo = upgradeTypes(Parameters[0].apply(o, env), Parameters[1].apply(o, env));
+        public override object apply(object o = null, ISecurity env = null) {
+            dynamic oo = upgradeTypes(Parameters[0].apply(o, env), Parameters[1].apply(o, env));
             if (oo[0] == null || oo[1] == null) return null;
             if (DBNull.Value.Equals(oo[0])) return false;
             if (DBNull.Value.Equals(oo[1])) return false;
@@ -2972,7 +3062,7 @@ namespace mdl {
             return par1 > par2;
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             var par1 = Parameters[0];
             var par2 = Parameters[1];
             return q.UnquotedCmpGt(par1.toSql(q, env), par2.toSql(q, env));
@@ -3174,7 +3264,7 @@ namespace mdl {
             Name = "&";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             dynamic result = null;
             if (isNull()) return DBNull.Value;
             if (isUndefined()) return null;
@@ -3194,7 +3284,7 @@ namespace mdl {
             return result;
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             return q.BitwiseAnd(MetaExpressionHelper.toSql(Parameters, q, env));            
         }
 
@@ -3217,7 +3307,7 @@ namespace mdl {
             Name = "|";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             dynamic result = null;
             if (isNull()) return DBNull.Value;
             if (isUndefined()) return null;
@@ -3237,7 +3327,7 @@ namespace mdl {
             return result;
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             return q.BitwiseOr(MetaExpressionHelper.toSql(Parameters, q, env));         
         }
         public override string getCCode(Compiler c, string varName, Type T) {
@@ -3260,7 +3350,7 @@ namespace mdl {
             Name = "^";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             dynamic result = null;
             if (isNull()) return DBNull.Value;
             if (isUndefined()) return null;
@@ -3280,7 +3370,7 @@ namespace mdl {
             return result;
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
            return q.BitwiseXor(MetaExpressionHelper.toSql(Parameters, q, env));         
         }
         public override string getCCode(Compiler c, string varName, Type T) {
@@ -3381,7 +3471,7 @@ namespace mdl {
             Name = "fieldIn";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             if (_arr.Length == 0) return false;
             dynamic par = Parameters[0].apply(o, env);
             if (par == null) return null;
@@ -3400,7 +3490,7 @@ namespace mdl {
             return $"{Parameters[0].toString()} in ({allVal})";
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             var allVal = (from s in _arr select $"{s.toSql(q,env)}").ToArray();
             return q.UnquotedFieldIn(Parameters[0].toSql(q, env), allVal);
         }
@@ -3441,7 +3531,7 @@ namespace mdl {
             Name = "fieldNotIn";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             if (_arr.Length == 0) return true;
             dynamic par = Parameters[0].apply(o, env);
             if (par == null) return null;
@@ -3459,7 +3549,7 @@ namespace mdl {
             return $"{Parameters[0].toString()} not in ({allVal})";
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
 	        var allVal = (from s in _arr select $"{s.toSql(q,env)}").ToArray();
 	        return q.UnquotedFieldNotIn(Parameters[0].toSql(q, env), allVal);
         }
@@ -3471,7 +3561,7 @@ namespace mdl {
             Info = m.Info;
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             return Parameters[0].apply(o, env);
         }
 
@@ -3481,7 +3571,7 @@ namespace mdl {
             return $"({internalExpr})";
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             string internalExpr = Parameters[0].toSql(q, env);
             if (internalExpr.StartsWith("(")&& internalExpr.EndsWith(")")) return internalExpr;
             return q.DoPar(internalExpr);
@@ -3499,7 +3589,7 @@ namespace mdl {
             Name = "like";
         }
 
-        public override object apply(object o = null, dynamic env = null) {
+        public override object apply(object o = null, ISecurity env = null) {
             dynamic par1 = Parameters[0].apply(o, env);
             dynamic par2 = Parameters[1].apply(o, env);
             if (DBNull.Value.Equals(par1)) return DBNull.Value;
@@ -3517,10 +3607,43 @@ namespace mdl {
             return $"{Parameters[0].toString()} LIKE {Parameters[1].toString()}";
         }
 
-        public override string toSql(QueryHelper q, dynamic env = null) {
+        public override string toSql(QueryHelper q, ISecurity env = null) {
             return q.UnquotedLike(Parameters[0].toSql(q, env), Parameters[1].toSql(q, env));
         }
     }
+
+
+    /// <summary>
+    /// 
+    /// </summary>
+    class MetaExpressionWithEnv :MetaExpression {
+        MetaExpression M;
+        ISecurity env;
+        public MetaExpressionWithEnv(MetaExpression M, ISecurity env) {
+            this.M = M;
+            this.env = env;
+            Name = "WithEnv";
+        }
+
+        public override object apply(object o = null, ISecurity env = null) {
+            return M.apply(o, this.env);
+        }
+
+        public override string toSql(QueryHelper q, ISecurity env = null) {
+            return M.toSql(q, this.env);
+        }
+
+        public override string getCCode(Compiler c, string varName, Type T) {
+            throw new NotImplementedException("Compilation not supported in withEnv MetaExpression");
+        }
+
+        public override string toString() {
+            return M.toString();
+        }
+
+    }
+
+
 }
 
 

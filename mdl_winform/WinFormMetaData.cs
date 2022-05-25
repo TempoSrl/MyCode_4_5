@@ -121,7 +121,7 @@ namespace mdl_winform {
 
 
         ICustomViewListForm GetListForm(IWinFormMetaData linked, string columnlist,
-            string mergedfilter, string searchtable, string listingType, string sorting, int top);
+            MetaExpression mergedfilter, string searchtable, string listingType, string sorting, int top);
 
 
 
@@ -149,7 +149,7 @@ namespace mdl_winform {
         /// <remarks> If the entity is selected, a row is loaded in the primary table
         ///  and all other data is cleared. </remarks>
         DataRow SelectOne(string ListingType,
-            string filter,
+            MetaExpression filter,
             string searchtable,
             DataTable ToMerge);
 
@@ -162,7 +162,7 @@ namespace mdl_winform {
         /// <param name="filter"></param>
         /// <param name="searchtable"></param>
         /// <returns>A row belonging to a table equal to PrimaryTable</returns>
-        DataRow SelectByCondition(string filter,string searchtable);
+        DataRow SelectByCondition(MetaExpression filter,string searchtable);
 
 
 
@@ -232,7 +232,7 @@ namespace mdl_winform {
         /// <summary>
         /// 
         /// </summary>
-        string StartFilter { get; set; }
+        MetaExpression StartFilter { get; set; }
 
 
 
@@ -250,7 +250,7 @@ namespace mdl_winform {
         /// <summary>
         /// Filter calculated by the context menu manager that has opened this form
         /// </summary>
-        string ContextFilter { get; }
+        MetaExpression ContextFilter { get; }
 
 
         /// <summary>
@@ -282,7 +282,7 @@ namespace mdl_winform {
         public bool StartEmpty { get; set; }
 
         /// <inheritdoc />
-        public string ContextFilter { get;internal set;}
+        public MetaExpression ContextFilter { get;internal set;}
 
 
         public DataRow CurrentRow {
@@ -312,7 +312,7 @@ namespace mdl_winform {
         /// <summary>
         /// StartFilter is used to filter data collected in lists and trees. 
         /// </summary>
-        public string StartFilter { get;set;}
+        public MetaExpression StartFilter { get;set;}
 
         /// <summary>
         /// String wanted in first list selected row 
@@ -392,7 +392,7 @@ namespace mdl_winform {
         /// <returns>List Form</returns>
         ICustomViewListForm getMergeListForm(IWinFormMetaData linked,
             string columnlist,
-            string mergedfilter,
+            MetaExpression mergedfilter,
             string searchtable,
             string listingType,
             string sorting,
@@ -420,14 +420,14 @@ namespace mdl_winform {
         /// <param name="filter"></param>
         /// <param name="searchtable"></param>
         /// <returns>A row belonging to a table equal to PrimaryTable</returns>
-        public virtual DataRow SelectByCondition(string filter,
+        public virtual DataRow SelectByCondition(MetaExpression filter,
             string searchtable) {
             //string mergedfilter = GetData.MergeFilters(filter, PrimaryDataTable);
 
-            var resultCount = conn.RUN_SELECT_COUNT(searchtable, filter, true);
+            var resultCount = conn.Count(searchtable,filter: filter).GetAwaiter().GetResult();
             if (resultCount != 1) return null;
 
-            var t2 = conn.RUN_SELECT(TableName, null, null, filter, null, null, true);
+            var t2 = conn.Select(TableName, filter: filter).GetAwaiter().GetResult();
             if (t2 == null) return null;
             return t2.Rows.Count == 0 ? null : CheckSelectRow(t2.Rows[0]);
         }
@@ -445,7 +445,7 @@ namespace mdl_winform {
         /// <param name="top"></param>
         /// <returns>Custom List Form</returns>
         public virtual ICustomViewListForm GetListForm(IWinFormMetaData linked, string columnlist,
-            string mergedfilter, string searchtable, string listingType, string sorting, int top) {
+            MetaExpression mergedfilter, string searchtable, string listingType, string sorting, int top) {
 
 	        var f = MetaFactory.factory.createInstance<ICustomViewListForm>();
             f.init(linked, columnlist,mergedfilter,searchtable,listingType,null,sorting,top,false,"Elenco");
@@ -545,7 +545,7 @@ namespace mdl_winform {
             //  Di base il controller potrebbe essere creato con un DataAccess ed un Dispatcher + metadato
             ds = f.getInstance<DataSet>();
             if (ExtraParameter != null) {
-                metaModel.setExtraParams(controller.primaryTable, ExtraParameter);
+                metaModel.SetExtraParams(controller.primaryTable, ExtraParameter);
             }
 
             //Ora può fare l'InitClass del GetData, prima non aveva il DataSet
@@ -653,7 +653,7 @@ namespace mdl_winform {
 
             //Se connessione assente esci 
             checkConn();
-            if ((conn != null) && (conn.openError)) {
+            if ((conn != null) && (conn.BrokenConnection)) {
                 shower.Show(LM.dbConnectionInterrupted);
                 ErroreIrrecuperabile = true;
                 return false;
@@ -805,7 +805,7 @@ namespace mdl_winform {
         /// <returns></returns>
         virtual protected Form GetForm(string EditType) {
             if (conn == null) return null;
-            DataRow formDesc = conn.GetFormInfo(this.TableName, EditType);
+            DataRow formDesc = conn.GetFormInfo(this.TableName, EditType).GetAwaiter().GetResult();
             if (formDesc != null) {
                 Form f = GetFormByDllName(formDesc["dllname"].ToString());
                 if (f != null) {
@@ -842,7 +842,7 @@ namespace mdl_winform {
             }
 
             err += "Assembly:" + this.GetType().Assembly.FullName;
-            ErrorLogger.markEvent(err);
+            ErrorLogger.MarkEvent(err);
             ErrorLogger.logException(err, meta: this);
 
             return null;
@@ -862,7 +862,7 @@ namespace mdl_winform {
             var someData = (helpForm != null) && (HelpForm.GetLastSelected(controller.primaryTable) != null);
             DataRow currRow = null;
             if (someData) currRow = HelpForm.GetLastSelected(controller.primaryTable);
-            if ((conn != null) && (conn.openError)) return false;
+            if ((conn != null) && (conn.BrokenConnection)) return false;
 
             // Input potrebbe essere dato dalla PrimaryDataTable
             // L'input sin qua è dato dalla  GetLastSelected(PrimaryDataTable)
@@ -966,7 +966,7 @@ namespace mdl_winform {
         /// <remarks> If the entity is selected, a row is loaded in the primary table
         ///  and all other data is cleared. </remarks>
         public virtual DataRow SelectOne(string listingType,
-            string filter,
+            MetaExpression filter,
             string searchtable,
             DataTable toMerge = null
             ) {
@@ -979,7 +979,7 @@ namespace mdl_winform {
                 try {
                     var err =
                         $"ListingType=null calling SelectOne on table {searchtable} with filter {filter} in form {linkedForm.Text}";
-                    ErrorLogger.markEvent(err);
+                    ErrorLogger.MarkEvent(err);
                 }
                 catch {
                     //ignore
@@ -988,14 +988,15 @@ namespace mdl_winform {
             else {
 
                 if (ManagedByDB) {
-                    listingType = conn.GetListType(out var dbs, searchtable, listingType);
+                    dbstructure dbs;
+                    (listingType,dbs) = conn.GetListType(searchtable, listingType).GetAwaiter().GetResult();
                     searchtable = DataAccess.PrimaryTableOf(dbs);
                     var qhc = new CQueryHelper();
                     var viewFound = dbs.customview.Select(qhc.CmpEq("viewname",listingType));
                     if (viewFound.Length > 0) {
-                        var staticfilter = viewFound[0]["staticfilter"].ToString().Trim();
-                        staticfilter = security.Compile(staticfilter, true);
-                        if (staticfilter != "") mergedfilter = GetData.MergeFilters(mergedfilter, staticfilter);
+                        var staticfilter = MetaExpression.fromString(viewFound[0]["staticfilter"].ToString().Trim());
+                        //staticfilter = security.Compile(staticfilter, true);
+                        if (staticfilter != null) mergedfilter = MetaExpression.and(mergedfilter, staticfilter);
                     }
                 }
 
@@ -1022,7 +1023,7 @@ namespace mdl_winform {
                 sortBy = sortBy ?? ds.Tables[searchtable].getSorting();
             }
             else {
-                var temp = conn.CreateTableByName(searchtable, "*");
+                var temp = conn.CreateTable(searchtable, "*").GetAwaiter().GetResult();
                 if (temp.PrimaryKey == null || temp.PrimaryKey.Length == 0) {
                     if (metaToConsider.PrimaryKey() != null && metaToConsider.PrimaryKey().Length > 0) {
                         temp.PrimaryKey =
@@ -1033,23 +1034,21 @@ namespace mdl_winform {
                 columnlist = QueryCreator.SortedColumnNameList(temp);
             }
 
-            string prefilter = mergedfilter;
+            var prefilter = mergedfilter;
             if (!this.ManagedByDB) {
-                var staticfilter = metaToConsider.GetStaticFilter(listingType);
-                staticfilter = security.Compile(staticfilter, true);
-                mergedfilter = GetData.MergeFilters(mergedfilter, staticfilter);
+                var staticfilter = metaToConsider.GetStaticFilter(listingType);                
+                mergedfilter = MetaExpression.and(mergedfilter, staticfilter);
             }
 
-            if (filter == null) filter = "";
-            filter = filter.Trim();
+            
             if (metaToConsider.listTop != 0 || filterLocked) {
-                var tabTemp = conn.RUN_SELECT(searchtable, "*", null, mergedfilter,"2", true);
+                var tabTemp = conn.Select(searchtable,filter: mergedfilter,top:"2").GetAwaiter().GetResult();
                 var resultCount = tabTemp.Rows.Count;// dbConn.RUN_SELECT_COUNT(searchtable, mergedfilter, true);
                 if ((toMerge == null) && (resultCount == 0)) {
                     conn.Close();
                     var mess = LM.noRowFoundInTable(searchtable); //$"Nella tabella \'{searchtable}\' non è stata trovata alcuna riga.\r\n";
-                    mess += filter != ""
-                        ? LM.conditionSetWas(mergedfilter) //La condizione di ricerca impostata era: \'{filter}\'.
+                    mess += filter != null
+                        ? LM.conditionSetWas(mergedfilter?.toADO()) //La condizione di ricerca impostata era: \'{filter}\'.
                         : LM.noConditionUsed;  //Nessuna condizione è stata usata.
                     if (listingType != null) mess += LM.listNameIs(listingType);    //Nome Elenco: \'{listingType}\'.
                     var shortmsg = metaToConsider.GetNoRowFoundMessage(listingType);
@@ -1061,8 +1060,7 @@ namespace mdl_winform {
                 if (resultCount == 1 &&
                     (toMerge == null || toMerge.Rows.Count == 0)
                 ) { //ex ((ToMerge==null)&&
-                    var T = conn.RUN_SELECT(searchtable, columnlist, sortBy, mergedfilter, null, null,
-                        true); //mergefilter
+                    var T = conn.Select(searchtable, columnlist: columnlist, order_by: sortBy, filter:mergedfilter).GetAwaiter().GetResult(); //mergefilter
                     return T.Rows.Count == 0 ? null : metaToConsider.CheckSelectRow(T.Rows[0]);
                 }
             }

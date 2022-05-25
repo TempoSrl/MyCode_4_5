@@ -3,8 +3,11 @@ D:\progetti\MDL_4.5\mdl_windows\obj\Debug\mdl_windows.csproj.CoreCompileInputs.c
 D:\progetti\MDL_4.5\mdl_windows\bin\Debug\mdl_windows.dll
 D:\progetti\MDL_4.5\mdl_windows\bin\Debug\mdl_windows.pdb
 D:\progetti\MDL_4.5\mdl_windows\bin\Debug\EPPlus.dll
+D:\progetti\MDL_4.5\mdl_windows\bin\Debug\mdl.dll
 D:\progetti\MDL_4.5\mdl_windows\bin\Debug\mdl_language.dll
 D:\progetti\MDL_4.5\mdl_windows\bin\Debug\mdl_utils.dll
+D:\progetti\MDL_4.5\mdl_windows\bin\Debug\AsyncDataAdapter.dll
+D:\progetti\MDL_4.5\mdl_windows\bin\Debug\mdl.pdb
 D:\progetti\MDL_4.5\mdl_windows\bin\Debug\mdl_language.pdb
 D:\progetti\MDL_4.5\mdl_windows\bin\Debug\mdl_utils.pdb
 D:\progetti\MDL_4.5\mdl_windows\bin\Debug\EPPlus.xml
